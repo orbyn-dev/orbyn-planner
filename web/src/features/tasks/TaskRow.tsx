@@ -3,6 +3,7 @@ import { useUi } from "../../app/ui";
 import { formatTime, parseDue } from "../../lib/dates";
 import { usePlanner } from "../../store/context";
 import { shownTags, TagChip, tagLabels } from "./TagChips";
+import { statusOf } from "../../store/taskStatus";
 import type { Task } from "../../store/types";
 import { dueText, needsAction } from "./selectors";
 import { useComplete } from "./useComplete";
@@ -61,6 +62,7 @@ export function TaskRow({ task, layout = "tasks", extra, unsynced = false }: { t
       <span><Check task={task} /></span>
       <span className="ttwrap">
         <button type="button" className="tt link-btn" onClick={open}>{task.title}</button>
+        {!task.done && statusOf(task) === "blocked" && <span className="t3 status-word"> · Blocked</span>}
         {chips.map((t) => <TagChip key={t.id} tag={t} label={labels.get(t.id)} />)}
       </span>
       {layout === "tasks" && (
@@ -104,7 +106,7 @@ export function TodayRow({ task, late, compact = false, quietLate = false, unsyn
     <li className={task.done ? "row done" : "row"} data-row-id={task.id} data-done={task.done} {...(at ? { "aria-posinset": at.index + 1, "aria-setsize": at.of } : {})} style={compact ? { gridTemplateColumns: "var(--sp-16) minmax(0,1fr) auto" } : undefined}>
       {!compact && <span className={soon ? "time amber" : "time"}>{time}</span>}
       <Check task={task} />
-      <button type="button" className="what link-btn" onClick={open}>{task.title}</button>
+      <button type="button" className="what link-btn" onClick={open}>{task.title}{!task.done && statusOf(task) === "blocked" && <span className="t3"> · Blocked</span>}</button>
       <span className={late !== undefined && !task.done ? "meta amber" : "meta"}>{compact ? (parsed?.hasTime ? formatTime(parsed.date) : "") : meta}</span>
     </li>
   );

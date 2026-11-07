@@ -165,9 +165,11 @@ jobs:
         run: npm run generate:check
         env:
           ORBYN_ENGINE_DIR: ${{ github.workspace }}/engine
-      # Types and lint ran in "Cheap checks".
+      # Types and lint ran in "Cheap checks". The task-status vectors are read from the pinned engine checkout (the one generate:check uses).
       - if: env.RUN == 'true'
         run: npm test
+        env:
+          ORBYN_ENGINE_DIR: ${{ github.workspace }}/engine
       - if: env.RUN == 'true'
         run: npm run build
 

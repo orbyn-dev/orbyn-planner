@@ -1,4 +1,5 @@
 import { addWall } from "../../lib/wall";
+import { icsStatus } from "../../store/taskStatus";
 import type { Day, Repeat, Series } from "../../store/repeat";
 import type { CalendarEvent, PlannerState, Priority, Response, Tag, Task } from "../../store/types";
 
@@ -123,8 +124,10 @@ function vtodo(t: Task, listName: string, tagNames: string[], stamp: string): st
   if (categories.length > 0) lines.push(`CATEGORIES:${categories.map(text).join(",")}`);
   const priority = PRIORITY[t.priority];
   if (priority !== null) lines.push(`PRIORITY:${priority}`);
-  if (t.done) lines.push("STATUS:COMPLETED", ...(t.completedAt ? [`COMPLETED:${utc(t.completedAt)}`] : []));
-  else lines.push("STATUS:NEEDS-ACTION");
+  const status = icsStatus(t);
+  lines.push(`STATUS:${status.STATUS}`);
+  if (t.done && t.completedAt) lines.push(`COMPLETED:${utc(t.completedAt)}`);
+  if (status.X_ORBYN_STATUS) lines.push(`X-ORBYN-STATUS:${status.X_ORBYN_STATUS}`);
   if (t.repeat) lines.push(rrule(t.repeat.repeat, due.date), ...exdates(t.repeat, t.due!, new Set()));
   lines.push(...alarm(t.reminder, due.date), "END:VTODO");
   return lines;

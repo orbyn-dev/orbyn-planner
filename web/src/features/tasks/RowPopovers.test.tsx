@@ -146,6 +146,56 @@ describe("task panel row popovers", () => {
   });
 });
 
+describe("Status row (Planner Designs task-panel-status-open)", () => {
+  it("sits after Reminder, defaults to To do, offers To do, In progress and Blocked, and a pick writes only the status", async () => {
+    const { store, panel } = await open((s) => s.addTask({ title: "Review", due: "2026-11-09" }));
+    const labels = [...panel.querySelectorAll(".kv > span:first-child")].map((e) => e.textContent);
+    expect(labels.indexOf("Status")).toBe(labels.indexOf("Reminder") + 1);
+    expect(row(panel, "Status")).toHaveTextContent("To do");
+    const before = { ...store.getState().tasks[0]! };
+    expect(store.getState().tasks[0]!.status).toBeUndefined(); // nothing is written until a person changes it
+    await userEvent.click(row(panel, "Status"));
+    const menu = within(screen.getByRole("dialog", { name: "Status" }));
+    expect(menu.getAllByRole("menuitemradio").map((o) => o.textContent)).toEqual(["To do", "In progress", "Blocked"]);
+    await userEvent.click(menu.getByRole("menuitemradio", { name: "Blocked" }));
+    const after = store.getState().tasks[0]!;
+    expect(after.status).toBe("blocked");
+    expect({ ...after, status: undefined, updatedAt: "" }).toEqual({ ...before, status: undefined, updatedAt: "" }); // only the status changed
+    expect(row(panel, "Status")).toHaveTextContent("Blocked");
+  });
+
+  it("a done task keeps its status and shows it; choosing another changes only the status", async () => {
+    const { store, panel } = await open((s) => {
+      const t = s.addTask({ title: "Review" });
+      s.updateTask(t.id, { status: "blocked" });
+      s.setDone(t.id, true);
+    }, "/tasks", "Review");
+    expect(row(panel, "Status")).toHaveTextContent("Blocked");
+    await userEvent.click(row(panel, "Status"));
+    await userEvent.click(within(screen.getByRole("dialog", { name: "Status" })).getByRole("menuitemradio", { name: "In progress" }));
+    expect(store.getState().tasks[0]).toMatchObject({ status: "in_progress", done: true });
+  });
+
+  it("a status this version does not know reads as To do and is kept until the person picks one", async () => {
+    const { store, panel } = await open((s) => {
+      const t = s.addTask({ title: "Review" });
+      s.updateTask(t.id, { status: "waiting_on_review" });
+    });
+    expect(row(panel, "Status")).toHaveTextContent("To do");
+    expect(store.getState().tasks[0]!.status).toBe("waiting_on_review");
+  });
+
+  it("a blocked open task shows only the word Blocked after its title; In progress shows nowhere in the list", async () => {
+    await open((s) => {
+      s.updateTask(s.addTask({ title: "Review" }).id, { status: "blocked" });
+      s.updateTask(s.addTask({ title: "Plan" }).id, { status: "in_progress" });
+    }, "/tasks", /Review/);
+    expect(screen.getByRole("button", { name: "Review" }).closest("li")).toHaveTextContent("Review · Blocked");
+    expect(screen.getByRole("button", { name: "Plan" }).closest("li")).not.toHaveTextContent("Blocked");
+    expect(screen.queryByText(/In progress/)).toBeNull();
+  });
+});
+
 describe("event panel row popovers", () => {
   it("Calendar lists the calendars with a search, and Repeat and Reminder open the same popovers", async () => {
     const { panel } = await open(
