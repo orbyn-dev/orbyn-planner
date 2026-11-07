@@ -18,3 +18,16 @@ describe("amber dates", () => {
     expect(needsAction(task("2026-11-06", true), NOW)).toBe(false); // done
   });
 });
+
+import { groupTasks } from "./selectors";
+
+describe("group names (Planner Designs v49)", () => {
+  const t = (due: string) => ({ id: due, due, done: false, createdAt: due, deletedAt: null }) as unknown as Task;
+  it("the days after today are Next week when all of them fall in the following week, and This week while any is still in this one", () => {
+    // Saturday 7 Nov 2026: the week (Monday start) ends on Sunday 8, so Mon 9 to Fri 13 are next week.
+    expect(groupTasks([t("2026-11-09"), t("2026-11-12")], new Date(2026, 10, 7, 10, 0)).map((g) => g.label)).toEqual(["Next week"]);
+    expect(groupTasks([t("2026-11-08"), t("2026-11-12")], new Date(2026, 10, 7, 10, 0)).map((g) => g.label)).toEqual(["This week"]);
+    // Monday 2 Nov: Tue 3 to Fri 6 are this week.
+    expect(groupTasks([t("2026-11-04")], new Date(2026, 10, 2, 10, 0)).map((g) => g.label)).toEqual(["This week"]);
+  });
+});
