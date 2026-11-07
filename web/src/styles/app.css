@@ -785,3 +785,9 @@ button.pillx { border: 0; }
 .seg-btn[aria-checked="true"] { background: var(--main); color: var(--t1); box-shadow: 0 0 0 var(--bw) var(--line); }
 .chip { border: 0; cursor: pointer; }
 .chip-menu { right: auto; left: 0; width: var(--sp-200); padding: var(--sp-6); }
+
+/* The Tasks board: the lane a card would land in is outlined while it is dragged; a quiet hint says where it goes (p-board-drag). */
+.lane.drop { box-shadow: inset 0 0 0 var(--bw-1-5) var(--t1); }
+.drop-hint { margin: 0; text-align: center; font-size: var(--fs-12); }
+.tcard[draggable="true"] { cursor: grab; }
+.tcard .move-btn { border: 0; background: none; padding: 0; color: var(--t3); font: inherit; font-size: var(--fs-11-5); cursor: pointer; }

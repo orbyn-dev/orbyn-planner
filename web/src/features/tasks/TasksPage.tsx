@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { MotionList } from "../../components/MotionList";
 import { useNow } from "../../app/clock";
 import { useUi } from "../../app/ui";
@@ -9,6 +9,10 @@ import { usePlanner, useStore } from "../../store/context";
 import { describeParse, parseQuickAdd } from "./quickAdd";
 import { DUE_FILTERS, activeTasks, isOpen, matchesDue, type DueFilter } from "./selectors";
 import { FilterChip } from "./FilterChip";
+import { OptionMenu } from "../../components/OptionMenu";
+import { usePopover } from "../../components/usePopover";
+import { LANES, LANE_LABELS, laneOf, type Lane } from "../../store/taskStatus";
+import { useMoveTask } from "./useMoveTask";
 import { ViewOptionsButton } from "./ViewOptionsButton";
 import { groupFor, lanesFor, loadViewOptions, saveViewOptions, type ViewOptions } from "./viewOptions";
 import { tagLabels } from "./TagChips";
@@ -65,18 +69,48 @@ export function QuickAddField({ listId, example = "Call Sam tomorrow 3pm #work !
   );
 }
 
-function BoardCard({ task }: { task: Task }) {
+/** A card of the Tasks board: draggable to another lane, and "Move to" for the keyboard. */
+function BoardCard({ task, onDragging }: { task: Task; onDragging: (id: string | null) => void }) {
   const { lists } = usePlanner();
   const { open } = useTaskActions(task);
+  const move = useMoveTask();
   const now = useNow();
   const list = lists.find((l) => l.id === task.listId);
+  const [menu, setMenu] = useState(false);
+  const anchor = useRef<HTMLButtonElement>(null);
+  const pop = usePopover(menu, () => setMenu(false), anchor);
+  const here = laneOf(task);
   return (
-    <li className="tcard" data-row-id={task.id} data-done={task.done}>
+    <li
+      className="tcard"
+      data-row-id={task.id}
+      data-done={task.done}
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData("text/plain", task.id);
+        e.dataTransfer.effectAllowed = "move";
+        onDragging(task.id);
+      }}
+      onDragEnd={() => onDragging(null)}
+    >
       <button type="button" className="tt link-btn" onClick={open}>{task.title}</button>
       <span className="m">
         {list && <Swatch colour={list.colour} />}
         {[list?.name, task.due && formatDue(task.due, now)].filter(Boolean).join(" · ")}
       </span>
+      <div className="sync-wrap">
+        <button ref={anchor} type="button" className="move-btn" aria-haspopup="menu" aria-expanded={menu} aria-label={`Move ${task.title} to`} onClick={() => setMenu(!menu)}>Move to</button>
+        {menu && (
+          <div ref={pop} className="card popover chip-menu" role="dialog" aria-label={`Move ${task.title} to`}>
+            <OptionMenu
+              label="Move to"
+              options={LANES.filter((l) => l !== here).map((l) => ({ value: l, label: LANE_LABELS[l] }))}
+              selected={undefined}
+              onPick={(l) => { setMenu(false); move(task, l); }}
+            />
+          </div>
+        )}
+      </div>
     </li>
   );
 }
@@ -103,6 +137,10 @@ export function TasksPage() {
     [tasks, now, due, priority, listId, tagId, options.showCompleted],
   );
   const groups = useMemo(() => groupFor(shown, lists, now, options), [shown, lists, now, options]);
+  const lanes = useMemo(() => lanesFor(shown, options), [shown, options]);
+  const move = useMoveTask();
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [over, setOver] = useState<Lane | null>(null);
   const openCount = tasks.filter(isOpen).length;
   const anyTask = tasks.some((t) => t.deletedAt === null);
 
@@ -182,19 +220,35 @@ export function TasksPage() {
           ))}
         </div>
       ) : (
-        <div className="board">
-          {lanesFor(shown, options).map(({ label, tasks: lane }) => {
-            return (
-              <section key={label} className="lane" aria-label={label}>
-                <h2 className="lane-h">{label}<span>{lane.length}</span></h2>
-                <ul className="cards">
-                  {lane.map((t) => (
-                    <BoardCard key={t.id} task={t} />
-                  ))}
-                </ul>
-              </section>
-            );
-          })}
+        <div className="board" style={{ gridTemplateColumns: `repeat(${lanes.length}, minmax(0, 1fr))` }}>
+          {lanes.map(({ lane, label, tasks: cards }) => (
+            <section
+              key={lane}
+              className={over === lane ? "lane drop" : "lane"}
+              aria-label={label}
+              onDragOver={(e) => {
+                if (dragging === null) return;
+                e.preventDefault();
+                setOver(lane);
+              }}
+              onDragLeave={(e) => !e.currentTarget.contains(e.relatedTarget as Node | null) && over === lane && setOver(null)}
+              onDrop={(e) => {
+                e.preventDefault();
+                const task = tasks.find((t) => t.id === (e.dataTransfer.getData("text/plain") || dragging));
+                setOver(null);
+                setDragging(null);
+                if (task) move(task, lane);
+              }}
+            >
+              <h2 className="lane-h">{label}<span>{cards.length}</span></h2>
+              <ul className="cards">
+                {cards.map((t) => (
+                  <BoardCard key={t.id} task={t} onDragging={setDragging} />
+                ))}
+              </ul>
+              {over === lane && dragging !== null && <p className="t3 drop-hint">Drop to move to {label}</p>}
+            </section>
+          ))}
         </div>
       )}
 
