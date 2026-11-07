@@ -46,7 +46,7 @@ const RESENDS_PER_HOUR = 3;
 const HOUR_MS = 3_600_000;
 
 /** The code step of a sign-up: no account and no session exist until the code from the email is right. */
-function CheckEmail({ pending, onBack, onDone, onInviteRejected }: { pending: PendingSignUp; onBack: () => void; onDone: () => void; onInviteRejected: () => void }) {
+function CheckEmail({ pending, onBack, onDone, onInviteRejected, onSignIn }: { pending: PendingSignUp; onBack: () => void; onDone: () => void; onInviteRejected: () => void; onSignIn: () => void }) {
   const auth = useAuth()!;
   const clock = auth.services.now;
   const [code, setCode] = useState("");
@@ -97,6 +97,7 @@ function CheckEmail({ pending, onBack, onDone, onInviteRejected }: { pending: Pe
       onDone();
     } catch (e) {
       if (e instanceof ApiFailure && e.code === "keys_not_saved") {
+        pending.cancel(); // the account exists and is empty, and nothing here can use its keys: let them go
         setKeysLost(true);
       } else if (e instanceof ApiFailure && e.code === "invite_invalid") {
         setInviteRejected(true);
@@ -128,7 +129,7 @@ function CheckEmail({ pending, onBack, onDone, onInviteRejected }: { pending: Pe
   };
 
   const seconds = `${Math.floor(wait / 60)}:${String(wait % 60).padStart(2, "0")}`;
-  if (keysLost) return <StartOver email={pending.email} onChangeEmail={onBack} />;
+  if (keysLost) return <StartOver email={pending.email} onBackToSignIn={onSignIn} />;
   return (
     <form className="authcard" onSubmit={(e) => void verify(e)} aria-label="Check your inbox" noValidate>
       <StepBar step={3} label="Check your email" />
@@ -232,6 +233,7 @@ function SignUp({ go }: { go: (s: AuthScreen) => void }) {
   const backToCode = () => {
     pending?.cancel();
     setPending(null);
+    setPassword(""); // the password was typed for an invite that is gone; it is not kept in the page
     setRejected(false);
     setInvite(null);
   };
@@ -256,7 +258,7 @@ function SignUp({ go }: { go: (s: AuthScreen) => void }) {
   if (invite === null) return <InviteStep onAccepted={setInvite} go={go} />;
   return (
     <>
-    {pending && <CheckEmail pending={pending} onBack={() => setPending(null)} onDone={auth.closeAuth} onInviteRejected={backToCode} />}
+    {pending && <CheckEmail pending={pending} onBack={() => setPending(null)} onDone={auth.closeAuth} onInviteRejected={backToCode} onSignIn={() => go("signin")} />}
     {/* Kept while the code is awaited, so "Change email" finds the name and email as they were; the password is cleared as soon as it is sent. */}
     <form className="authcard" onSubmit={submit} aria-label="Create your account" noValidate hidden={pending !== null}>
       <StepBar step={2} label="Email and password" />
@@ -270,7 +272,7 @@ function SignUp({ go }: { go: (s: AuthScreen) => void }) {
       )}
       <div className="form" style={{ width: "auto" }}>
         <label htmlFor="su-name">Name</label>
-        <input id="su-name" className="field" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
+        <input id="su-name" className="field" autoComplete="name" placeholder="What should we call you?" value={name} onChange={(e) => setName(e.target.value)} />
         <label htmlFor="su-email">Email</label>
         <input id="su-email" className="field" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         <label htmlFor="su-password">Password</label>

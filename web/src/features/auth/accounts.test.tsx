@@ -2158,6 +2158,38 @@ describe("invite sign-up", () => {
 });
 
 
+describe("sign-up review fixes", () => {
+  it("Back to the form after a refused invite leaves no password in the form", async () => {
+    engine.requireInvites("K7QM-2XWH-9QXA-LC2D");
+    await mount(services());
+    await userEvent.click(await screen.findByRole("button", { name: "Get started" }));
+    await userEvent.type(await screen.findByLabelText("Invite code"), "K7QM-2XWH-9QXA-LC2D");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByLabelText("Name");
+    expect(screen.getByLabelText("Name")).toHaveAttribute("placeholder", "What should we call you?");
+    await userEvent.type(screen.getByLabelText("Email"), SAM.email);
+    await userEvent.type(screen.getByLabelText("Password"), SAM.password);
+    await userEvent.click(screen.getByRole("button", { name: "Continue with a password" }));
+    await screen.findByLabelText("Code");
+    engine.spendInvite("K7QM-2XWH-9QXA-LC2D");
+    await verifyEmail(SAM.email);
+    await userEvent.click(within(await screen.findByRole("alert")).getByRole("button", { name: "Back to the form" }));
+    engine.requireInvites("AAAA-BBBB-CCCC-DDDD");
+    await userEvent.type(await screen.findByLabelText("Invite code"), "AAAA-BBBB-CCCC-DDDD");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByLabelText("Password")).toHaveValue("");
+  });
+
+  it("the Start over page's links open the right screen: /sign-up the invite step, /sign-in the sign-in form", async () => {
+    await mount(services(), "/sign-up");
+    expect(await screen.findByLabelText("Invite code")).toBeInTheDocument();
+    cleanup();
+    document.getElementById("root")?.remove();
+    await mount(services(), "/sign-in");
+    expect(await screen.findByRole("form", { name: "Sign in" })).toBeInTheDocument();
+  });
+});
+
 describe("Start over after the keys could not be held", () => {
   /** A browser that can make the wrapping secret once (the sign-up checks) and never again, so the keys can be neither stored nor held. */
   async function signUpUntilKeysLost() {
@@ -2203,7 +2235,8 @@ describe("Start over after the keys could not be held", () => {
     expect(await screen.findByRole("group", { name: "Check your email" })).toHaveTextContent("If this account can be deleted this way, we’ve sent a link to sam@example.com. It works once and expires in 24 hours.");
     expect(engine.deleteUnusedAsked).toEqual(["sam@example.com"]);
     expect(screen.getByText(/Send a new link in 1:00/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Change email" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Change email" })).toBeNull(); // the account exists and its invite is spent
+    expect(screen.getByRole("button", { name: "Back to sign in" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Send a new link" })).toBeNull();
   });
 
