@@ -189,8 +189,8 @@
     ]
   },
   "p-view-options-list": {
-    "kind": "desktop",
     "design": "p-view-options-list",
+    "kind": "desktop",
     "route": "/tasks",
     "scenario": "tasks",
     "steps": [

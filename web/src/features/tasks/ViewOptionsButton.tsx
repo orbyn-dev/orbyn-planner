@@ -10,10 +10,11 @@ function Group<T extends string>({ label, value, choices, onChange }: { label: s
   return (
     <div className="vo-group">
       <span className="vo-label">{label}</span>
-      <div role="radiogroup" aria-label={label} className="pills">
+      <div role="radiogroup" aria-label={label} className="opt-menu">
         {choices.map((c) => (
-          <button key={c.id} type="button" role="radio" aria-checked={value === c.id} className="pill" onClick={() => onChange(c.id)}>
-            {c.label}
+          <button key={c.id} type="button" role="radio" aria-checked={value === c.id} aria-label={c.label} className="opt vo-row" onClick={() => onChange(c.id)}>
+            <span>{c.label}</span>
+            {value === c.id && <span className="k t3" aria-hidden="true">Selected</span>}
           </button>
         ))}
       </div>
@@ -53,9 +54,9 @@ export function ViewOptionsButton({ view, options, onChange }: { view: "list" | 
             <>
               <Group label="Group by" value={options.groupBy} choices={GROUPS} onChange={(groupBy) => set({ groupBy })} />
               <Group label="Sort by" value={options.sort} choices={SORTS} onChange={(sort) => set({ sort })} />
-              <div role="radiogroup" aria-label="Sort direction" className="pills">
+              <div role="radiogroup" aria-label="Sort direction" className="seg">
                 {([false, true] as const).map((d) => (
-                  <button key={String(d)} type="button" role="radio" aria-checked={options.descending === d} className="pill" onClick={() => set({ descending: d })}>
+                  <button key={String(d)} type="button" role="radio" aria-checked={options.descending === d} className="seg-btn" onClick={() => set({ descending: d })}>
                     {d ? "Descending" : "Ascending"}
                   </button>
                 ))}

@@ -1,4 +1,4 @@
-import { addDays, compareDue, dateKey, dueDayKey, formatDue, isDueToday, isOverdue, parseDue, startOfDay, startOfWeek } from "../../lib/dates";
+import { addDays, compareDue, dateKey, dueDayKey, formatDue, isDueToday, isOverdue, parseDue, startOfDay, startOfWeek, weekStartOf } from "../../lib/dates";
 import type { Task } from "../../store/types";
 
 export type DueFilter = "any" | "today" | "week" | "overdue";
@@ -101,7 +101,7 @@ export interface TaskGroup {
 }
 
 /** Overdue, Today, This week, Later and No date, each in due order. Finished tasks stay with their day. */
-export function groupTasks(tasks: readonly Task[], now: Date): TaskGroup[] {
+export function groupTasks(tasks: readonly Task[], now: Date, weekStart: "mon" | "sun" = "mon"): TaskGroup[] {
   const weekEnd = dateKey(addDays(now, 6));
   const today = dateKey(now);
   const buckets: Record<string, Task[]> = { overdue: [], today: [], week: [], later: [], none: [] };
@@ -112,10 +112,14 @@ export function groupTasks(tasks: readonly Task[], now: Date): TaskGroup[] {
     else if (dueDayKey(t.due) <= weekEnd) buckets.week!.push(t);
     else buckets.later!.push(t);
   }
+  // The next six days are "This week" while any of them is still in the week that holds today, and "Next week" once they are all in the
+  // following one (on the last day of the week, Planner Designs v49).
+  const thisWeekEnd = dateKey(addDays(weekStartOf(now, weekStart), 6));
+  const weekLabel = buckets.week!.length > 0 && dueDayKey(buckets.week![0]!.due!) > thisWeekEnd ? "Next week" : "This week";
   const defs: [string, string, boolean][] = [
     ["overdue", "Overdue", true],
     ["today", "Today (planned or due)", false],
-    ["week", "This week", false],
+    ["week", weekLabel, false],
     ["later", "Later", false],
     ["none", "No date", false],
   ];

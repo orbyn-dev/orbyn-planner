@@ -657,7 +657,7 @@ button.pillx { border: 0; }
 .task-panel .kv .ctl .inp, .authcard .kv .ctl .inp { border-color: transparent; background: transparent; text-align: right; }
 .task-panel .kv .ctl .inp:hover, .authcard .kv .ctl .inp:hover, .task-panel .kv .ctl .inp:focus-visible, .authcard .kv .ctl .inp:focus-visible { border-color: var(--line2); background: var(--raise); }
 /* The View options popover on Tasks. */
-.view-options { display: flex; flex-direction: column; gap: var(--sp-12); }
+.view-options { display: flex; flex-direction: column; gap: var(--sp-8); width: var(--sp-280); }
 .vo-group { display: flex; flex-direction: column; gap: var(--sp-6); align-items: flex-start; }
 .vo-label { color: var(--t3); font-size: var(--fs-12); }
 .vo-link { color: var(--t1); text-decoration: none; border-top: var(--bw) solid var(--line); padding-top: var(--sp-10); }
@@ -751,3 +751,13 @@ button.pillx { border: 0; }
   .cal-btn .lbl { display: none; }
   .cal-btn { padding: 0; width: var(--sp-30); justify-content: center; }
 }
+/* View options as a 280 px list (Planner Designs v49 p-view-options-list): rows with Selected at the right, a two-part direction switch. */
+.vo-group { align-items: stretch; }
+.vo-group .opt-menu { gap: 0; }
+.vo-row { justify-content: space-between; }
+.vo-row .k { font-family: var(--mono); font-size: var(--fs-11-5); }
+.seg { display: inline-flex; align-self: flex-start; padding: var(--sp-2); border-radius: var(--r-9); background: var(--raise); }
+.seg-btn { border: 0; background: none; color: var(--t3); font: inherit; font-size: var(--fs-12-5); padding: var(--sp-5) var(--sp-12); border-radius: var(--r-7); cursor: pointer; }
+.seg-btn[aria-checked="true"] { background: var(--main); color: var(--t1); box-shadow: 0 0 0 var(--bw) var(--line); }
+.chip { border: 0; cursor: pointer; }
+.chip-menu { right: auto; left: 0; width: var(--sp-200); padding: var(--sp-6); }

@@ -282,7 +282,7 @@ export function TodayPage() {
         <div className="cols today-cols">
           <div className="blk" aria-busy="true"><div className="bh"><b>Today</b><span></span></div>{skeleton && <ul>{loadingRows(6)}</ul>}</div>
           <div className="blk aside">
-            <div className="bh"><b>This week</b><span></span></div>
+            <div className="bh"><b>Next 7 days</b><span></span></div>
             {skeleton && Array.from({ length: 5 }, (_, i) => <div className="kv" key={i}><span><span className="skel" style={{ width: "var(--sp-44)" }} /></span><span className="skel" style={{ width: "var(--sp-120)" }} /></div>)}
           </div>
         </div>
@@ -361,7 +361,7 @@ export function TodayPage() {
           {phone && (
             <div className="week-fold">
               <button type="button" className="kv link-btn" aria-expanded={weekOpen} onClick={() => setWeekOpen(!weekOpen)}>
-                <span>This week</span>
+                <span>Next 7 days</span>
                 <b>{countWords(comingUp, "item", "items")} <Icon name={weekOpen ? "down" : "right"} small /></b>
               </button>
               {weekOpen && weekList}
@@ -371,7 +371,7 @@ export function TodayPage() {
 
         {!phone && (
         <div className="blk aside">
-          <div className="bh"><b>This week</b><span></span></div>
+          <div className="bh"><b>Next 7 days</b><span></span></div>
           {weekList}
           {progress.length > 0 && (
             <>

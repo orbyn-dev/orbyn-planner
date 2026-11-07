@@ -300,7 +300,7 @@ describe("Today while it loads, and on a phone", () => {
     }
   });
 
-  it("on a phone: the title is Today, the count is items, there are no stats, events have no meta, and This week is one collapsed row", async () => {
+  it("on a phone: the title is Today, the count is items, there are no stats, events have no meta, and Next 7 days is one collapsed row", async () => {
     vi.stubGlobal("matchMedia", (query: string) => ({ matches: true, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
     await openToday((s) => {
       s.addEvent({ title: "Lunch", start: "2026-11-07T13:00", end: "2026-11-07T14:00", place: "Cafe" });
@@ -310,7 +310,7 @@ describe("Today while it loads, and on a phone", () => {
     expect(screen.getByRole("heading", { name: "Today" })).toBeInTheDocument();
     expect(screen.getByText("Saturday 7 November · 2 items")).toBeInTheDocument();
     expect(document.querySelector(".row .meta")?.textContent).toBe("");
-    const fold = screen.getByRole("button", { name: /^This week\s*1 item$/ });
+    const fold = screen.getByRole("button", { name: /^Next 7 days\s*1 item$/ });
     expect(fold).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByRole("list", { name: "The week at a glance" })).toBeNull();
   });

@@ -28,6 +28,12 @@ async function add(field: HTMLElement, text: string) {
   await userEvent.type(field, `${text}{Enter}`);
 }
 
+/** Open a filter chip and choose one of its choices. */
+async function pickChip(label: string, choice: string) {
+  await userEvent.click(screen.getByRole("button", { name: new RegExp(`^${label}:`) }));
+  await userEvent.click(screen.getByRole("menuitemradio", { name: choice }));
+}
+
 beforeEach(() => vi.unstubAllGlobals());
 afterEach(() => vi.useRealTimers());
 
@@ -80,34 +86,38 @@ describe("Tasks page", () => {
 
   it("filters by due date and by list", async () => {
     const { field, store } = await openTasks();
-    const errands = store.addList("Errands", "c3");
+    store.addList("Errands", "c3");
     await add(field, "one today");
     await add(field, "two tomorrow");
     await add(field, "three #errands");
-    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Due date" }), "today");
+    await pickChip("Due date", "Today");
     expect(screen.getByRole("button", { name: "one" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "two" })).not.toBeInTheDocument();
-    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Due date" }), "any");
-    await userEvent.selectOptions(screen.getByRole("combobox", { name: "List" }), errands.id);
+    await pickChip("Due date", "Any due date");
+    await pickChip("List", "Errands");
     expect(screen.getByRole("button", { name: "three" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "one" })).not.toBeInTheDocument();
   });
 
-  it("the filters are chips: Any due date, Any priority, Any list; the Owner filter stays out until sharing exists", async () => {
+  it("the filters are chips without a chevron: Any due date, Any priority, Any list; the Owner filter stays out until sharing exists", async () => {
     const { field } = await openTasks();
     await add(field, "plain");
     await add(field, "urgent !high");
-    const names = within(document.querySelector(".filters")!).getAllByRole("combobox").map((c) => c.getAttribute("aria-label") ?? c.closest("label")!.textContent);
-    expect(names.join(",")).toContain("Due date");
-    const due = screen.getByRole("combobox", { name: "Due date" });
-    expect(within(due).getAllByRole("option").map((o) => o.textContent)).toEqual(["Any due date", "Today", "This week", "Overdue"]);
-    const priority = screen.getByRole("combobox", { name: "Filter by priority" });
-    expect(within(priority).getAllByRole("option").map((o) => o.textContent)).toEqual(["Any priority", "High", "Medium", "Low", "None"]);
-    expect(screen.queryByRole("combobox", { name: /Anyone|Owner/ })).toBeNull();
-    await userEvent.selectOptions(priority, "high");
+    const chips = [...document.querySelectorAll(".filters .chip")].map((c) => c.textContent);
+    expect(chips).toEqual(["Any due date", "Any priority", "Any list"]);
+    expect(document.querySelector(".filters .chip svg")).toBeNull(); // no chevron
+    expect(document.querySelector(".filters select")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Anyone|Owner/ })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Due date: Any due date" }));
+    expect(within(screen.getByRole("menu", { name: "Due date" })).getAllByRole("menuitemradio").map((o) => o.textContent)).toEqual(["Any due date", "Today", "This week", "Overdue"]);
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(screen.getByRole("button", { name: "Priority: Any priority" }));
+    expect(within(screen.getByRole("menu", { name: "Priority" })).getAllByRole("menuitemradio").map((o) => o.textContent)).toEqual(["Any priority", "High", "Medium", "Low", "None"]);
+    await userEvent.click(screen.getByRole("menuitemradio", { name: "High" }));
+    expect(screen.getByRole("button", { name: "Priority: High" })).toHaveTextContent("High");
     expect(screen.getByRole("button", { name: "urgent" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "plain" })).toBeNull();
-    await userEvent.selectOptions(priority, "any");
+    await pickChip("Priority", "Any priority");
     expect(screen.getByRole("button", { name: "plain" })).toBeInTheDocument();
   });
 
@@ -191,5 +201,22 @@ describe("quick add preview", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("View options is a 280 px list: rows with Selected at the right, a two-part direction switch, not chips", async () => {
+    await openTasks();
+    await userEvent.click(screen.getByRole("button", { name: "View options" }));
+    const pop = screen.getByRole("dialog", { name: "View options" });
+    expect(pop.className).toContain("view-options");
+    const group = within(within(pop).getByRole("radiogroup", { name: "Group by" }));
+    expect(group.getAllByRole("radio").map((r) => r.getAttribute("aria-label"))).toEqual(["None", "Due date", "List", "Priority"]);
+    expect(group.getByRole("radio", { name: "Due date" })).toHaveTextContent("Selected");
+    expect(group.getByRole("radio", { name: "None" })).not.toHaveTextContent("Selected");
+    expect(within(pop).getByRole("radiogroup", { name: "Sort direction" })).toHaveClass("seg");
+    expect(pop.querySelector(".pills")).toBeNull();
+    const nodeFs = "node:fs";
+    const fs = (await import(/* @vite-ignore */ nodeFs)) as { readFileSync(path: string, encoding: "utf8"): string };
+    const rules = fs.readFileSync(`${(globalThis as { process?: { cwd(): string } }).process!.cwd()}/src/styles/app.css`, "utf8");
+    expect(rules).toMatch(/\.view-options \{[^}]*width: var\(--sp-280\)/);
   });
 });
