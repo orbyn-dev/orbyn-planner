@@ -99,8 +99,12 @@ export function NewEventDialog() {
                 </select>
               </b>
             </div>
-            <label htmlFor="ne-people">Invite people</label>
-            <input id="ne-people" className="field" placeholder="Add by email" value={people} onChange={(e) => setPeople(e.target.value)} />
+            <div className="kv">
+              <label htmlFor="ne-people">Invite people</label>
+              <b className="ctl">
+                <input id="ne-people" className="inp" placeholder="Add by email" value={people} onChange={(e) => setPeople(e.target.value)} />
+              </b>
+            </div>
             <div className="dialog-actions">
               <button type="button" className="ghost" onClick={ui.closeNewEvent}>Cancel</button>
               <button type="submit" className="btn" disabled={bad}>Add event</button>
