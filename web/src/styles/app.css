@@ -717,3 +717,22 @@ button.pillx { border: 0; }
 /* Search with nothing found: the words under the add rows. */
 .no-results { padding: var(--sp-22) var(--sp-12) var(--sp-14); display: flex; flex-direction: column; gap: var(--sp-4); }
 .no-results b { font-weight: var(--fw-medium); color: var(--t1); }
+
+/* Motion Designs: select, banner, inputerr, syncline. Opacity and a short slide only; under reduced motion the slide goes and the fade stays. */
+@keyframes m-pop { from { opacity: 0; transform: translateY(-4px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes m-banner { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+@keyframes m-err { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@keyframes m-fade { from { opacity: 0; } to { opacity: 1; } }
+/* The menu opens from its trigger: fades, rises from 4 px above and scales from .98 (200 ms). */
+.popover { transform-origin: top right; animation: m-pop var(--m-base) var(--m-out); }
+.banner { animation: m-banner var(--m-base) var(--m-out); }
+/* The error message fades in beneath its field and the field's border turns in the same moment (150 ms). */
+.err, small.err { animation: m-err var(--m-base) var(--m-out); }
+.field, .cbox { transition: border-color var(--m-fast) var(--m-out), box-shadow var(--m-fast) var(--m-out); }
+/* The sync label is drawn fresh when its state changes, and fades in. */
+.pillx, .st { animation: m-fade var(--m-fast) var(--m-out); }
+@media (prefers-reduced-motion: reduce) {
+  .popover { animation-name: m-fade; }
+  .banner { animation-name: m-fade; }
+  .err, small.err { animation-name: m-fade; }
+}
