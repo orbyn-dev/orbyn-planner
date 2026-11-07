@@ -98,14 +98,14 @@ describe("useSyncStatus", () => {
     vi.stubGlobal("fetch", vi.fn(async () => ok()));
     render(<Probe />);
     expect(screen.getByRole("status")).toHaveTextContent("Syncing");
-    expect(await screen.findByText("On this device")).toBeInTheDocument();
+    expect(await screen.findByText("On this device", {}, { timeout: 3000 })).toBeInTheDocument();
   });
 
   it("ends in the error state when the check times out, never stuck on Syncing", async () => {
     vi.spyOn(AbortSignal, "timeout").mockReturnValue(AbortSignal.abort());
     vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => (init?.signal?.aborted ? Promise.reject(new Error("timeout")) : Promise.resolve(ok()))));
     render(<Probe />);
-    expect(await screen.findByText(/Couldn’t sync/)).toBeInTheDocument();
+    expect(await screen.findByText(/Couldn’t sync/, {}, { timeout: 3000 })).toBeInTheDocument();
     vi.restoreAllMocks();
   });
 
@@ -113,7 +113,7 @@ describe("useSyncStatus", () => {
     const fetchMock = vi.fn(async () => ok());
     vi.stubGlobal("fetch", fetchMock);
     render(<Probe />);
-    await screen.findByText("On this device");
+    await screen.findByText("On this device", {}, { timeout: 3000 });
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     act(() => {
@@ -129,7 +129,7 @@ describe("useSyncStatus", () => {
       window.dispatchEvent(new Event("online"));
     });
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
-    expect(await screen.findByText("On this device")).toBeInTheDocument();
+    expect(await screen.findByText("On this device", {}, { timeout: 3000 })).toBeInTheDocument();
   });
 
   it("never runs two checks at once, so focus changes cannot stack timer loops", async () => {
@@ -151,7 +151,7 @@ describe("useSyncStatus", () => {
     await act(async () => {
       release?.();
     });
-    expect(await screen.findByText("On this device")).toBeInTheDocument();
+    expect(await screen.findByText("On this device", {}, { timeout: 3000 })).toBeInTheDocument();
     act(() => {
       document.dispatchEvent(new Event("visibilitychange"));
     });
@@ -163,12 +163,41 @@ describe("useSyncStatus", () => {
     const fetchMock = vi.fn().mockRejectedValueOnce(new Error("down")).mockImplementation(async () => ok());
     vi.stubGlobal("fetch", fetchMock);
     render(<Probe />);
-    expect(await screen.findByText(/Couldn’t sync/)).toBeInTheDocument();
+    expect(await screen.findByText(/Couldn’t sync/, {}, { timeout: 3000 })).toBeInTheDocument();
     await act(async () => {
       await vi.advanceTimersByTimeAsync(5_100);
     });
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(await screen.findByText("On this device")).toBeInTheDocument();
+    expect(await screen.findByText("On this device", {}, { timeout: 3000 })).toBeInTheDocument();
+  });
+});
+
+describe("SyncLine holds each state for a second (Motion Designs syncline)", () => {
+  it("a Syncing that is replaced at once stays until it has been shown for a second, and the label is drawn fresh", async () => {
+    vi.useFakeTimers();
+    try {
+      const { rerender } = render(<SyncLine status={{ kind: "syncing" }} />);
+      const first = screen.getByRole("status");
+      rerender(<SyncLine status={{ kind: "synced", devices: 2 }} />);
+      expect(screen.getByRole("status")).toHaveTextContent("Syncing");
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(999);
+      });
+      expect(screen.getByRole("status")).toHaveTextContent("Syncing");
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2);
+      });
+      expect(screen.getByRole("status")).toHaveTextContent("Synced · 2 devices");
+      expect(screen.getByRole("status")).not.toBe(first); // a new element: it fades in
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a change inside the same state shows at once", () => {
+    const { rerender } = render(<SyncLine status={{ kind: "offline", waiting: 1 }} />);
+    rerender(<SyncLine status={{ kind: "offline", waiting: 2 }} />);
+    expect(screen.getByRole("status")).toHaveTextContent("Offline · 2 changes waiting");
   });
 });
 

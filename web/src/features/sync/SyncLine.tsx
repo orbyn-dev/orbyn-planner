@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { getHealth } from "../../api/engine";
 import { Icon } from "../../components/Icon";
 import { PHONE_QUERY, useMediaQuery } from "../../components/useMediaQuery";
@@ -75,7 +75,40 @@ function OfflinePill({ status, waiting }: { status: Extract<SyncStatus, { kind: 
   );
 }
 
+/** Motion Designs `syncline`: a state shows for at least this long, so a quick Syncing never flickers past. */
+export const SYNC_STATE_MIN_MS = 1000;
+
+/** The status to draw: a change of kind waits until the one on show has been there for SYNC_STATE_MIN_MS. */
+function useHeldStatus(status: SyncStatus): SyncStatus {
+  const [shown, setShown] = useState(status);
+  const since = useRef<number | null>(null);
+  useEffect(() => {
+    since.current ??= Date.now(); // the first state is on show from when it was drawn
+    if (status.kind === shown.kind) return;
+    const wait = Math.max(0, SYNC_STATE_MIN_MS - (Date.now() - since.current));
+    const timer = setTimeout(() => {
+      since.current = Date.now();
+      setShown(status);
+    }, wait);
+    return () => clearTimeout(timer);
+  }, [status, shown.kind]);
+  return status.kind === shown.kind ? status : shown;
+}
+
+/**
+ * The sync pill. When the state changes the label cross-fades in place (150 ms: the new one is drawn fresh and fades in), and each
+ * state shows for at least a second.
+ */
 export function SyncLine({ status, onRetry, waiting = [] }: { status: SyncStatus; onRetry?: () => void; waiting?: WaitingChange[] }) {
+  const held = useHeldStatus(status);
+  return (
+    <Fragment key={held.kind}>
+      <SyncState status={held} onRetry={onRetry} waiting={waiting} />
+    </Fragment>
+  );
+}
+
+function SyncState({ status, onRetry, waiting }: { status: SyncStatus; onRetry?: () => void; waiting: WaitingChange[] }) {
   switch (status.kind) {
     case "synced":
       return <p className="pillx" role="status">Synced · {status.devices === 1 ? "this device" : `${status.devices} devices`}</p>;
