@@ -38,10 +38,10 @@ const wrapFor = (given: KeyStore) => {
   return w;
 };
 
-function services(keys: KeyStore = createMemoryKeyStore(), useRealCrypto = false, poll = FAST_POLL): AuthServices {
+function services(keys: KeyStore = createMemoryKeyStore(), useRealCrypto = false, poll = FAST_POLL, fetchImpl: typeof fetch = engine.fetch): AuthServices {
   return createAuthServices({
     wrapSecret: async () => wrapFor(keys).slice(),
-    fetch: engine.fetch,
+    fetch: fetchImpl,
     baseUrl: "http://engine.test",
     keys,
     crypto: useRealCrypto ? undefined : () => crypto,
@@ -86,8 +86,17 @@ afterEach(() => {
   registerAuthCrypto(null);
 });
 
+/** Step 1 of a sign-up: a complete invite code, checked (the mock engine is open unless a test asks for invites). */
+async function acceptInvite(code = "K7QM-2XWH-9QXA-LC2D") {
+  await userEvent.type(await screen.findByLabelText("Invite code"), code);
+  await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+  await screen.findByLabelText("Name");
+  engine.calls.splice(0); // the tests below the sign-up form look at what the form itself sends
+}
+
 async function fillSignUp(user = SAM) {
   await userEvent.click(await screen.findByRole("button", { name: "Get started" }));
+  await acceptInvite();
   await userEvent.type(screen.getByLabelText("Name"), user.name);
   await userEvent.type(screen.getByLabelText("Email"), user.email);
   await userEvent.type(screen.getByLabelText("Password"), user.password);
@@ -175,6 +184,7 @@ describe("the public pages", () => {
   it("sign up and sign in draw a dimmed Planned passkey button that does nothing, and the primary button reads Continue with a password", async () => {
     await mount(services());
     await userEvent.click(await screen.findByRole("button", { name: "Get started" }));
+    await acceptInvite();
     const up = screen.getByRole("button", { name: /^Continue with a passkey/ });
     expect(up).toBeDisabled();
     expect(up).toHaveAttribute("aria-disabled", "true");
@@ -221,6 +231,7 @@ describe("sign up", () => {
   it("needs a password of 8 characters", async () => {
     await mount(services());
     await userEvent.click(await screen.findByRole("button", { name: "Get started" }));
+    await acceptInvite();
     await userEvent.type(screen.getByLabelText("Email"), "sam@example.com");
     await userEvent.type(screen.getByLabelText("Password"), "short");
     expect(screen.getByRole("button", { name: "Continue with a password" })).toBeDisabled();
@@ -611,6 +622,7 @@ describe("adding a device", () => {
   it("Add a device explains the steps", async () => {
     await mount(services(), "/settings");
     await userEvent.click(await screen.findByRole("button", { name: "Get started" }));
+    await acceptInvite();
     await userEvent.type(screen.getByLabelText("Email"), SAM.email);
     await userEvent.type(screen.getByLabelText("Password"), SAM.password);
     await userEvent.click(screen.getByRole("button", { name: "Continue with a password" }));
@@ -1287,6 +1299,7 @@ describe("signing out", () => {
     await mount(auth, "/settings");
     await openAccount();
     await userEvent.click(screen.getByRole("button", { name: "Create an account" }));
+    await acceptInvite();
     await userEvent.type(screen.getByLabelText("Email"), SAM.email);
     await userEvent.type(screen.getByLabelText("Password"), SAM.password);
     await userEvent.click(screen.getByRole("button", { name: "Continue with a password" }));
@@ -1316,6 +1329,7 @@ describe("email verification at sign-up", () => {
     const auth = services(keys);
     await mount(auth, "/today", strict);
     await userEvent.click(await screen.findByRole("button", { name: "Get started" }));
+    await acceptInvite();
     await userEvent.type(screen.getByLabelText("Name"), SAM.name);
     await userEvent.type(screen.getByLabelText("Email"), SAM.email);
     await userEvent.type(screen.getByLabelText("Password"), SAM.password);
@@ -1420,6 +1434,7 @@ describe("email verification at sign-up", () => {
     const a = createAuthServices({ fetch: engine.fetch, baseUrl: "http://engine.test", keys, crypto: () => crypto, now: () => nowMs, poll: FAST_POLL, wrapSecret: () => Promise.reject(new Error("no crypto")) });
     await mount(a);
     await userEvent.click(await screen.findByRole("button", { name: "Get started" }));
+    await acceptInvite();
     await userEvent.type(screen.getByLabelText("Name"), SAM.name);
     await userEvent.type(screen.getByLabelText("Email"), SAM.email);
     await userEvent.type(screen.getByLabelText("Password"), SAM.password);
@@ -1902,6 +1917,8 @@ describe("an account that was deleted", () => {
     await screen.findByRole("group", { name: "This account was deleted" });
     await userEvent.click(screen.getByRole("button", { name: "Remove it now" }));
     await userEvent.click(await screen.findByRole("button", { name: "Create a new account" }));
+    expect(await screen.findByLabelText("Invite code")).toBeInTheDocument();
+    await acceptInvite();
     expect(await screen.findByLabelText("Name")).toBeInTheDocument();
     expect(screen.queryByRole("group", { name: "This account was deleted" })).toBeNull();
   });
@@ -1963,5 +1980,179 @@ describe("the engine's module fails to load", () => {
     await mount(services(), "/settings");
     await openAccount();
     expect(screen.queryByText("Couldn’t load Orbyn’s security module")).not.toBeInTheDocument();
+  });
+});
+
+
+describe("invite sign-up", () => {
+  const CODE = "K7QM-2XWH-9QXA-LC2D";
+  const field = () => screen.getByLabelText("Invite code");
+  const goToStep1 = async (auth = services()) => {
+    await mount(auth);
+    await userEvent.click(await screen.findByRole("button", { name: "Get started" }));
+    await screen.findByText("Orbyn is invite-only for now");
+  };
+
+  it("step 1 of 4 asks for the code first, with Continue off, and keeps Sign in and Use without an account", async () => {
+    await goToStep1();
+    expect(screen.getByText("Step 1 of 4 · Invite code")).toBeInTheDocument();
+    expect(field()).toHaveAttribute("placeholder", "XXXX-XXXX-XXXX-XXXX");
+    expect(screen.getByText("Paste it with or without dashes.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
+    expect(screen.queryByLabelText("Email")).toBeNull(); // no email is asked before the code
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Use without an account" })).toBeInTheDocument();
+    expect(screen.queryByText(/request|waitlist/i)).toBeNull(); // no way to ask for a code here
+  });
+
+  it("turns what is typed or pasted into upper case with dashes, and turns Continue on at 16 characters", async () => {
+    await goToStep1();
+    await userEvent.click(field());
+    await userEvent.paste("k7qm 2xwh-9qxa lc2d");
+    expect(field()).toHaveValue(CODE);
+    expect(screen.getByRole("button", { name: "Continue" })).toBeEnabled();
+    await userEvent.clear(field());
+    await userEvent.paste("k7qm2xwh9qxalc2");
+    expect(field()).toHaveValue("K7QM-2XWH-9QXA-LC2");
+    expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
+    await userEvent.clear(field());
+    await userEvent.paste("k7qm2xwh9qxalc2dEXTRA");
+    expect(field()).toHaveValue(CODE);
+  });
+
+  it("checks the code without spending it, then shows step 2 with the Invite accepted chip", async () => {
+    engine.requireInvites(CODE);
+    await goToStep1();
+    await userEvent.type(field(), "k7qm2xwh9qxalc2d");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByText("Step 2 of 4 · Email and password")).toBeInTheDocument();
+    expect(screen.getByText("Invite accepted")).toBeInTheDocument();
+    expect(engine.calls.map((c) => `${c.method} ${c.path}`)).toEqual(["POST /v1/invites/check"]);
+    expect(engine.calls[0]!.body).toEqual({ invite: CODE });
+    expect(engine.inviteUnused(CODE)).toBe(true);
+  });
+
+  it("one answer for a code that cannot be used: the field turns red and the words are fixed", async () => {
+    engine.requireInvites(CODE);
+    await goToStep1();
+    await userEvent.type(field(), "AAAA-AAAA-AAAA-AAAA");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("This invite code didn’t work. Check it and try again.");
+    expect(field()).toHaveAttribute("aria-invalid", "true");
+    expect(field()).toHaveValue("AAAA-AAAA-AAAA-AAAA"); // what was typed stays
+    expect(screen.getByRole("button", { name: "Continue" })).toBeEnabled();
+    await userEvent.type(field(), "{Backspace}");
+    expect(field()).not.toHaveAttribute("aria-invalid"); // typing clears it
+  });
+
+  it("Checking… disables the field and the button while the check is out", async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const slow = (async (url: string, init?: RequestInit) => {
+      if (String(url).endsWith("/v1/invites/check")) await gate;
+      return engine.fetch(url, init);
+    }) as unknown as typeof fetch;
+    await goToStep1(services(createMemoryKeyStore(), false, FAST_POLL, slow));
+    await userEvent.type(field(), CODE);
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(field()).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Continue/ })).toBeDisabled();
+    release();
+    expect(await screen.findByText("Step 2 of 4 · Email and password")).toBeInTheDocument();
+  });
+
+  it("too many tries (the engine's 429) shows a neutral banner and turns the field and Continue off", async () => {
+    await goToStep1();
+    engine.refuseNext("/v1/invites/check", 429, "too_many_attempts");
+    await userEvent.type(field(), CODE);
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Too many tries. Try again later.");
+    expect(screen.getByRole("alert")).not.toHaveTextContent(/minute|hour|wait/i); // the engine gives no wait time
+    expect(field()).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
+  });
+
+  it("a check that cannot reach Orbyn says nothing was changed and offers Try again", async () => {
+    let down = true;
+    const flaky = (async (url: string, init?: RequestInit) => {
+      if (down && String(url).endsWith("/v1/invites/check")) throw new TypeError("offline");
+      return engine.fetch(url, init);
+    }) as unknown as typeof fetch;
+    await goToStep1(services(createMemoryKeyStore(), false, FAST_POLL, flaky));
+    await userEvent.type(field(), CODE);
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Couldn’t check the code. Nothing was changed.");
+    expect(field()).toHaveValue(CODE);
+    down = false;
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByText("Step 2 of 4 · Email and password")).toBeInTheDocument();
+  });
+
+  it("sends the invite with the sign-up, shows step 3, and the invite is spent only when the email code is right", async () => {
+    engine.requireInvites(CODE);
+    await mount(services());
+    await userEvent.click(await screen.findByRole("button", { name: "Get started" }));
+    await userEvent.type(await screen.findByLabelText("Invite code"), CODE);
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByLabelText("Name");
+    await userEvent.type(screen.getByLabelText("Email"), SAM.email);
+    await userEvent.type(screen.getByLabelText("Password"), SAM.password);
+    await userEvent.click(screen.getByRole("button", { name: "Continue with a password" }));
+    expect(await screen.findByText("Step 3 of 4 · Check your email")).toBeInTheDocument();
+    const finish = engine.calls.find((c) => c.path === "/v1/accounts/register/finish")!.body as { invite?: string };
+    expect(finish.invite).toBe(CODE);
+    expect(engine.inviteUnused(CODE)).toBe(true);
+    await verifyEmail(SAM.email);
+    await todayShown();
+    expect(engine.inviteUnused(CODE)).toBe(false);
+  });
+
+  it("a code spent by another sign-up in the meantime: a banner on step 3 in the step 1 words, and Back to the form returns to step 1", async () => {
+    engine.requireInvites(CODE);
+    await mount(services());
+    await userEvent.click(await screen.findByRole("button", { name: "Get started" }));
+    await userEvent.type(await screen.findByLabelText("Invite code"), CODE);
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByLabelText("Name");
+    await userEvent.type(screen.getByLabelText("Email"), SAM.email);
+    await userEvent.type(screen.getByLabelText("Password"), SAM.password);
+    await userEvent.click(screen.getByRole("button", { name: "Continue with a password" }));
+    await screen.findByLabelText("Code");
+    engine.spendInvite(CODE);
+    await verifyEmail(SAM.email);
+    const banner = await screen.findByRole("alert");
+    expect(banner).toHaveTextContent("This invite code didn’t work. Check it and try again.");
+    expect(screen.getByRole("heading", { name: "Check your inbox" })).toBeInTheDocument(); // the person stays on the step they were on
+    expect(engine.accounts.size).toBe(0);
+    await userEvent.click(within(banner).getByRole("button", { name: "Back to the form" }));
+    expect(await screen.findByText("Step 1 of 4 · Invite code")).toBeInTheDocument();
+    expect(field()).toHaveValue("");
+  });
+
+  it("a refusal at step 2 shows the same banner there, and Back to the form returns to step 1", async () => {
+    engine.requireInvites(CODE);
+    await mount(services());
+    await userEvent.click(await screen.findByRole("button", { name: "Get started" }));
+    await userEvent.type(await screen.findByLabelText("Invite code"), CODE);
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByLabelText("Name");
+    engine.spendInvite(CODE);
+    await userEvent.type(screen.getByLabelText("Email"), SAM.email);
+    await userEvent.type(screen.getByLabelText("Password"), SAM.password);
+    await userEvent.click(screen.getByRole("button", { name: "Continue with a password" }));
+    const banner = await screen.findByRole("alert");
+    expect(banner).toHaveTextContent("This invite code didn’t work. Check it and try again.");
+    await userEvent.click(within(banner).getByRole("button", { name: "Back to the form" }));
+    expect(await screen.findByText("Step 1 of 4 · Invite code")).toBeInTheDocument();
+  });
+
+  it("open sign-up (ORBYN_SIGNUP=open): the engine answers 204 to any code and ignores it, so the planner still asks for one and then signs up", async () => {
+    // The engine has no route that says its sign-up mode, so the planner cannot skip step 1; any complete code gets through.
+    await mount(services());
+    await fillSignUp();
+    await todayShown();
+    const paths = engine.calls.map((c) => c.path);
+    expect(paths.slice(0, 3)).toEqual(["/v1/accounts/register/start", "/v1/accounts/register/finish", "/v1/accounts/email/verify"]);
+    expect((engine.calls[1]!.body as { invite?: string }).invite).toBe("K7QM-2XWH-9QXA-LC2D");
   });
 });

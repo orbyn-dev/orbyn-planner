@@ -10,6 +10,7 @@ import { KeysForAnotherAccount, SecondFactorNeeded, signIn, signUp, type Pending
 import { cryptoLoad } from "../../api/realCrypto";
 import { CryptoProblem, MODULE_LOAD_FAILED } from "./CryptoProblem";
 import { useAuth, type AuthScreen } from "../../auth/AuthProvider";
+import { INVITE_REFUSED, InviteStep, StepBar } from "./InviteStep";
 
 /** A readable line for whatever went wrong. */
 export function describeError(error: unknown): string {
@@ -44,7 +45,7 @@ const RESENDS_PER_HOUR = 3;
 const HOUR_MS = 3_600_000;
 
 /** The code step of a sign-up: no account and no session exist until the code from the email is right. */
-function CheckEmail({ pending, onBack, onDone }: { pending: PendingSignUp; onBack: () => void; onDone: () => void }) {
+function CheckEmail({ pending, onBack, onDone, onInviteRejected }: { pending: PendingSignUp; onBack: () => void; onDone: () => void; onInviteRejected: () => void }) {
   const auth = useAuth()!;
   const clock = auth.services.now;
   const [code, setCode] = useState("");
@@ -54,6 +55,8 @@ function CheckEmail({ pending, onBack, onDone }: { pending: PendingSignUp; onBac
   const [resends, setResends] = useState<number[]>([]);
   const [, tick] = useState(0);
   const [engineLimited, setEngineLimited] = useState(false);
+  /** The invite was spent by another sign-up in the meantime: no account can be made, and the person goes back to step 1. */
+  const [inviteRejected, setInviteRejected] = useState(false);
 
   // Leaving this screen lets the sign-up go: its keys were only ever in memory. React's development check unmounts and mounts a
   // screen at once to test this very cleanup, so the sign-up is let go only if no mount follows straight after.
@@ -90,7 +93,9 @@ function CheckEmail({ pending, onBack, onDone }: { pending: PendingSignUp; onBac
       await pending.verify(digits);
       onDone();
     } catch (e) {
-      if (e instanceof ApiFailure && e.code === "invalid_email_code") {
+      if (e instanceof ApiFailure && e.code === "invite_invalid") {
+        setInviteRejected(true);
+      } else if (e instanceof ApiFailure && e.code === "invalid_email_code") {
         // A wrong, an expired and a made-up code are one answer; "Send a new code" is always there.
         setWrong(true);
         setError("That code isn’t right. Use the code in the newest email.");
@@ -120,7 +125,14 @@ function CheckEmail({ pending, onBack, onDone }: { pending: PendingSignUp; onBac
   const seconds = `${Math.floor(wait / 60)}:${String(wait % 60).padStart(2, "0")}`;
   return (
     <form className="authcard" onSubmit={(e) => void verify(e)} aria-label="Check your inbox" noValidate>
+      <StepBar step={3} label="Check your email" />
       <h1 className="auth-title">Check your inbox</h1>
+      {inviteRejected && (
+        <div className="banner" role="alert">
+          {INVITE_REFUSED}
+          <span className="end"><button type="button" className="ghost" onClick={onInviteRejected}>Back to the form</button></span>
+        </div>
+      )}
       <p className="t3">We sent a 6-digit code to {pending.email}. It works for 30 minutes.</p>
       <div className="cboxes">
         {Array.from({ length: 6 }, (_, i) => (
@@ -207,16 +219,27 @@ function SignUp({ go }: { go: (s: AuthScreen) => void }) {
   const [pending, setPending] = useState<PendingSignUp | null>(null);
   /** This browser can't hold the keys at all, so nothing was created. */
   const [noMemory, setNoMemory] = useState(false);
+  /** The accepted invite code (step 1); null until there is one. */
+  const [invite, setInvite] = useState<string | null>(null);
+  /** The engine refused the invite after step 1: the person stays here, with a way back to the code step. */
+  const [rejected, setRejected] = useState(false);
+  const backToCode = () => {
+    pending?.cancel();
+    setPending(null);
+    setRejected(false);
+    setInvite(null);
+  };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      setPending(await signUp(auth.services, { name, email, password }));
+      setPending(await signUp(auth.services, { name, email, password, invite: invite ?? undefined }));
       setPassword(""); // the sign-up is waiting for its code: the password is not needed again, and is not kept in the page
     } catch (e) {
       if (e instanceof ApiFailure && e.code === "no_memory") setNoMemory(true);
+      else if (e instanceof ApiFailure && e.code === "invite_invalid") setRejected(true);
       else setError(describeError(e));
     } finally {
       setBusy(false);
@@ -224,12 +247,21 @@ function SignUp({ go }: { go: (s: AuthScreen) => void }) {
   };
 
   if (noMemory) return <NoMemory />;
+  if (invite === null) return <InviteStep onAccepted={setInvite} go={go} />;
   return (
     <>
-    {pending && <CheckEmail pending={pending} onBack={() => setPending(null)} onDone={auth.closeAuth} />}
+    {pending && <CheckEmail pending={pending} onBack={() => setPending(null)} onDone={auth.closeAuth} onInviteRejected={backToCode} />}
     {/* Kept while the code is awaited, so "Change email" finds the name and email as they were; the password is cleared as soon as it is sent. */}
     <form className="authcard" onSubmit={submit} aria-label="Create your account" noValidate hidden={pending !== null}>
+      <StepBar step={2} label="Email and password" />
+      <span className="st ok"><i className="sd" />Invite accepted</span>
       <h1 className="auth-title">Create your account</h1>
+      {rejected && (
+        <div className="banner" role="alert">
+          {INVITE_REFUSED}
+          <span className="end"><button type="button" className="ghost" onClick={backToCode}>Back to the form</button></span>
+        </div>
+      )}
       <div className="form" style={{ width: "auto" }}>
         <label htmlFor="su-name">Name</label>
         <input id="su-name" className="field" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
