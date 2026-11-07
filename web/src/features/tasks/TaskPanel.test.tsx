@@ -90,7 +90,8 @@ describe("task panel saving", () => {
     const { store, task } = await open();
     const panel = screen.getByRole("complementary", { name: "Task" });
     expect(store.getState().tasks.find((t) => t.id === task.id)!.due).toBe("2026-11-09T09:00");
-    await userEvent.clear(within(panel).getByLabelText("Due date"));
+    await userEvent.click(within(panel).getByRole("button", { name: /^Due,/ }));
+    await userEvent.click(within(screen.getByRole("dialog", { name: "Due" })).getByRole("button", { name: "No date" }));
     expect(store.getState().tasks.find((t) => t.id === task.id)!.due).toBeNull();
   });
 });

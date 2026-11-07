@@ -89,9 +89,9 @@ function Weekdays({ value, onChange }: { value: Day[]; onChange: (days: Day[]) =
  * years, on chosen weekdays, ending never, on a date or after some times). It only reports rules
  * the engine's validation accepts. `start` is the date of the first due, `YYYY-MM-DD`.
  */
-export function RepeatPicker({ value, start, onChange }: { value: Repeat | null; start: string; onChange: (rule: Repeat | null) => void }) {
-  const [kind, setKind] = useState<RepeatKind>(() => kindOf(value));
-  const [draft, setDraft] = useState<Repeat | null>(value);
+export function RepeatPicker({ value, start, initialKind, onChange }: { value: Repeat | null; start: string; initialKind?: RepeatKind; onChange: (rule: Repeat | null) => void }) {
+  const [kind, setKind] = useState<RepeatKind>(() => initialKind ?? kindOf(value));
+  const [draft, setDraft] = useState<Repeat | null>(() => (initialKind === "custom" && !value ? ruleFor("custom", start, null) : value));
   const [error, setError] = useState<string | null>(null);
   // What is typed in the number fields, so a field can be emptied on the way to a new number.
   const [everyText, setEveryText] = useState(String(value?.interval ?? 2));
