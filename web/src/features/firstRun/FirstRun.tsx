@@ -133,7 +133,7 @@ export function FirstRun({ onDone }: { onDone: () => void }) {
         {step === 1 && (
           <>
             <h1 className="fr-title fr-step-title">When does your week start?</h1>
-            <p className="t3 fr-lede">This sets the first column of your calendar and the week in Today.</p>
+            <p className="t3 fr-lede fr-more">This sets the first column of your calendar and the week in Today.</p>
             <div role="radiogroup" aria-label="Week starts on" className="fr-choices">
               {WEEK_STARTS.map((w) => (
                 <button key={w.id} type="button" role="radio" aria-checked={weekStart === w.id} className="fr-choice fr-pick-card" onClick={() => setWeekStart(w.id)}>
@@ -153,7 +153,7 @@ export function FirstRun({ onDone }: { onDone: () => void }) {
                 </button>
               ))}
             </div>
-            <p className="t3 small">You can change both later in Settings › Planning.</p>
+            <p className="t3 small fr-more">You can change both later in Settings › Planning.</p>
           </>
         )}
         {step === 2 && (

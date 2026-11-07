@@ -201,6 +201,19 @@ describe("First run, as the frames draw it (Planner Designs fr-week, fr-calendar
     }
   });
 
+  it("step 1: the phone form drops the sentence under the title, the Sunday and Saturday notes and the footnote", async () => {
+    await open();
+    await start();
+    const step = screen.getByRole("region", { name: "First run, step 1 of 3" });
+    const gone = [...step.querySelectorAll(".fr-more")].map((e) => e.textContent);
+    expect(gone).toEqual([
+      "This sets the first column of your calendar and the week in Today.",
+      "Week 1 begins on a Sunday",
+      "Week 1 begins on a Saturday",
+      "You can change both later in Settings › Planning.",
+    ]);
+  });
+
   it("step 2: the empty-name line sits inside the chosen row, between the field and the colours", async () => {
     await open();
     await start();
