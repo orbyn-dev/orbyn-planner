@@ -1,8 +1,12 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNow } from "../../app/clock";
 import { Link } from "../../app/router";
 import { useUi } from "../../app/ui";
 import { EmptyState } from "../../components/EmptyState";
+import { motionMs } from "../../styles/tokens";
+import { SyncLine, useSyncStatus, withPersistence } from "../sync/SyncLine";
+import { useSyncController, useSyncState } from "../../sync/SyncProvider";
+import { QuickAddField } from "../tasks/TasksPage";
 import { Icon } from "../../components/Icon";
 import { usePlanner, useStore } from "../../store/context";
 import { StrandedZones } from "../sync/StrandedZones";
@@ -54,9 +58,40 @@ function ListTitle({ list }: { list: TaskList }) {
   );
 }
 
+/** True once `active` has lasted 400 ms: a quick load never flashes a skeleton. */
+function useSlow(active: boolean): boolean {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (!active) return;
+    const timer = setTimeout(() => setSlow(true), motionMs("wait"));
+    return () => {
+      clearTimeout(timer);
+      setSlow(false);
+    };
+  }, [active]);
+  return active && slow;
+}
+
+/**
+ * The list could not be read (Planner Designs p-lists-error): what failed, that the data is safe, and a retry. Like Today's error it is
+ * shown only when the local store reports a read failure, which it does not yet, so nothing renders it today.
+ */
+export function ListError({ name, onRetry, onOther }: { name: string; onRetry: () => void; onOther: () => void }) {
+  return (
+    <div className="empty" role="alert">
+      <h2>Couldn’t load {name}</h2>
+      <p>The list is safe on your other devices. Check your connection and try again.</p>
+      <div className="acts">
+        <button type="button" className="ghost" onClick={onOther}>Open another list</button>
+        <button type="button" className="btn" onClick={onRetry}>Try again</button>
+      </div>
+    </div>
+  );
+}
+
 export function ListsPage() {
   const store = useStore();
-  const { lists, tasks, ready } = usePlanner();
+  const { lists, tasks, ready, outbox, persistence } = usePlanner();
   const ui = useUi();
   const now = useNow();
   const [adding, setAdding] = useState(false);
@@ -71,6 +106,24 @@ export function ListsPage() {
   );
   const inbox = ordered.find((l) => l.isInbox);
   const mine = ordered.filter((l) => !l.isInbox && l.name.toLowerCase().includes(find.trim().toLowerCase()));
+
+  // Offline is ink, not alarm: the pill says how many changes wait, rows say theirs has not left this device (p-lists-offline).
+  const waiting = useMemo(() => {
+    const latest = new Map<string, string>();
+    for (const e of outbox) if (e.type === "task") latest.set(e.id, e.updatedAt);
+    return [...latest].flatMap(([id, at]) => {
+      const task = tasks.find((t) => t.id === id);
+      return task ? [{ id, label: task.title, at }] : [];
+    });
+  }, [outbox, tasks]);
+  const sync = useSyncState();
+  const controller = useSyncController();
+  const syncNow = useCallback(() => controller?.syncNow(), [controller]);
+  const { status: health, retry } = useSyncStatus(outbox.length, sync, syncNow);
+  const status = withPersistence(health, persistence);
+  const offline = status.kind === "offline";
+  const unsynced = new Set(offline ? waiting.map((w) => w.id) : []);
+  const skeleton = useSlow(!ready);
 
   const create = () => {
     const name = newName.trim();
@@ -131,8 +184,9 @@ export function ListsPage() {
         {selected && (
           <div className="ph" key={selected.id}>
             <ListTitle list={selected} />
-            <span className="sub">{openCount(tasks, selected.id)} open</span>
+            <span className="sub">{[shown.length === 0 ? "Nothing here" : `${openCount(tasks, selected.id)} open`, offline && "offline"].filter(Boolean).join(" · ")}</span>
             <div className="acts">
+              <SyncLine status={status} onRetry={retry} waiting={waiting} />
               <Link to="/completed" className="ghost">Completed and deleted</Link>
               <div role="radiogroup" aria-label="Colour" className="colours">
                 {LIST_COLOURS.map((c) => (
@@ -148,17 +202,34 @@ export function ListsPage() {
             </div>
           </div>
         )}
-        {shown.length === 0 ? (
-          <EmptyState title="Nothing in this list" body="Tasks added to this list will appear here." />
+        {offline && <p className="t3 offline-note">You’re offline. Everything here is saved on this device and will sync when you’re back.</p>}
+        {!ready ? (
+          <div className="tbl-wrap" role="status" aria-label="Loading tasks" aria-busy="true">
+            {skeleton && (
+              <ul className="tbl">
+                {Array.from({ length: 4 }, (_, i) => (
+                  <li className="tr list" key={i} style={{ gridTemplateColumns: "var(--sp-22) minmax(0,1fr) var(--sp-110)" }}>
+                    <span /><span className="skel" /><span className="skel" />
+                  </li>
+                ))}
+              </ul>
+            )}
+            <span className="t3">Loading tasks</span>
+          </div>
+        ) : shown.length === 0 ? (
+          <EmptyState title={`No tasks in ${selected?.name ?? "this list"}`} body="Add the first one, or move a task here from another list.">
+            <button type="button" className="btn" onClick={() => ui.openNewTask()}>Add a task</button>
+          </EmptyState>
         ) : (
           <div className="tbl-wrap">
             <ul className="tbl">
               {shown.map((t) => (
-                <TaskRow key={t.id} task={t} layout="list" />
+                <TaskRow key={t.id} task={t} layout="list" unsynced={unsynced.has(t.id)} />
               ))}
             </ul>
           </div>
         )}
+        {selected && <QuickAddField listId={selected.id} example="Post the parcel tomorrow" />}
       </div>
     </div>
   );

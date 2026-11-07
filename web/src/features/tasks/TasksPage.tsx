@@ -15,7 +15,8 @@ import type { Priority, Task } from "../../store/types";
 
 type View = "list" | "board";
 
-export function QuickAddField() {
+/** `listId` is where a task goes when the words name no list of their own (the open list on the Lists page). */
+export function QuickAddField({ listId, example = "Call Sam tomorrow 3pm #work !high" }: { listId?: string; example?: string } = {}) {
   const store = useStore();
   const { lists, ready } = usePlanner();
   const ui = useUi();
@@ -35,7 +36,7 @@ export function QuickAddField() {
       onSubmit={(event) => {
         event.preventDefault();
         if (!typed) return;
-        const task = store.addTask({ title: parsed.title, due: parsed.due, listId: parsed.listId ?? undefined, priority: parsed.priority, repeat: parsed.repeat });
+        const task = store.addTask({ title: parsed.title, due: parsed.due, listId: parsed.listId ?? listId, priority: parsed.priority, repeat: parsed.repeat });
         ui.showToast(`Added “${task.title}”`);
         setText("");
       }}
@@ -43,7 +44,7 @@ export function QuickAddField() {
       <input
         className="field"
         aria-label="Add a task"
-        placeholder="Add a task: Call Sam tomorrow 3pm #work !high"
+        placeholder={`Add a task: ${example}`}
         value={text}
         disabled={!ready}
         onChange={(e) => setText(e.target.value)}
