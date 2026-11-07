@@ -5,7 +5,7 @@ import { useUi } from "../../app/ui";
 import { PageHeader } from "../../components/EmptyState";
 import { Icon } from "../../components/Icon";
 import { PHONE_QUERY, useMediaQuery } from "../../components/useMediaQuery";
-import { MONTHS, WEEKDAYS, addDays, dateKey, dateOf, isoWeek, weekStartOf } from "../../lib/dates";
+import { addDays, dateKey, dateOf, isoWeek, MONTHS, WEEKDAYS, type WeekStart, weekStartOf } from "../../lib/dates";
 import { usePlanner } from "../../store/context";
 import { expandEvents } from "../../store/occurrences";
 import { AgendaView } from "./AgendaView";
@@ -23,7 +23,7 @@ const VIEWS: readonly { id: View; label: string }[] = [
 ];
 
 /** The days a view shows around `anchor`. */
-export function viewDays(view: View, anchor: string, weekStart: "mon" | "sun", weekDays: 5 | 7): string[] {
+export function viewDays(view: View, anchor: string, weekStart: WeekStart, weekDays: 5 | 7): string[] {
   const a = dateOf(anchor);
   if (view === "day") return [anchor];
   if (view === "agenda") return Array.from({ length: 7 }, (_, i) => dateKey(addDays(a, i)));
@@ -38,7 +38,7 @@ export function viewDays(view: View, anchor: string, weekStart: "mon" | "sun", w
 }
 
 /** "2 – 8 Nov", or "30 Nov – 6 Dec" across a month: the seven days of the week that holds `anchor`, whatever "days shown" says. */
-export function weekRange(anchor: string, weekStart: "mon" | "sun"): string {
+export function weekRange(anchor: string, weekStart: WeekStart): string {
   const first = weekStartOf(dateOf(anchor), weekStart);
   const last = addDays(first, 6);
   const m = (d: Date) => MONTHS[d.getMonth()]!.slice(0, 3);

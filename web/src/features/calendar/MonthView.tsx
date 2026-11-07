@@ -1,6 +1,6 @@
 import { useState, type KeyboardEvent } from "react";
 import { useUi } from "../../app/ui";
-import { WEEKDAYS, addDays, dateKey, dateOf } from "../../lib/dates";
+import { addDays, dateKey, dateOf, WEEKDAYS, weekOrder, type WeekStart } from "../../lib/dates";
 import { touchesDay } from "../../lib/wall";
 import { usePlanner } from "../../store/context";
 import type { Occurrence } from "../../store/occurrences";
@@ -13,13 +13,13 @@ export function MonthView({ days, anchor, occurrences, today, weekStart, onDay }
   anchor: string;
   occurrences: Occurrence[];
   today: string;
-  weekStart: "mon" | "sun";
+  weekStart: WeekStart;
   onDay: (day: string) => void;
 }) {
   const { calendars } = usePlanner();
   const ui = useUi();
   const month = dateOf(anchor).getMonth();
-  const order = weekStart === "mon" ? [1, 2, 3, 4, 5, 6, 0] : [0, 1, 2, 3, 4, 5, 6];
+  const order = weekOrder(weekStart);
   // Hide a sixth week that falls wholly in the next month.
   const shownDays = days.slice(0, 35).concat(dateOf(days[35]!).getMonth() === month ? days.slice(35) : []);
 

@@ -1,8 +1,9 @@
+import type { WeekStart } from "../lib/dates";
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 
 export interface Prefs {
   /** The first day of the week in the month view and a 7-day week. */
-  weekStart: "mon" | "sun";
+  weekStart: WeekStart;
   /** Days in the Week view: the whole week, or Monday to Friday (which still shows 7 on a weekend of the current week). */
   weekDays: 5 | 7;
   /** Task reminders as browser notifications. Turned on in Settings · Notifications, never at load. */
@@ -28,7 +29,7 @@ function read(): Prefs {
   try {
     const raw = JSON.parse(localStorage.getItem(PREFS_KEY) ?? "{}") as Partial<Prefs>;
     return {
-      weekStart: raw.weekStart === "sun" ? "sun" : "mon",
+      weekStart: raw.weekStart === "sun" || raw.weekStart === "sat" ? raw.weekStart : "mon",
       weekDays: raw.weekDays === 5 ? 5 : 7,
       reminders: raw.reminders === true,
       quiet: {

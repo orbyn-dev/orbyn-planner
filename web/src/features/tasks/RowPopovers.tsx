@@ -3,7 +3,7 @@ import { Modal } from "../../components/Modal";
 import { MonthGrid } from "../../components/MonthGrid";
 import { OptionMenu, type MenuOption } from "../../components/OptionMenu";
 import { PopoverRow } from "../../components/PopoverRow";
-import { addDays, dateKey, dateOf, formatDue, parseDue } from "../../lib/dates";
+import { addDays, dateKey, dateOf, formatDue, parseDue, type WeekStart } from "../../lib/dates";
 import { readTime } from "../../lib/whenParser";
 import { ruleLabel } from "../../store/occurrences";
 import { dayOf, type Repeat } from "../../store/repeat";
@@ -11,7 +11,7 @@ import { LIST_COLOURS, PRIORITIES, type Priority, type TaskList } from "../../st
 import { RepeatPicker, kindOf, ruleFor, type RepeatKind } from "./RepeatPicker";
 import { REMINDER_MENU, reminderLabel } from "./reminder";
 
-function DueBody({ due, today, weekStart, onChange, close }: { due: string | null; today: string; weekStart: "mon" | "sun"; onChange: (day: string, time: string) => void; close: () => void }) {
+function DueBody({ due, today, weekStart, onChange, close }: { due: string | null; today: string; weekStart: WeekStart; onChange: (day: string, time: string) => void; close: () => void }) {
   const day = due ? due.slice(0, 10) : "";
   const time = due && parseDue(due).hasTime ? due.slice(11, 16) : "";
   const [bad, setBad] = useState(false);
@@ -53,7 +53,7 @@ function DueBody({ due, today, weekStart, onChange, close }: { due: string | nul
 }
 
 /** The Due row: a month, a 24-hour time with No time, and four shortcuts (p-row-due). `onChange` gets the day and time; an empty day removes the date. */
-export function DueRow({ due, now, weekStart, style, onChange }: { due: string | null; now: Date; weekStart: "mon" | "sun"; style?: React.CSSProperties; onChange: (day: string, time: string) => void }) {
+export function DueRow({ due, now, weekStart, style, onChange }: { due: string | null; now: Date; weekStart: WeekStart; style?: React.CSSProperties; onChange: (day: string, time: string) => void }) {
   return (
     <PopoverRow label="Due" value={due ? formatDue(due, now) : "No date"} style={style} wide>
       {({ close }) => <DueBody due={due} today={dateKey(now)} weekStart={weekStart} onChange={onChange} close={close} />}

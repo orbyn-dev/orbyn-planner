@@ -5,7 +5,7 @@ import { Link } from "../../app/router";
 import { useUi } from "../../app/ui";
 import { EmptyState } from "../../components/EmptyState";
 import { Icon } from "../../components/Icon";
-import { MONTHS, WEEKDAYS, addDays, dateKey, dateOf, formatDue, weekStartOf } from "../../lib/dates";
+import { addDays, dateKey, dateOf, formatDue, MONTHS, WEEKDAYS, weekOrder, weekStartOf } from "../../lib/dates";
 import { usePlanner, useStore } from "../../store/context";
 import type { Project, Task } from "../../store/types";
 import { dueText, needsAction } from "../tasks/selectors";
@@ -218,7 +218,7 @@ function CalendarTab({ project }: { project: Project }) {
   const shownDays = days.slice(0, 35).concat(dateOf(days[35]!).getMonth() === first.getMonth() ? days.slice(35) : []);
   const mine = tasksOf(tasks, project.id);
   const undated = mine.filter((t) => t.due === null && !t.done).length;
-  const order = prefs.weekStart === "mon" ? [1, 2, 3, 4, 5, 6, 0] : [0, 1, 2, 3, 4, 5, 6];
+  const order = weekOrder(prefs.weekStart);
   const today = dateKey(now);
   const step = (n: number) => setAnchor(dateKey(new Date(first.getFullYear(), first.getMonth() + n, 1)));
 

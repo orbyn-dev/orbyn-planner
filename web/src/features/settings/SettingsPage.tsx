@@ -52,9 +52,9 @@ export function SettingsPage() {
                 <div className="kv" style={{ height: "var(--sp-44)", borderBottom: "var(--bw) solid var(--line)" }}>
                   <span id="week-start-label">Week starts on</span>
                   <div role="radiogroup" aria-labelledby="week-start-label" className="pills">
-                    {(["mon", "sun"] as const).map((d) => (
+                    {(["mon", "sun", "sat"] as const).map((d) => (
                       <button key={d} type="button" role="radio" aria-checked={prefs.weekStart === d} className="pill" onClick={() => setPrefs({ weekStart: d })}>
-                        {d === "mon" ? "Monday" : "Sunday"}
+                        {d === "mon" ? "Monday" : d === "sun" ? "Sunday" : "Saturday"}
                       </button>
                     ))}
                   </div>
