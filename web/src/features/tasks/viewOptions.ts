@@ -1,6 +1,7 @@
 import { browserStorage } from "../../lib/browserStorage";
 import { compareDue } from "../../lib/dates";
 import type { Priority, Task, TaskList } from "../../store/types";
+import { LANES, LANE_LABELS, laneOf, type Lane } from "../../store/taskStatus";
 import { groupTasks, sortByDue, type TaskGroup } from "./selectors";
 
 /** How the Tasks list and board are arranged. Kept on this device only, as a convenience. */
@@ -80,9 +81,9 @@ export function groupFor(tasks: readonly Task[], lists: readonly TaskList[], now
     .filter((g) => g.tasks.length > 0);
 }
 
-/** The lanes of the board: To do and, if shown, Done, each ordered by `boardSort`. */
-export function lanesFor(tasks: readonly Task[], options: ViewOptions): { label: "To do" | "Done"; tasks: Task[] }[] {
-  const lane = (done: boolean) => (options.boardSort === "due" ? sortByDue(tasks.filter((t) => t.done === done)) : sortTasks(tasks.filter((t) => t.done === done), options.boardSort));
-  return [{ label: "To do" as const, tasks: lane(false) }, ...(options.showDone ? [{ label: "Done" as const, tasks: lane(true) }] : [])];
+/** The lanes of the Tasks board: To do, In progress, Blocked and, if shown, Done, each ordered by `boardSort`. A lane is the task's status; Done when it is done. */
+export function lanesFor(tasks: readonly Task[], options: ViewOptions): { lane: Lane; label: string; tasks: Task[] }[] {
+  const order = (list: Task[]) => (options.boardSort === "due" ? sortByDue(list) : sortTasks(list, options.boardSort));
+  const lanes = LANES.filter((lane) => lane !== "done" || options.showDone);
+  return lanes.map((lane) => ({ lane, label: LANE_LABELS[lane], tasks: order(tasks.filter((t) => laneOf(t) === lane)) }));
 }
-
