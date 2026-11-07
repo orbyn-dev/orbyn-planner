@@ -43,6 +43,11 @@ export interface Task {
   reminder: number | null;
   /** When a repeating task was completed, most recent last. Feeds "Done this week". */
   completions: string[];
+  /**
+   * Where an open task stands (To do, In progress, Blocked; see `taskStatus.ts`). Missing reads as To do and nothing is written until a person
+   * changes it; a value this version does not know is kept as it is. Done is `done`, never a status.
+   */
+  status?: string | null;
   /** Set on the one-off copy made by "This task" on a repeating task: which date of which task it replaces. */
   overrideOf: { id: string; date: string } | null;
   createdAt: string;
@@ -228,7 +233,7 @@ export type FeedEvent = Pick<NewEvent, "title" | "allDay" | "start" | "end" | "p
 export type CalendarPatch = Partial<Pick<PlannerCalendar, "name" | "colour" | "visible">>;
 
 export type TaskPatch = Partial<
-  Pick<Task, "title" | "notes" | "listId" | "due" | "priority" | "checklist" | "projectId" | "sectionId" | "repeat" | "reminder" | "completions" | "done" | "completedAt" | "overrideOf">
+  Pick<Task, "title" | "notes" | "listId" | "due" | "priority" | "checklist" | "projectId" | "sectionId" | "repeat" | "reminder" | "completions" | "done" | "completedAt" | "overrideOf" | "status">
 >;
 
 export interface NewProject {

@@ -7,7 +7,8 @@ import { addDays, dateKey, dateOf, formatDue, parseDue, type WeekStart } from ".
 import { readTime } from "../../lib/whenParser";
 import { ruleLabel } from "../../store/occurrences";
 import { dayOf, type Repeat } from "../../store/repeat";
-import { LIST_COLOURS, PRIORITIES, type Priority, type TaskList } from "../../store/types";
+import { STATUSES, STATUS_LABELS, statusOf, type Status } from "../../store/taskStatus";
+import { LIST_COLOURS, PRIORITIES, type Priority, type Task, type TaskList } from "../../store/types";
 import { RepeatPicker, kindOf, ruleFor, type RepeatKind } from "./RepeatPicker";
 import { REMINDER_MENU, reminderLabel } from "./reminder";
 
@@ -227,3 +228,15 @@ export function ReminderRow({ value, disabled, onChange }: { value: number | nul
 }
 
 
+
+const STATUS_OPTIONS: readonly MenuOption<Status>[] = STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] }));
+
+/** Where an open task stands: To do, In progress or Blocked (Planner Designs task-panel-status-open). Done stays the checkbox. */
+export function StatusRow({ task, onChange }: { task: Pick<Task, "status">; onChange: (status: Status) => void }) {
+  const status = statusOf(task);
+  return (
+    <PopoverRow label="Status" value={STATUS_LABELS[status]}>
+      {({ close }) => <OptionMenu label="Status" options={STATUS_OPTIONS} selected={status} onPick={(s) => { onChange(s); close(); }} />}
+    </PopoverRow>
+  );
+}

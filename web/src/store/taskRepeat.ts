@@ -23,8 +23,10 @@ export function completeRepeating(task: Task, nowIso: string): Record<string, un
   // Steps start unticked for the next time round.
   const checklist = task.checklist.some((c) => c.done) ? task.checklist.map((c) => ({ ...c, done: false })) : task.checklist;
   const next = nextOnOrAfter(series, dayAfter(current));
+  // The next occurrence starts as To do, in the same write (a status that was never written stays unwritten).
+  const reset = task.status !== undefined && task.status !== null && task.status !== "todo" ? { status: "todo" } : {};
   if (next === null) return { done: true, completedAt: nowIso, completions };
-  return { due: next + timeOf(task.due), done: false, completedAt: null, completions, checklist };
+  return { due: next + timeOf(task.due), done: false, completedAt: null, completions, checklist, ...reset };
 }
 
 /** The first occurrence on or after `today`, for "Skip to next upcoming" on an overdue repeating task. */
@@ -138,7 +140,7 @@ function remaining(series: Series, currentDue: string, start: string): Series {
 }
 
 /** The fields an undo puts back on a task. */
-const TASK_FIELDS = ["title", "notes", "listId", "due", "priority", "checklist", "projectId", "sectionId", "repeat", "reminder", "completions", "done", "completedAt", "overrideOf"] as const;
+const TASK_FIELDS = ["title", "notes", "listId", "due", "priority", "checklist", "projectId", "sectionId", "repeat", "reminder", "completions", "done", "completedAt", "overrideOf", "status"] as const;
 
 /**
  * Runs a change to tasks and returns how to undo it: tasks it changed go back to what they were
@@ -155,7 +157,8 @@ export function undoableTasks<T>(store: PlannerStore, run: () => T): { result: T
       for (const t of made) store.deleteTask(t.id);
       for (const t of changed) {
         const was = before.get(t.id)!;
-        store.updateTask(t.id, Object.fromEntries(TASK_FIELDS.map((f) => [f, was[f]])));
+        // One write puts status, done and completedAt back together; a status that was never written goes back to null, which reads as To do.
+        store.updateTask(t.id, Object.fromEntries(TASK_FIELDS.map((f) => [f, f === "status" ? (was.status ?? null) : was[f]])));
       }
     },
   };

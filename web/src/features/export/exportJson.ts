@@ -34,6 +34,8 @@ export class ExportError extends Error {
 
 type Content = Pick<PlannerState, "lists" | "tasks" | "projects" | "tags" | "calendars" | "events">;
 
+const withStatus = (t: Task): Task => ({ ...t, status: t.status ?? "todo" });
+
 export function buildExport(state: Content, exportedAt: string): PlannerExport {
   const kept = <T extends { deletedAt: string | null }>(all: readonly T[]) => all.filter((r) => r.deletedAt === null);
   const trashed = <T extends { deletedAt: string | null }>(all: readonly T[]) => all.filter((r) => r.deletedAt !== null);
@@ -42,12 +44,13 @@ export function buildExport(state: Content, exportedAt: string): PlannerExport {
     formatVersion: EXPORT_VERSION,
     exportedAt,
     lists: [...state.lists],
-    tasks: kept(state.tasks),
+    // A task always carries its status (To do when none was ever written); an unknown value is exported as it is.
+    tasks: kept(state.tasks).map(withStatus),
     projects: [...state.projects],
     tags: kept(state.tags),
     calendars: [...state.calendars],
     events: kept(state.events),
-    trash: { tasks: trashed(state.tasks), events: trashed(state.events), tags: trashed(state.tags) },
+    trash: { tasks: trashed(state.tasks).map(withStatus), events: trashed(state.events), tags: trashed(state.tags) },
   };
 }
 

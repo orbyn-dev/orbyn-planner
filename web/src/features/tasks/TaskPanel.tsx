@@ -15,7 +15,7 @@ import { allowedScopes, editTaskRepeat, undoableTasks, type RepeatEdit } from ".
 import { MAX_TAGS_PER_TASK } from "../../store/records";
 import { LIST_COLOURS, type ListColour, type Task } from "../../store/types";
 import { ScopeDialog } from "../calendar/ScopeDialog";
-import { DueRow, ListRow, PriorityRow, ReminderRow, RepeatRow } from "./RowPopovers";
+import { DueRow, ListRow, PriorityRow, ReminderRow, RepeatRow, StatusRow } from "./RowPopovers";
 import { shownTags, TagChip, tagLabels } from "./TagChips";
 import { needsAction } from "./selectors";
 import { useComplete } from "./useComplete";
@@ -208,6 +208,7 @@ function Panel({ task }: { task: Task }) {
       </div>
       <RepeatRow rule={task.repeat?.repeat ?? null} start={dayValue || today} onChange={(rule) => edit({ repeat: rule })} />
       <ReminderRow value={task.reminder} onChange={(reminder) => store.updateTask(task.id, { reminder })} />
+      <StatusRow task={task} onChange={(status) => store.updateTask(task.id, { status })} />
       {task.reminder !== null && !task.due && <p className="t3 hint">Set a due date to get this reminder.</p>}
       {projects.length > 0 && (
         <>
