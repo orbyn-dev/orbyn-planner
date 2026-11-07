@@ -17,10 +17,13 @@ export const NAV: readonly NavItem[] = [
 
 export const SETTINGS: NavItem = { path: "/settings", label: "Settings", icon: "gear" };
 
-/** Reached from the phone's More tab, which has no room for them in the bar. */
-export const MORE: readonly NavItem[] = [NAV[4]!, NAV[5]!, SETTINGS];
+/**
+ * Reached from the round button at the right of the phone's Today header (Planner Designs p-phone-menu), which has no More tab to
+ * hold them. Booking is drawn too, and is added when Booking is built.
+ */
+export const PHONE_MENU: readonly NavItem[] = [NAV[5]!, NAV[4]!, SETTINGS];
 
-/** The phone tab bar: four daily pages and search; More opens the rest. */
+/** The phone tab bar: four daily pages and search. */
 export const TABS: readonly NavItem[] = [
   ...NAV.slice(0, 4),
   { path: "/search", label: "Search", icon: "search" },

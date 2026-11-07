@@ -3,6 +3,7 @@ import { useNow } from "../../app/clock";
 import { useRouter } from "../../app/router";
 import { useUi } from "../../app/ui";
 import { useAuth } from "../../auth/AuthProvider";
+import { initialsOf } from "../../app/initials";
 import { PHONE_QUERY, useMediaQuery } from "../../components/useMediaQuery";
 import { motionMs } from "../../styles/tokens";
 import { projectStats } from "../projects/stats";
@@ -292,6 +293,11 @@ export function TodayPage() {
     <>
       <PageHeader title={title} sub={`${dayName} ${now.getDate()} ${MONTHS[now.getMonth()]} · ${status.kind === "offline" ? "offline" : summary}`}>
         <SyncLine status={status} onRetry={retry} waiting={waiting} />
+        {phone && (
+          <button type="button" className="avatar menu-btn" aria-label="Menu" aria-haspopup="dialog" onClick={ui.openMenu}>
+            {initialsOf(auth?.session?.name, auth?.session?.email)}
+          </button>
+        )}
         <button type="button" className="btn" onClick={() => ui.openNewTask()}>
           <Icon name="plus" small />
           New task

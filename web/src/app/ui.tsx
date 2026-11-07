@@ -50,6 +50,10 @@ interface Ui {
   newTaskDefaults: { projectId?: string | null; sectionId?: string | null };
   openNewTask: (defaults?: { projectId?: string | null; sectionId?: string | null }) => void;
   closeNewTask: () => void;
+  /** The phone menu sheet (the round button in the Today header). */
+  menuOpen: boolean;
+  openMenu: () => void;
+  closeMenu: () => void;
   searchOpen: boolean;
   openSearch: () => void;
   closeSearch: () => void;
@@ -68,6 +72,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
   const [newEventTime, setNewEventTime] = useState<string | null>(null);
   const [listId, setListId] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [newTaskOpen, setNewTaskOpen] = useState(false);
   const [newTaskDefaults, setNewTaskDefaults] = useState<{ projectId?: string | null; sectionId?: string | null }>({});
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -108,6 +113,9 @@ export function UiProvider({ children }: { children: ReactNode }) {
         setNewTaskOpen(true);
       },
       closeNewTask: () => setNewTaskOpen(false),
+      menuOpen,
+      openMenu: () => setMenuOpen(true),
+      closeMenu: () => setMenuOpen(false),
       searchOpen,
       openSearch: () => setSearchOpen(true),
       closeSearch: () => setSearchOpen(false),
@@ -115,7 +123,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
       showToast,
       dismissToast,
     }),
-    [newTaskDefaults, taskId, eventKey, newEventDate, newEventTime, listId, newTaskOpen, searchOpen, toast, showToast, dismissToast],
+    [newTaskDefaults, taskId, eventKey, newEventDate, newEventTime, listId, newTaskOpen, searchOpen, menuOpen, toast, showToast, dismissToast],
   );
   return <UiContext.Provider value={value}>{children}</UiContext.Provider>;
 }

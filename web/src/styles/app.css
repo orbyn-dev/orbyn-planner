@@ -189,7 +189,7 @@ button { cursor: pointer; }
   .split > .l .search { flex: 1 0 100%; }
   .split > .l .nav { width: auto; }
   .tabbar {
-    display: grid; grid-template-columns: repeat(6, 1fr); min-height: var(--sp-78); padding: var(--sp-8) var(--sp-6) calc(var(--sp-22) + env(safe-area-inset-bottom));
+    display: grid; grid-template-columns: repeat(5, 1fr); min-height: var(--sp-78); padding: var(--sp-8) var(--sp-6) calc(var(--sp-22) + env(safe-area-inset-bottom));
     border-top: var(--bw) solid var(--line); background: var(--main);
   }
   .tabbar .tab {
@@ -683,3 +683,16 @@ button.pillx { border: 0; }
 .cal-menu .check.done { background: var(--btn); border-color: var(--btn); }
 .cal-menu .check.done::after { content: ""; position: absolute; left: var(--sp-5); top: var(--sp-2); width: var(--sp-4); height: var(--sp-8); border: solid var(--btnt); border-width: 0 var(--bw-2) var(--bw-2) 0; transform: rotate(45deg); }
 .cal-menu .sw { width: var(--sp-8); height: var(--sp-8); border-radius: var(--r-pill); }
+
+/* The phone menu: the round initials button in the Today header and the sheet it opens (p-phone-menu). */
+.avatar { width: var(--sp-30); height: var(--sp-30); border-radius: var(--r-round); background: var(--raise); display: inline-flex; align-items: center; justify-content: center; font-size: var(--fs-12); font-weight: var(--fw-medium); color: var(--t1); border: 0; padding: 0; flex: none; }
+.ph { position: relative; }
+@media (max-width: 767px) {
+  .ph .menu-btn { position: absolute; top: var(--sp-12); right: var(--sp-20); }
+}
+@media (min-width: 768px) {
+  .ph .menu-btn { display: none; }
+}
+.more-sheet .grab { display: block; width: var(--sp-36); height: var(--sp-4); border-radius: var(--r-pill); background: var(--line2); margin: 0 auto var(--sp-8); }
+.msep { border: 0; border-top: var(--bw) solid var(--line); margin: var(--sp-8) 0; }
+.menu-account { display: grid; grid-template-columns: var(--sp-30) minmax(0, 1fr) auto; align-items: center; gap: var(--sp-12); min-height: var(--sp-56); color: var(--t1); }
