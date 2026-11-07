@@ -29,7 +29,7 @@ export function forgetDeleteUnusedTokenForTests(): void {
   taken = null;
 }
 
-type Result = "ready" | "busy" | "released" | "not-released" | "expired" | "not-empty" | "error";
+type Result = "ready" | "busy" | "released" | "not-released" | "expired" | "not-empty" | "limited" | "error";
 
 async function confirm(token: string): Promise<Exclude<Result, "ready" | "busy">> {
   try {
@@ -47,6 +47,8 @@ async function confirm(token: string): Promise<Exclude<Result, "ready" | "busy">
     // A wrong, used, voided or expired token is one answer; the account is not said to exist.
     if (response.status === 400) return "expired";
     if (response.status === 409) return "not-empty";
+    // A flood from one network: plain words, with nothing to press. "Orbyn didn’t answer" is for a network or server failure.
+    if (response.status === 429) return "limited";
     return "error";
   } catch {
     return "error";
@@ -89,7 +91,7 @@ export function DeleteUnusedPage() {
       <span className="pv-ok"><Icon name="check2" size={22} /></span>
       <h1 className="keys-title">{title}</h1>
       <span className="t2">{text}</span>
-      <div className="pv-stack"><a className="btn lg" href="/">Sign up again</a></div>
+      <div className="pv-stack"><a className="btn lg" href="/sign-up">Sign up again</a></div>
     </div>
   );
 
@@ -110,7 +112,7 @@ export function DeleteUnusedPage() {
           <span className="pv-red"><Icon name="alert" size={22} /></span>
           <h1 className="keys-title">This link doesn’t work any more</h1>
           <span className="t2">It may have been used already, or it may have expired after 24 hours. Go back to sign-up and choose Start over to get a new one.</span>
-          <div className="pv-stack"><a className="btn lg" href="/">Back to sign-up</a></div>
+          <div className="pv-stack"><a className="btn lg" href="/sign-up">Back to sign-up</a></div>
         </div>
       ) : result === "not-empty" ? (
         <div className="authcard keys-card" role="status" aria-label="This account can’t be deleted this way">
@@ -118,7 +120,7 @@ export function DeleteUnusedPage() {
           <h1 className="keys-title">This account can’t be deleted this way</h1>
           <span className="t2">Something has been stored in it, or a device now holds its keys. Nothing was deleted. To delete it, sign in and use Settings › Account › Delete account, or email {SUPPORT}.</span>
           <div className="pv-stack">
-            <a className="btn lg" href="/">Sign in</a>
+            <a className="btn lg" href="/sign-in">Sign in</a>
             <button
               type="button"
               className="ghost lg"
@@ -130,6 +132,12 @@ export function DeleteUnusedPage() {
               {copied ? "Copied" : "Copy address"}
             </button>
           </div>
+        </div>
+      ) : result === "limited" ? (
+        <div className="authcard keys-card" role="status" aria-label="Too many tries">
+          <Icon name="clock" size={22} />
+          <h1 className="keys-title">Too many tries</h1>
+          <span className="t2">Wait a while, then try again.</span>
         </div>
       ) : result === "error" ? (
         <div className="authcard keys-card" role="alert" aria-label="Couldn’t delete the account">
@@ -144,8 +152,8 @@ export function DeleteUnusedPage() {
           <h1 className="keys-title">Delete this empty account?</h1>
           <span className="t2">This account has nothing stored in it. Deleting it lets you sign up again. Only an empty account can be deleted this way. If you signed up with an invite code, deleting this account may release the code so you can use it again.</span>
           <div className="pv-stack">
-            <button type="button" className="danger lg" onClick={() => void press()}>Delete this account</button>
             <a className="ghost lg" href="/">Cancel</a>
+            <button type="button" className="danger lg" onClick={() => void press()}>Delete this account</button>
           </div>
         </div>
       )}

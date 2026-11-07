@@ -161,4 +161,15 @@ describe("quick add preview", () => {
     expect(screen.getByRole("button", { name: "View options" })).toHaveFocus();
     expect(window.localStorage.getItem("orbyn-planner.tasks-view")).toContain('"groupBy":"priority"');
   });
+
+  it("completing a task says Task completed with Undo, which brings it back (Motion Designs checkoff)", async () => {
+    const { field, store } = await openTasks();
+    await add(field, "alpha");
+    await userEvent.click(await screen.findByRole("checkbox", { name: "Complete alpha" }));
+    expect(store.getState().tasks[0]!.done).toBe(true);
+    expect(screen.getByText("Task completed")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(store.getState().tasks[0]!.done).toBe(false);
+    expect(screen.getByRole("checkbox", { name: "Complete alpha" })).not.toBeChecked();
+  });
 });

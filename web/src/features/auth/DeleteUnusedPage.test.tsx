@@ -4,6 +4,9 @@ import { StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DeleteUnusedPage, forgetDeleteUnusedTokenForTests } from "./DeleteUnusedPage";
 
+const nodeFs = "node:fs";
+const fs = (await import(/* @vite-ignore */ nodeFs)) as { readFileSync(path: string, encoding: "utf8"): string };
+
 const fetchMock = vi.fn();
 const TOKEN = "dG9rZW4tdG9rZW4tdG9rZW4";
 const answer = (status: number, body?: unknown) => new Response(body === undefined ? null : JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
@@ -100,5 +103,67 @@ describe("the Start over link", () => {
     finish(answer(200, { invite_released: false }));
     await screen.findByRole("heading", { name: "Account deleted" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("Cancel comes first and the red Delete this account last", () => {
+    render(<DeleteUnusedPage />);
+    const card = screen.getByRole("group", { name: "Delete this empty account?" });
+    const actions = [...card.querySelectorAll("a, button")].map((e) => e.textContent);
+    expect(actions).toEqual(["Cancel", "Delete this account"]);
+    expect(screen.getByRole("button", { name: "Delete this account" })).toHaveClass("danger");
+  });
+
+  it("a 429 is a neutral card (clock, Too many tries, Wait a while, then try again.) with nothing to press, not 'Orbyn didn’t answer'", async () => {
+    fetchMock.mockResolvedValue(answer(429, { code: "too_many_attempts", message: "x" }));
+    render(<DeleteUnusedPage />);
+    await press();
+    const card = await screen.findByRole("status", { name: "Too many tries" });
+    expect(card).toHaveTextContent("Too many tries");
+    expect(card).toHaveTextContent("Wait a while, then try again.");
+    expect(card.querySelector("svg")).not.toBeNull();
+    expect(screen.queryByText(/didn’t answer/)).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.queryByRole("link")).toBeNull();
+  });
+
+  it("Sign up again, Back to sign-up and Sign in open their own screens", async () => {
+    fetchMock.mockResolvedValueOnce(answer(200, { invite_released: false }));
+    const first = render(<DeleteUnusedPage />);
+    await press();
+    expect(await screen.findByRole("link", { name: "Sign up again" })).toHaveAttribute("href", "/sign-up");
+    first.unmount();
+    window.history.replaceState(null, "", "/delete-unused");
+    forgetDeleteUnusedTokenForTests();
+    render(<DeleteUnusedPage />);
+    expect(screen.getByRole("link", { name: "Back to sign-up" })).toHaveAttribute("href", "/sign-up");
+  });
+
+  it("a link that is no longer empty offers Sign in at /sign-in", async () => {
+    fetchMock.mockResolvedValueOnce(answer(409, { code: "delete_unused_not_possible", message: "x" }));
+    render(<DeleteUnusedPage />);
+    await press();
+    expect(await screen.findByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/sign-in");
+  });
+
+  it("is isolated: main.tsx loads it before the app, and nothing it imports reaches accounts, stores, sync or the wasm module", () => {
+    const root = `${(globalThis as { process?: { cwd(): string } }).process!.cwd()}/src`;
+    const main = fs.readFileSync(`${root}/main.tsx`, "utf8");
+    const route = main.indexOf('"/delete-unused"');
+    expect(route).toBeGreaterThan(-1);
+    expect(main.indexOf('import("./bootApp")')).toBeGreaterThan(route);
+    const seen = new Set<string>();
+    const walk = (file: string) => {
+      if (seen.has(file)) return;
+      seen.add(file);
+      const text = fs.readFileSync(file, "utf8");
+      for (const m of text.matchAll(/(?:from|import\(|^import)\s*"(\.[^"]+)"/gm)) {
+        const base = new URL(m[1]!, `file://${file}`).pathname;
+        const target = ["", ".ts", ".tsx", "/index.ts", "/index.tsx"].map((x) => base + x).find((x) => { try { return /\.(ts|tsx)$/.test(x) && fs.readFileSync(x, "utf8") !== undefined; } catch { return false; } });
+        if (target) walk(target);
+      }
+    };
+    walk(`${root}/features/auth/DeleteUnusedPage.tsx`);
+    const reached = [...seen].map((f) => f.slice(root.length));
+    for (const f of reached) expect(f, f).not.toMatch(/^\/(auth|store|sync|app)\/|wasm|realCrypto|authCrypto|keyStore|tokenStore/);
   });
 });

@@ -22,7 +22,7 @@ export function NewEventDialog() {
   useDialog(ref, ui.closeNewEvent);
 
   const nextHour = ui.newEventTime ? Number(ui.newEventTime.slice(0, 2)) : Math.min(now.getHours() + 1, 22);
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(ui.newEventTitle);
   const firstDay = ui.newEventDate || dateKey(now);
   const [when, setWhen] = useState<When>({ allDay: false, startDay: firstDay, startTime: `${pad(nextHour)}:00`, endDay: firstDay, endTime: `${pad(Math.min(nextHour + 1, 23))}:00` });
   const { prefs } = usePrefs();

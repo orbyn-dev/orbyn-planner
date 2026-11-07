@@ -14,7 +14,13 @@ export function useComplete() {
   const ui = useUi();
   const now = useNow();
   return (task: Task, done: boolean) => {
-    if (!done || !task.repeat) return store.setDone(task.id, done);
+    if (!done) return store.setDone(task.id, false);
+    if (!task.repeat) {
+      // Motion Designs `checkoff`: "Task completed" with Undo, which brings it back.
+      store.setDone(task.id, true);
+      ui.showToast("Task completed", () => store.setDone(task.id, false), { focusRowOnUndo: task.id });
+      return;
+    }
     const before = { due: task.due, completions: task.completions ?? [], checklist: task.checklist };
     store.setDone(task.id, true);
     const after = store.getState().tasks.find((t) => t.id === task.id);

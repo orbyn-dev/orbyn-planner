@@ -17,7 +17,7 @@ const HOUR_MS = 3_600_000;
  * cannot be used here (Account Designs so-card, so-check, so-phone). Start over asks the engine to mail a link that deletes an empty
  * account. The engine answers 202 whatever the account is, so what the screen says is the same whether or not anything was sent.
  */
-export function StartOver({ email, onChangeEmail }: { email: string; onChangeEmail: () => void }) {
+export function StartOver({ email, onBackToSignIn }: { email: string; onBackToSignIn: () => void }) {
   const auth = useAuth()!;
   const clock = auth.services.now;
   /** When each link was asked for; empty before the first. */
@@ -104,7 +104,7 @@ export function StartOver({ email, onChangeEmail }: { email: string; onChangeEma
         <button type="button" className="link-btn small" disabled={busy} onClick={() => void send()}>Send a new link</button>
       )}
       <span className="t3 small">
-        Wrong address? <button type="button" className="link-btn link" onClick={onChangeEmail}>Change email</button>
+        <button type="button" className="link-btn quiet-link" onClick={onBackToSignIn}>Back to sign in</button>
       </span>
     </div>
   );
