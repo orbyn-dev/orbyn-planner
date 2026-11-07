@@ -25,10 +25,10 @@ export function usePopover(open: boolean, close: () => void, anchor: RefObject<H
       anchor.current?.focus(); // back to the control
     };
     document.addEventListener("mousedown", away);
-    document.addEventListener("keydown", key);
+    document.addEventListener("keydown", key, true); // capture: an open popover takes Escape before the dialog around it
     return () => {
       document.removeEventListener("mousedown", away);
-      document.removeEventListener("keydown", key);
+      document.removeEventListener("keydown", key, true);
     };
   }, [open, anchor]);
   return ref;

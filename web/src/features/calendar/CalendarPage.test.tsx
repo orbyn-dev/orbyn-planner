@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../app/App";
@@ -186,14 +186,16 @@ describe("Event panel", () => {
     );
   });
 
-  it("will not save an event that ends before it starts", async () => {
+  it("an end time before the start ends the next day, so an event cannot end before it starts", async () => {
     await open({ seed: seedWeek });
     await userEvent.click(screen.getByRole("button", { name: /Lunch with Maya/ }));
     const panel = screen.getByRole("complementary", { name: "Event" });
-    await userEvent.clear(within(panel).getByLabelText("End date"));
-    await userEvent.type(within(panel).getByLabelText("End date"), "2026-11-04");
-    expect(within(panel).getByText("It ends before it starts.")).toBeInTheDocument();
-    expect(within(panel).getByRole("button", { name: "Save" })).toBeDisabled();
+    await userEvent.click(within(panel).getByRole("button", { name: /^When,/ }));
+    const end = screen.getByRole("textbox", { name: "End time" });
+    await userEvent.clear(end);
+    await userEvent.type(end, "12:00{Enter}");
+    expect(within(panel).getByRole("button", { name: /^When,/ })).toHaveTextContent("Thu 5 Nov, 13:00 – Fri 6 Nov, 12:00");
+    expect(within(panel).getByRole("button", { name: "Save" })).toBeEnabled();
   });
 
   it("asks which events an edit reaches when the event repeats", async () => {
@@ -266,6 +268,20 @@ describe("Event panel", () => {
 });
 
 describe("New event", () => {
+  it("Escape closes the When calendar first and the dialog only on the next press", async () => {
+    await open();
+    await userEvent.click(screen.getByRole("button", { name: "New event" }));
+    const dialog = screen.getByRole("dialog", { name: "New event" });
+    await userEvent.click(within(dialog).getByRole("button", { name: "Open the calendar" }));
+    expect(within(dialog).getByRole("dialog", { name: "When" })).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    expect(within(dialog).queryByRole("dialog", { name: "When" })).toBeNull();
+    expect(screen.getByRole("dialog", { name: "New event" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("textbox", { name: "When" })).toHaveFocus();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog", { name: "New event" })).toBeNull();
+  });
+
   it("adds an event with its calendar, repeat, reminder and people", async () => {
     const store = await open();
     await userEvent.click(screen.getByRole("button", { name: "New event" }));
@@ -273,11 +289,7 @@ describe("New event", () => {
     expect(within(dialog).getByRole("button", { name: "Add event" })).toBeDisabled();
     await userEvent.type(within(dialog).getByLabelText("Title"), "Dentist");
     await userEvent.clear(within(dialog).getByLabelText("When"));
-    await userEvent.type(within(dialog).getByLabelText("When"), "2026-11-13");
-    await userEvent.clear(within(dialog).getByLabelText("Start time"));
-    await userEvent.type(within(dialog).getByLabelText("Start time"), "15:00");
-    await userEvent.clear(within(dialog).getByLabelText("End time"));
-    await userEvent.type(within(dialog).getByLabelText("End time"), "15:45");
+    await userEvent.type(within(dialog).getByLabelText("When"), "2026-11-13 15:00-15:45");
     await userEvent.selectOptions(within(dialog).getByLabelText("Repeat"), "monthly");
     await userEvent.selectOptions(within(dialog).getByLabelText("Reminder"), "60");
     await userEvent.type(within(dialog).getByLabelText("Invite people"), "maya@example.com, alex@example.com");
@@ -521,7 +533,7 @@ describe("keyboard", () => {
     expect(document.querySelector('[data-day="2026-11-06"]')).toHaveFocus();
     await userEvent.keyboard("{ArrowRight}{Enter}");
     const dialog = screen.getByRole("dialog", { name: "New event" });
-    expect(within(dialog).getByLabelText("When")).toHaveValue("2026-11-07");
+    expect(within(dialog).getByLabelText("When")).toHaveValue("Sat 7 Nov, 11:00 – 12:00");
   });
 
   it("Week: a focused hour slot takes Enter to add an event at that time", async () => {
@@ -533,15 +545,13 @@ describe("keyboard", () => {
     expect(document.querySelector('[data-slot="2026-11-06T15"]')).toHaveFocus();
     await userEvent.keyboard("{ArrowLeft}{Enter}");
     const dialog = screen.getByRole("dialog", { name: "New event" });
-    expect(within(dialog).getByLabelText("When")).toHaveValue("2026-11-05");
-    expect(within(dialog).getByLabelText("Start time")).toHaveValue("15:00");
-    expect(within(dialog).getByLabelText("End time")).toHaveValue("16:00");
+    expect(within(dialog).getByLabelText("When")).toHaveValue("Thu 5 Nov, 15:00 – 16:00");
   });
 
   it("Week: clicking a slot also adds an event there", async () => {
     await open();
     await userEvent.click(document.querySelector('[data-slot="2026-11-04T10"]') as HTMLElement);
-    expect(within(screen.getByRole("dialog", { name: "New event" })).getByLabelText("Start time")).toHaveValue("10:00");
+    expect(within(screen.getByRole("dialog", { name: "New event" })).getByLabelText("When")).toHaveValue("Wed 4 Nov, 10:00 – 11:00");
   });
 });
 
@@ -552,8 +562,9 @@ describe("a move the repeat cannot say", () => {
     });
     await userEvent.click(screen.getAllByRole("button", { name: /Swim/ })[0]!);
     const panel = screen.getByRole("complementary", { name: "Event" });
-    fireEvent.change(within(panel).getByLabelText("Start date"), { target: { value: "2026-11-08" } });
-    fireEvent.change(within(panel).getByLabelText("End date"), { target: { value: "2026-11-08" } });
+    await userEvent.click(within(panel).getByRole("button", { name: /^When,/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Sunday 8 November" }));
+    await userEvent.click(screen.getByRole("button", { name: "Done" }));
     await userEvent.click(within(panel).getByRole("button", { name: "Save" }));
     await userEvent.click(screen.getByRole("button", { name: /^All events/ }));
     expect(await within(panel).findByRole("alert")).toHaveTextContent("some of its days would fall in a different week of the cycle");

@@ -1,7 +1,13 @@
 import { useMemo, useRef, useState } from "react";
+import { useNow } from "../../app/clock";
+import { usePrefs } from "../../app/prefs";
 import { useUi } from "../../app/ui";
 import { Icon } from "../../components/Icon";
+import { PopoverRow } from "../../components/PopoverRow";
 import { Portal } from "../../components/Portal";
+import { WhenBody } from "../../components/WhenField";
+import { dateKey } from "../../lib/dates";
+import { formatWhen, type When } from "../../lib/whenParser";
 import { PHONE_QUERY, useMediaQuery } from "../../components/useMediaQuery";
 import { useDialog } from "../../components/useDialog";
 import { usePlanner, useStore } from "../../store/context";
@@ -29,11 +35,16 @@ function Panel({ occ }: { occ: Occurrence }) {
   const calendar = calendars.find((c) => c.id === event.calendarId);
 
   const [title, setTitle] = useState(event.title);
-  const [allDay, setAllDay] = useState(occ.allDay);
-  const [startDay, setStartDay] = useState(occ.start.slice(0, 10));
-  const [startTime, setStartTime] = useState(timePart(occ.start) || "09:00");
-  const [endDay, setEndDay] = useState(occ.end.slice(0, 10));
-  const [endTime, setEndTime] = useState(timePart(occ.end) || "10:00");
+  const [when, setWhen] = useState<When>({
+    allDay: occ.allDay,
+    startDay: occ.start.slice(0, 10),
+    startTime: timePart(occ.start) || "09:00",
+    endDay: occ.end.slice(0, 10),
+    endTime: timePart(occ.end) || "10:00",
+  });
+  const { allDay, startDay, startTime, endDay, endTime } = when;
+  const now = useNow();
+  const { prefs } = usePrefs();
   const [calendarId, setCalendarId] = useState(event.calendarId);
   const [place, setPlace] = useState(event.place);
   const [repeatRule, setRepeatRule] = useState<Repeat | null>(event.repeat?.repeat ?? null);
@@ -106,22 +117,9 @@ function Panel({ occ }: { occ: Occurrence }) {
       </div>
       {locked && <p className="t3">From the subscribed calendar “{calendar?.name}”. It can’t be changed here.</p>}
 
-      <div className="kv"><span>All day</span><b className="ctl"><input type="checkbox" className="check" aria-label="All day" checked={allDay} disabled={locked} onChange={(e) => setAllDay(e.target.checked)} /></b></div>
-      <div className="kv">
-        <span>Starts</span>
-        <b className="ctl">
-          <input className="inp" type="date" aria-label="Start date" value={startDay} disabled={locked} onChange={(e) => setStartDay(e.target.value)} />
-          {!allDay && <input className="inp" type="time" aria-label="Start time" value={startTime} disabled={locked} onChange={(e) => setStartTime(e.target.value)} />}
-        </b>
-      </div>
-      <div className="kv">
-        <span>Ends</span>
-        <b className="ctl">
-          <input className="inp" type="date" aria-label="End date" value={endDay} disabled={locked} onChange={(e) => setEndDay(e.target.value)} />
-          {!allDay && <input className="inp" type="time" aria-label="End time" value={endTime} disabled={locked} onChange={(e) => setEndTime(e.target.value)} />}
-        </b>
-      </div>
-      {end < start && <p className="err">It ends before it starts.</p>}
+      <PopoverRow label="When" value={formatWhen(when, now, "event")} disabled={locked} wide>
+        {({ close }) => <WhenBody kind="event" value={when} today={dateKey(now)} weekStart={prefs.weekStart} onChange={(w) => w && setWhen(w)} onDone={close} />}
+      </PopoverRow>
       <CalendarRow calendars={editable} value={calendarId} disabled={locked} onChange={setCalendarId} />
       <div className="kv">
         <span>Where</span>

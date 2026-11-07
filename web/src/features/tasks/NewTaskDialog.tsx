@@ -1,7 +1,10 @@
 import { useRef, useState } from "react";
 import { useNow } from "../../app/clock";
+import { usePrefs } from "../../app/prefs";
 import { useUi } from "../../app/ui";
 import { Portal } from "../../components/Portal";
+import { WhenField } from "../../components/WhenField";
+import type { When } from "../../lib/whenParser";
 import { useDialog } from "../../components/useDialog";
 import { dateKey, makeDue, parseDue } from "../../lib/dates";
 import { usePlanner, useStore } from "../../store/context";
@@ -22,8 +25,10 @@ export function NewTaskDialog() {
 
   const inbox = lists.find((l) => l.isInbox);
   const [title, setTitle] = useState("");
-  const [day, setDay] = useState("");
-  const [time, setTime] = useState("");
+  const [due, setDue] = useState<When | null>(null);
+  const { prefs } = usePrefs();
+  const day = due?.startDay ?? "";
+  const time = due?.startTime ?? "";
   const [listId, setListId] = useState(inbox?.id ?? "");
   const [priority, setPriority] = useState<Priority>("none");
   const [repeat, setRepeat] = useState<Repeat | null>(null);
@@ -72,11 +77,7 @@ export function NewTaskDialog() {
         >
           <label htmlFor="nt-title">Title</label>
           <input id="nt-title" className="field" data-autofocus value={title} onChange={(e) => setTitle(e.target.value)} />
-          <label htmlFor="nt-day">Due</label>
-          <div className="two">
-            <input id="nt-day" className="field" type="date" value={day} onChange={(e) => setDay(e.target.value)} />
-            <input className="field" type="time" aria-label="Due time" value={time} onChange={(e) => setTime(e.target.value)} />
-          </div>
+          <WhenField label="Due" kind="task" value={due} now={now} weekStart={prefs.weekStart} onChange={setDue} />
           <label htmlFor="nt-list">List</label>
           <select id="nt-list" className="field" value={listId} onChange={(e) => setListId(e.target.value)}>
             {lists.map((l) => (

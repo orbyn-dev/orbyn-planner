@@ -1,7 +1,10 @@
 import { useRef, useState } from "react";
 import { useNow } from "../../app/clock";
+import { usePrefs } from "../../app/prefs";
 import { useUi } from "../../app/ui";
 import { Portal } from "../../components/Portal";
+import { WhenField } from "../../components/WhenField";
+import type { When } from "../../lib/whenParser";
 import { useDialog } from "../../components/useDialog";
 import { dateKey } from "../../lib/dates";
 import { usePlanner, useStore } from "../../store/context";
@@ -20,26 +23,27 @@ export function NewEventDialog() {
 
   const nextHour = ui.newEventTime ? Number(ui.newEventTime.slice(0, 2)) : Math.min(now.getHours() + 1, 22);
   const [title, setTitle] = useState("");
-  const [allDay, setAllDay] = useState(false);
-  const [day, setDay] = useState(ui.newEventDate || dateKey(now));
-  const [startTime, setStartTime] = useState(`${pad(nextHour)}:00`);
-  const [endTime, setEndTime] = useState(`${pad(Math.min(nextHour + 1, 23))}:00`);
+  const firstDay = ui.newEventDate || dateKey(now);
+  const [when, setWhen] = useState<When>({ allDay: false, startDay: firstDay, startTime: `${pad(nextHour)}:00`, endDay: firstDay, endTime: `${pad(Math.min(nextHour + 1, 23))}:00` });
+  const { prefs } = usePrefs();
   const writable = calendars.filter((c) => c.kind.type === "local");
   const [calendarId, setCalendarId] = useState(writable[0]?.id ?? "");
   const [repeat, setRepeat] = useState<RepeatChoice>("never");
   const [reminder, setReminder] = useState<number | null>(null);
   const [people, setPeople] = useState("");
 
-  const bad = title.trim() === "" || (!allDay && endTime < startTime);
+  const start = when.allDay ? when.startDay : `${when.startDay}T${when.startTime}`;
+  const end = when.allDay ? when.endDay : `${when.endDay}T${when.endTime}`;
+  const bad = title.trim() === "" || end < start;
 
   const submit = () => {
     if (bad) return;
     const event = store.addEvent({
       title,
       calendarId,
-      allDay,
-      start: allDay ? day : `${day}T${startTime}`,
-      end: allDay ? day : `${day}T${endTime}`,
+      allDay: when.allDay,
+      start,
+      end,
       reminder,
       people: parsePeople(people),
       repeat: ruleOf(repeat) ?? null,
@@ -62,17 +66,7 @@ export function NewEventDialog() {
           >
             <label htmlFor="ne-title">Title</label>
             <input id="ne-title" className="field" data-autofocus value={title} onChange={(e) => setTitle(e.target.value)} />
-            <label htmlFor="ne-day">When</label>
-            <div className="two">
-              <input id="ne-day" className="field" type="date" value={day} onChange={(e) => setDay(e.target.value)} />
-              {!allDay && <input className="field" type="time" aria-label="Start time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />}
-              {!allDay && <input className="field" type="time" aria-label="End time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />}
-            </div>
-            <label className="check-row">
-              <input type="checkbox" className="check" checked={allDay} onChange={(e) => setAllDay(e.target.checked)} />
-              All day
-            </label>
-            {!allDay && endTime < startTime && <p className="err">It ends before it starts.</p>}
+            <WhenField label="When" kind="event" value={when} now={now} weekStart={prefs.weekStart} onChange={(w) => w && setWhen(w)} />
             <label htmlFor="ne-cal">Calendar</label>
             <select id="ne-cal" className="field" value={calendarId} onChange={(e) => setCalendarId(e.target.value)}>
               {writable.map((c) => (

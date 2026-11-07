@@ -4,18 +4,12 @@ import { MonthGrid } from "../../components/MonthGrid";
 import { OptionMenu, type MenuOption } from "../../components/OptionMenu";
 import { PopoverRow } from "../../components/PopoverRow";
 import { addDays, dateKey, dateOf, formatDue, parseDue } from "../../lib/dates";
+import { readTime } from "../../lib/whenParser";
 import { ruleLabel } from "../../store/occurrences";
 import { dayOf, type Repeat } from "../../store/repeat";
 import { LIST_COLOURS, PRIORITIES, type Priority, type TaskList } from "../../store/types";
 import { RepeatPicker, kindOf, ruleFor, type RepeatKind } from "./RepeatPicker";
 import { REMINDER_MENU, reminderLabel } from "./reminder";
-
-/** The time field takes 24-hour `H:mm` or `HH:mm`; anything else is not a time. */
-export function readTime(text: string): string | null {
-  const m = /^\s*(\d{1,2}):(\d{2})\s*$/.exec(text);
-  if (!m || Number(m[1]) > 23 || Number(m[2]) > 59) return null;
-  return `${m[1]!.padStart(2, "0")}:${m[2]}`;
-}
 
 function DueBody({ due, today, weekStart, onChange, close }: { due: string | null; today: string; weekStart: "mon" | "sun"; onChange: (day: string, time: string) => void; close: () => void }) {
   const day = due ? due.slice(0, 10) : "";

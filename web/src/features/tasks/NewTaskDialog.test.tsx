@@ -46,8 +46,7 @@ describe("New task", () => {
     expect(dialog).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add task" })).toBeDisabled();
     await userEvent.type(screen.getByLabelText("Title"), "Book the dentist");
-    await userEvent.type(screen.getByLabelText("Due"), "2026-11-14");
-    await userEvent.type(screen.getByLabelText("Due time"), "15:00");
+    await userEvent.type(screen.getByLabelText("Due"), "2026-11-14 15:00");
     await userEvent.selectOptions(screen.getByLabelText("Priority"), "high");
     await userEvent.click(screen.getByRole("button", { name: "Add task" }));
     expect(store.getState().tasks[0]).toMatchObject({ title: "Book the dentist", due: "2026-11-14T15:00", priority: "high" });
