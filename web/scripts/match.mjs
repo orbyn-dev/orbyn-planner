@@ -170,7 +170,7 @@ async function ours(theme) {
   await guardNetwork(context, "ours");
   const page = await context.newPage();
   await page.clock.setFixedTime(new Date(frame.now ?? PINNED_NOW));
-  const query = new URLSearchParams({ scenario: frame.scenario, route: frame.route, theme });
+  const query = new URLSearchParams({ scenario: frame.scenario, route: frame.route, theme, ...(frame.now ? { now: frame.now } : {}) });
   await page.goto(`${origin}/tools/match/index.html?${query}`);
   await page.waitForSelector(".app", { timeout: 20000 });
   for (const step of frame.steps ?? []) {
