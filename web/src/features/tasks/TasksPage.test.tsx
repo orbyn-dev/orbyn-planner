@@ -162,14 +162,34 @@ describe("quick add preview", () => {
     expect(window.localStorage.getItem("orbyn-planner.tasks-view")).toContain('"groupBy":"priority"');
   });
 
-  it("completing a task says Task completed with Undo, which brings it back (Motion Designs checkoff)", async () => {
+  it("completing a task says “Marked done.” with Undo, which brings it back; nothing moves", async () => {
     const { field, store } = await openTasks();
     await add(field, "alpha");
     await userEvent.click(await screen.findByRole("checkbox", { name: "Complete alpha" }));
     expect(store.getState().tasks[0]!.done).toBe(true);
-    expect(screen.getByText("Task completed")).toBeInTheDocument();
+    expect(screen.getByText("Marked done.")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Undo" }));
     expect(store.getState().tasks[0]!.done).toBe(false);
     expect(screen.getByRole("checkbox", { name: "Complete alpha" })).not.toBeChecked();
+  });
+
+  it("the Marked done toast stays for five seconds", async () => {
+    const { field } = await openTasks();
+    await add(field, "alpha");
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      await userEvent.click(await screen.findByRole("checkbox", { name: "Complete alpha" }));
+      expect(screen.getByText("Marked done.")).toBeInTheDocument();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(4_900);
+      });
+      expect(screen.getByText("Marked done.")).toBeInTheDocument();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(200);
+      });
+      expect(screen.queryByText("Marked done.")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
