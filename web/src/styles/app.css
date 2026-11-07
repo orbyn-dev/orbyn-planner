@@ -633,3 +633,8 @@ button.pillx { border: 0; }
 /* In the task and event panels and the new task and event cards a row is a label and its value; the control looks like the value until it is hovered or focused. */
 .task-panel .kv .ctl .inp, .authcard .kv .ctl .inp { border-color: transparent; background: transparent; text-align: right; }
 .task-panel .kv .ctl .inp:hover, .authcard .kv .ctl .inp:hover, .task-panel .kv .ctl .inp:focus-visible, .authcard .kv .ctl .inp:focus-visible { border-color: var(--line2); background: var(--raise); }
+/* The View options popover on Tasks. */
+.view-options { display: flex; flex-direction: column; gap: var(--sp-12); }
+.vo-group { display: flex; flex-direction: column; gap: var(--sp-6); align-items: flex-start; }
+.vo-label { color: var(--t3); font-size: var(--fs-12); }
+.vo-link { color: var(--t1); text-decoration: none; border-top: var(--bw) solid var(--line); padding-top: var(--sp-10); }
