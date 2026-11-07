@@ -5,6 +5,7 @@ import { App } from "../../app/App";
 import { ClockProvider } from "../../app/clock";
 import { LocalStore } from "../../store/LocalStore";
 import { MemoryPersistence } from "../../store/persistence";
+import { ListError } from "./ListsPage";
 
 const NOW = new Date(2026, 10, 7, 10, 0);
 
@@ -79,5 +80,57 @@ describe("Completed and deleted page", () => {
     await userEvent.click(screen.getByRole("button", { name: "Put back binned" }));
     expect(store.getState().tasks.find((t) => t.id === b.id)!.deletedAt).toBeNull();
     await waitFor(() => expect(screen.queryByText("binned")).not.toBeInTheDocument());
+  });
+});
+
+describe("Lists states (Planner Designs p-lists-empty, p-lists-loading, p-lists-error, p-lists-offline)", () => {
+  it("an empty list says so, offers Add a task, and the add field puts a task in that list", async () => {
+    const store = await open("/lists");
+    const errands = store.addList("Errands", "c4");
+    await userEvent.click(await screen.findByRole("button", { name: /Errands/ }));
+    expect(await screen.findByRole("heading", { name: "No tasks in Errands" })).toBeInTheDocument();
+    expect(screen.getByText("Add the first one, or move a task here from another list.")).toBeInTheDocument();
+    expect(screen.getByText("Nothing here")).toBeInTheDocument();
+    const field = screen.getByRole("textbox", { name: "Add a task" });
+    expect(field).toHaveAttribute("placeholder", "Add a task: Post the parcel tomorrow");
+    await userEvent.type(field, "Post the parcel{Enter}");
+    await waitFor(() => expect(store.getState().tasks.find((t) => t.title === "Post the parcel")?.listId).toBe(errands.id));
+  });
+
+  it("offline, the sub line says so, the pill counts the waiting changes, and a row says its change has not left the device", async () => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    try {
+      const store = await open("/lists");
+      act(() => {
+        store.addTask({ title: "Lemons" });
+      });
+      expect(await screen.findByText("1 open · offline")).toBeInTheDocument();
+      expect(screen.getByText("You’re offline. Everything here is saved on this device and will sync when you’re back.")).toBeInTheDocument();
+      expect(document.querySelector(".ph .pillx")!.textContent).toMatch(/^Offline/);
+      expect(screen.getByText("Not synced yet")).toBeInTheDocument();
+    } finally {
+      vi.restoreAllMocks();
+    }
+  });
+
+  it("online, rows and the sub line say nothing about syncing", async () => {
+    const store = await open("/lists");
+    act(() => {
+      store.addTask({ title: "Lemons" });
+    });
+    expect(await screen.findByText("1 open")).toBeInTheDocument();
+    expect(screen.queryByText("Not synced yet")).toBeNull();
+  });
+
+  it("the error card says what failed and that the data is safe, with Open another list and Try again", async () => {
+    const retry = vi.fn();
+    const other = vi.fn();
+    render(<ListError name="Errands" onRetry={retry} onOther={other} />);
+    expect(screen.getByRole("alert")).toHaveTextContent("Couldn’t load Errands");
+    expect(screen.getByText("The list is safe on your other devices. Check your connection and try again.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await userEvent.click(screen.getByRole("button", { name: "Open another list" }));
+    expect(retry).toHaveBeenCalledTimes(1);
+    expect(other).toHaveBeenCalledTimes(1);
   });
 });
