@@ -2156,3 +2156,77 @@ describe("invite sign-up", () => {
     expect((engine.calls[1]!.body as { invite?: string }).invite).toBe("K7QM-2XWH-9QXA-LC2D");
   });
 });
+
+
+describe("Start over after the keys could not be held", () => {
+  /** A browser that can make the wrapping secret once (the sign-up checks) and never again, so the keys can be neither stored nor held. */
+  async function signUpUntilKeysLost() {
+    const keys = createMemoryKeyStore();
+    let calls = 0;
+    const auth = createAuthServices({
+      wrapSecret: async () => {
+        if (++calls > 1) throw new Error("no key");
+        return wrapFor(keys).slice();
+      },
+      fetch: engine.fetch,
+      baseUrl: "http://engine.test",
+      keys,
+      crypto: () => crypto,
+      now: () => nowMs,
+      poll: FAST_POLL,
+    });
+    await mount(auth);
+    await userEvent.click(await screen.findByRole("button", { name: "Get started" }));
+    await acceptInvite();
+    await userEvent.type(screen.getByLabelText("Name"), SAM.name);
+    await userEvent.type(screen.getByLabelText("Email"), SAM.email);
+    await userEvent.type(screen.getByLabelText("Password"), SAM.password);
+    await userEvent.click(screen.getByRole("button", { name: "Continue with a password" }));
+    await verifyEmail(SAM.email);
+    return screen.findByRole("alert", { name: "Your account was created, but this browser can’t keep its keys" });
+  }
+
+  it("shows the card with Start over and the empty-account line, and the planner stays closed", async () => {
+    const card = await signUpUntilKeysLost();
+    expect(card).toHaveTextContent("sam@example.com now has an Orbyn account, but its keys couldn’t be held in this browser, so you can’t use it here.");
+    expect(card).toHaveTextContent("Nothing is stored in the account yet, so nothing is lost. You can delete this empty account and sign up again.");
+    expect(card).toHaveTextContent("If this account can be deleted this way, we’ll email sam@example.com a link. It only works because the account is empty.");
+    expect(within(card).getByRole("button", { name: "Start over" })).toBeInTheDocument();
+    expect(within(card).getByRole("link", { name: "hello@orbyn.dev" })).toBeInTheDocument();
+    expect(within(card).getByRole("button", { name: "Copy address" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Nothing planned today" })).toBeNull();
+  });
+
+  it("Start over asks for the link and shows the same words whether or not anything was sent, with a 60 second wait", async () => {
+    const card = await signUpUntilKeysLost();
+    await userEvent.click(within(card).getByRole("button", { name: "Start over" }));
+    expect(await screen.findByRole("group", { name: "Check your email" })).toHaveTextContent("If this account can be deleted this way, we’ve sent a link to sam@example.com. It works once and expires in 24 hours.");
+    expect(engine.deleteUnusedAsked).toEqual(["sam@example.com"]);
+    expect(screen.getByText(/Send a new link in 1:00/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Change email" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Send a new link" })).toBeNull();
+  });
+
+  it("after the wait a new link can be asked for; the third request in an hour ends in the amber state with no wait time", async () => {
+    const card = await signUpUntilKeysLost();
+    await userEvent.click(within(card).getByRole("button", { name: "Start over" }));
+    await screen.findByRole("group", { name: "Check your email" });
+    for (let n = 0; n < 2; n++) {
+      nowMs += 61_000;
+      await userEvent.click(await screen.findByRole("button", { name: "Send a new link" }, { timeout: 3000 }));
+      await waitFor(() => expect(engine.deleteUnusedAsked).toHaveLength(n + 2));
+    }
+    expect(await screen.findByText("You’ve asked for several links. Try again later, or check your spam folder.")).toBeInTheDocument();
+    expect(screen.getByText("Send a new link · not available right now")).toBeInTheDocument();
+    expect(screen.queryByText(/in \d:\d\d/)).toBeNull();
+  });
+
+  it("the engine's own 429 is the same amber state", async () => {
+    const card = await signUpUntilKeysLost();
+    engine.refuseNext("/v1/accounts/delete-unused", 429, "too_many_attempts");
+    await userEvent.click(within(card).getByRole("button", { name: "Start over" }));
+    expect(await screen.findByText("You’ve asked for several links. Try again later, or check your spam folder.")).toBeInTheDocument();
+    expect(screen.getByText("Send a new link · not available right now")).toBeInTheDocument();
+    expect(engine.deleteUnusedAsked).toEqual([]);
+  });
+});

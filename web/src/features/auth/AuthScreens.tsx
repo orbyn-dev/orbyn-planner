@@ -11,6 +11,7 @@ import { cryptoLoad } from "../../api/realCrypto";
 import { CryptoProblem, MODULE_LOAD_FAILED } from "./CryptoProblem";
 import { useAuth, type AuthScreen } from "../../auth/AuthProvider";
 import { INVITE_REFUSED, InviteStep, StepBar } from "./InviteStep";
+import { StartOver } from "./StartOver";
 
 /** A readable line for whatever went wrong. */
 export function describeError(error: unknown): string {
@@ -57,6 +58,8 @@ function CheckEmail({ pending, onBack, onDone, onInviteRejected }: { pending: Pe
   const [engineLimited, setEngineLimited] = useState(false);
   /** The invite was spent by another sign-up in the meantime: no account can be made, and the person goes back to step 1. */
   const [inviteRejected, setInviteRejected] = useState(false);
+  /** The account was made but this browser can hold its keys neither in storage nor in memory: it is empty, and Start over can delete it. */
+  const [keysLost, setKeysLost] = useState(false);
 
   // Leaving this screen lets the sign-up go: its keys were only ever in memory. React's development check unmounts and mounts a
   // screen at once to test this very cleanup, so the sign-up is let go only if no mount follows straight after.
@@ -93,7 +96,9 @@ function CheckEmail({ pending, onBack, onDone, onInviteRejected }: { pending: Pe
       await pending.verify(digits);
       onDone();
     } catch (e) {
-      if (e instanceof ApiFailure && e.code === "invite_invalid") {
+      if (e instanceof ApiFailure && e.code === "keys_not_saved") {
+        setKeysLost(true);
+      } else if (e instanceof ApiFailure && e.code === "invite_invalid") {
         setInviteRejected(true);
       } else if (e instanceof ApiFailure && e.code === "invalid_email_code") {
         // A wrong, an expired and a made-up code are one answer; "Send a new code" is always there.
@@ -123,6 +128,7 @@ function CheckEmail({ pending, onBack, onDone, onInviteRejected }: { pending: Pe
   };
 
   const seconds = `${Math.floor(wait / 60)}:${String(wait % 60).padStart(2, "0")}`;
+  if (keysLost) return <StartOver email={pending.email} onChangeEmail={onBack} />;
   return (
     <form className="authcard" onSubmit={(e) => void verify(e)} aria-label="Check your inbox" noValidate>
       <StepBar step={3} label="Check your email" />
