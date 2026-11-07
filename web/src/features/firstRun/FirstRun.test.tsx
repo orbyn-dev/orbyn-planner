@@ -26,7 +26,8 @@ async function open(seed?: (s: LocalStore) => void, fetchImpl?: (url: string) =>
 
 beforeEach(() => {
   vi.unstubAllGlobals();
-  localStorage.clear(); // first run is not marked done here
+  localStorage.clear();
+  localStorage.removeItem(firstRunKey(null)); // first run is not marked done here
   vi.spyOn(navigator, "language", "get").mockReturnValue("en-GB"); // Monday by region
 });
 
