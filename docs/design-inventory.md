@@ -75,7 +75,7 @@ Deep pass (Today, calendar, tasks) is complete. Everything else is marked *not c
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `work-list` Tasks · List | `features/tasks/TasksPage.tsx:80` | partial | `cmp-work-list.png` | header has "Completed and deleted" where design has "View options" (TasksPage.tsx:102); due filter is four radio pills and one "Any list" select, design has Any due date / Any priority / Any list / Anyone chips (TasksPage.tsx:109-150); no Owner column or Blocked status (TaskRow.tsx:41) |
+| `work-list` Tasks · List | `features/tasks/TasksPage.tsx:80` | partial | `cmp-work-list.png` | header has "Completed and deleted" where design has "View options" (TasksPage.tsx:102); filters are now the chips Any due date / Any priority / Any list (feat/tasks-frames); "Anyone" and the Owner column stay out until sharing exists (data-gated); no Blocked status (needs the status field) |
 | `work-board` Tasks · Board | `features/tasks/TasksPage.tsx:178` | partial | `cmp-work-board.png` | two lanes (To do, Done); design has four (To do, In progress, Blocked, Done) and a progress bar on cards; Task has no status field (types.ts:19) |
 | `new-task` New task | `features/tasks/NewTaskDialog.tsx:15` | partial | `cmp-new-task.png` | full form with native date/time inputs, selects and a Project select, under a scrim; design is a compact card: Title, Due, List, then Repeat / Reminder / Priority as value rows |
 | `task-panel` Task panel | `features/tasks/TaskPanel.tsx:26` | partial | `cmp-task-panel.png` | panel is a form: title input, native date and time, selects, Tags input, "Add a step"; design is key/value rows; "Linked" cross-app card not built |

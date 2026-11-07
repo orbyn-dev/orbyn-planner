@@ -10,7 +10,7 @@ import { describeParse, parseQuickAdd } from "./quickAdd";
 import { DUE_FILTERS, activeTasks, groupTasks, isOpen, matchesDue, sortByDue, type DueFilter } from "./selectors";
 import { tagLabels } from "./TagChips";
 import { Swatch, TaskRow, useTaskActions } from "./TaskRow";
-import type { Task } from "../../store/types";
+import type { Priority, Task } from "../../store/types";
 
 type View = "list" | "board";
 
@@ -83,14 +83,15 @@ export function TasksPage() {
   const now = useNow();
   const [view, setView] = useState<View>("list");
   const [due, setDue] = useState<DueFilter>("any");
+  const [priority, setPriority] = useState<Priority | "any">("any");
   const [listId, setListId] = useState("");
   const [tagId, setTagId] = useState("");
   const liveTags = tags.filter((t) => t.deletedAt === null);
   const labels = tagLabels(tags);
 
   const shown = useMemo(
-    () => activeTasks(tasks, now).filter((t) => matchesDue(t, due, now) && (listId === "" || t.listId === listId) && (tagId === "" || t.tags.includes(tagId))),
-    [tasks, now, due, listId, tagId],
+    () => activeTasks(tasks, now).filter((t) => matchesDue(t, due, now) && (priority === "any" || t.priority === priority) && (listId === "" || t.listId === listId) && (tagId === "" || t.tags.includes(tagId))),
+    [tasks, now, due, priority, listId, tagId],
   );
   const groups = useMemo(() => groupTasks(shown, now), [shown, now]);
   const openCount = tasks.filter(isOpen).length;
@@ -115,13 +116,24 @@ export function TasksPage() {
           ))}
         </div>
         <span style={{ width: "var(--sp-12)" }} />
-        <div role="radiogroup" aria-label="Due date" className="pills">
-          {DUE_FILTERS.map((f) => (
-            <button key={f.id} type="button" role="radio" aria-checked={due === f.id} className="pill" onClick={() => setDue(f.id)}>
-              {f.label}
-            </button>
-          ))}
-        </div>
+        <label className="pill select-pill">
+          <span className="visually-hidden">Due date</span>
+          <select value={due} onChange={(e) => setDue(e.target.value as DueFilter)}>
+            {DUE_FILTERS.map((f) => (
+              <option key={f.id} value={f.id}>{f.label}</option>
+            ))}
+          </select>
+        </label>
+        <label className="pill select-pill">
+          <span className="visually-hidden">Filter by priority</span>
+          <select value={priority} onChange={(e) => setPriority(e.target.value as Priority | "any")}>
+            <option value="any">Any priority</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+            <option value="none">None</option>
+          </select>
+        </label>
         <label className="pill select-pill">
           <span className="visually-hidden">List</span>
           <select value={listId} onChange={(e) => setListId(e.target.value)}>
