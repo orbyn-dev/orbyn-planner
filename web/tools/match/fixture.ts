@@ -321,7 +321,10 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
       const reno = store.addList("Home renovation", "c4");
       store.addTask({ title: "Review the Q2 budget", due: day(6), listId: w.workList, priority: "high" });
       store.addTask({ title: "Send the launch brief to Priya", due: `${day(7)}T12:00`, listId: w.workList, priority: "high" });
-      store.addTask({ title: "Book a table for the book club", due: day(7), listId: home.id, priority: "medium" });
+      store.addTask({ title: "Fix the sign-up email bug", due: `${day(7)}T17:00`, listId: w.workList, priority: "high" });
+      const table = store.addTask({ title: "Book a table for the book club", due: day(7), listId: home.id, priority: "medium" });
+      store.updateTask(table.id, { status: "blocked" });
+      store.addTask({ title: "Book the dentist", due: day(13), listId: w.errands, priority: "medium" });
       store.addTask({ title: "Choose kitchen tiles", due: day(9), listId: reno.id, priority: "medium" });
       store.addTask({ title: "Prepare the launch slides", due: day(12), listId: w.workList, priority: "low" });
       store.setDone(store.addTask({ title: "Reply to the school about the trip", due: day(7), listId: w.workList }).id, true);
