@@ -5,27 +5,38 @@ import { useUi } from "../../app/ui";
 import { Icon } from "../../components/Icon";
 import { Portal } from "../../components/Portal";
 import { useDialog } from "../../components/useDialog";
-import { formatDue } from "../../lib/dates";
+import { MONTHS, WEEKDAYS, dateKey, dateOf, makeDue, parseDue } from "../../lib/dates";
 import { usePlanner, useStore } from "../../store/context";
-import type { Task, TaskList } from "../../store/types";
+import type { CalendarEvent, Project, Task, TaskList } from "../../store/types";
 import { describeRepeat, parseQuickAdd } from "../tasks/quickAdd";
-import { isLive, openCount } from "../tasks/selectors";
+import { isLive } from "../tasks/selectors";
 import { Swatch } from "../tasks/TaskRow";
 
 type Item =
-  | { kind: "add"; id: string; label: string }
+  | { kind: "add-task" | "add-event"; id: string; label: string }
   | { kind: "task"; id: string; task: Task; list?: TaskList }
-  | { kind: "list"; id: string; list: TaskList };
+  | { kind: "event"; id: string; event: CalendarEvent }
+  | { kind: "list"; id: string; list: TaskList }
+  | { kind: "project"; id: string; project: Project };
 
 interface Section {
   title: string;
   items: Item[];
 }
 
-/** Search or add: finds tasks and lists as you type, or adds a task from plain words. */
+const DELETED_KEPT_MS = 30 * 86_400_000;
+
+/** "Fri 13 Nov", with the year when it is not this year. */
+function dayText(day: string, now: Date): string {
+  const d = dateOf(day);
+  const base = `${WEEKDAYS[d.getDay()]!.slice(0, 3)} ${d.getDate()} ${MONTHS[d.getMonth()]!.slice(0, 3)}`;
+  return d.getFullYear() === now.getFullYear() ? base : `${base} ${d.getFullYear()}`;
+}
+
+/** Search or add (Planner Designs `search`, `p-search-none`): one field that finds any task, event, list or project, or adds a task or an event in plain words. */
 export function SearchDialog() {
   const store = useStore();
-  const { tasks, lists } = usePlanner();
+  const { tasks, lists, events, projects } = usePlanner();
   const ui = useUi();
   const router = useRouter();
   const now = useNow();
@@ -37,59 +48,79 @@ export function SearchDialog() {
   const [keep, setKeep] = useState(false);
   const q = query.trim();
 
-  const sections = useMemo<Section[]>(() => {
-    if (!q) return [];
+  const parsed = useMemo(() => (keep ? { title: q, due: null, listId: null, priority: "none" as const, repeat: null } : parseQuickAdd(q, now, lists)), [q, keep, now, lists]);
+
+  const { sections, found } = useMemo(() => {
+    if (!q) return { sections: [] as Section[], found: false };
     const needle = q.toLowerCase();
+    const hit = (text: string) => text.toLowerCase().includes(needle);
+    // Completed tasks count, and so do tasks deleted in the last 30 days (they are on the Completed and deleted page).
     const matchedTasks = tasks
-      .filter((t) => isLive(t) && t.title.toLowerCase().includes(needle))
-      .sort((a, b) => Number(a.done) - Number(b.done))
+      .filter((t) => hit(t.title) && (isLive(t) || (t.deletedAt !== null && now.getTime() - new Date(t.deletedAt).getTime() <= DELETED_KEPT_MS)))
+      .sort((a, b) => Number(a.deletedAt !== null) - Number(b.deletedAt !== null) || Number(a.done) - Number(b.done))
       .slice(0, 6);
-    const matchedLists = lists.filter((l) => l.name.toLowerCase().includes(needle)).slice(0, 4);
+    const matchedEvents = events.filter((e) => e.deletedAt === null && hit(e.title)).sort((a, b) => a.start.localeCompare(b.start)).slice(0, 4);
+    const matchedLists = lists.filter((l) => hit(l.name)).slice(0, 4);
+    const matchedProjects = projects.filter((p) => hit(p.name)).slice(0, 4);
     const exact = tasks.some((t) => isLive(t) && t.title.trim().toLowerCase() === needle);
 
     const out: Section[] = [];
-    const taskSection: Section = {
-      title: "Tasks",
-      items: matchedTasks.map((t) => ({ kind: "task", id: `task-${t.id}`, task: t, list: lists.find((l) => l.id === t.listId) })),
-    };
-    const listSection: Section = { title: "Lists", items: matchedLists.map((l) => ({ kind: "list", id: `list-${l.id}`, list: l })) };
-    let addSection: Section | null = null;
     if (!exact) {
-      const parsed = keep ? { title: q, due: null, listId: null, priority: "none" as const, repeat: null } : parseQuickAdd(q, now, lists);
+      // A time written in the words says it is an event, so that comes first; otherwise a task does.
+      const timed = parsed.due !== null && parseDue(parsed.due).hasTime;
       const bits = [
-        parsed.due && `due ${formatDue(parsed.due, now)}`,
+        parsed.due && `due ${dayText(parsed.due.slice(0, 10), now)}`,
         parsed.listId && lists.find((l) => l.id === parsed.listId)?.name,
         parsed.repeat && describeRepeat(parsed.repeat),
         parsed.priority !== "none" && `${parsed.priority} priority`,
       ].filter(Boolean);
-      addSection = {
-        title: "Add",
-        items: [{ kind: "add", id: "add", label: `Add task “${parsed.title}”${bits.length ? ` · ${bits.join(" · ")}` : ""}` }],
-      };
+      const when = parsed.due ? ` · ${dayText(parsed.due.slice(0, 10), now)}, ${timed ? parsed.due.slice(11, 16) : "all day"}` : "";
+      const task: Item = { kind: "add-task", id: "add-task", label: `Add task “${parsed.title}”${bits.length ? ` · ${bits.join(" · ")}` : ""}` };
+      const event: Item = { kind: "add-event", id: "add-event", label: `Add event “${parsed.title}”${when}` };
+      out.push({ title: "Add", items: timed ? [event, task] : [task, event] });
     }
-    // A phrase that matches nothing is most likely an add; otherwise the matches come first.
-    const found = taskSection.items.length + listSection.items.length > 0;
-    if (addSection && !found) out.push(addSection);
-    if (taskSection.items.length) out.push(taskSection);
-    if (listSection.items.length) out.push(listSection);
-    if (addSection && found) out.push(addSection);
-    return out;
-  }, [q, tasks, lists, now, keep]);
+    if (matchedTasks.length) out.push({ title: "Tasks", items: matchedTasks.map((t) => ({ kind: "task" as const, id: `task-${t.id}`, task: t, list: lists.find((l) => l.id === t.listId) })) });
+    if (matchedEvents.length) out.push({ title: "Calendar", items: matchedEvents.map((e) => ({ kind: "event" as const, id: `event-${e.id}`, event: e })) });
+    if (matchedLists.length) out.push({ title: "Lists", items: matchedLists.map((l) => ({ kind: "list" as const, id: `list-${l.id}`, list: l })) });
+    if (matchedProjects.length) out.push({ title: "Projects", items: matchedProjects.map((p) => ({ kind: "project" as const, id: `project-${p.id}`, project: p })) });
+    return { sections: out, found: matchedTasks.length + matchedEvents.length + matchedLists.length + matchedProjects.length > 0 };
+  }, [q, tasks, lists, events, projects, now, parsed]);
 
   const flat = sections.flatMap((s) => s.items);
   const current = Math.min(active, Math.max(flat.length - 1, 0));
 
   const pick = (item: Item | undefined) => {
     if (!item) return;
-    if (item.kind === "add") {
-      const parsed = keep ? { title: q, due: null, listId: null, priority: "none" as const, repeat: null } : parseQuickAdd(q, now, lists);
+    if (item.kind === "add-task") {
       const task = store.addTask({ title: parsed.title, due: parsed.due, listId: parsed.listId ?? undefined, priority: parsed.priority, repeat: parsed.repeat });
       ui.closeSearch();
       ui.showToast(`Added “${task.title}”`);
+    } else if (item.kind === "add-event") {
+      ui.closeSearch();
+      if (parsed.due) {
+        const day = parsed.due.slice(0, 10);
+        const timed = parseDue(parsed.due).hasTime;
+        const start = parsed.due;
+        // An hour long, which may run past midnight.
+        const end = timed ? makeDue(new Date(parseDue(parsed.due).date.getTime() + 3_600_000), true) : day;
+        const event = store.addEvent({ title: parsed.title, allDay: !timed, start, end });
+        ui.showToast(`Added “${event.title}”`);
+      } else {
+        // No day or time was written: the New event card asks, with the title already in.
+        ui.openNewEvent(dateKey(now), undefined, parsed.title);
+      }
     } else if (item.kind === "task") {
       ui.closeSearch();
-      ui.openTask(item.task.id);
-    } else {
+      if (item.task.deletedAt !== null) router.navigate("/completed");
+      else ui.openTask(item.task.id);
+    } else if (item.kind === "event") {
+      ui.closeSearch();
+      ui.openEvent(item.event.id, item.event.start.slice(0, 10));
+      router.navigate("/calendar");
+    } else if (item.kind === "project") {
+      ui.closeSearch();
+      router.navigate(`/projects/${item.project.id}`);
+    } else if (item.kind === "list") {
       ui.closeSearch();
       ui.selectList(item.list.id);
       router.navigate("/lists");
@@ -131,7 +162,7 @@ export function SearchDialog() {
               setActive(0);
             }}
           />
-          {activeItem?.kind === "add" && <span className="t3 hint-right">Enter to add</span>}
+          {(activeItem?.kind === "add-task" || activeItem?.kind === "add-event") && <span className="t3 hint-right">Enter to add</span>}
         </div>
         <div id="search-results" role="listbox" aria-label="Results">
           {sections.map((section) => (
@@ -147,22 +178,30 @@ export function SearchDialog() {
                   onMouseMove={() => setActive(flat.indexOf(item))}
                   onClick={() => pick(item)}
                 >
-                  {item.kind === "add" && (<><Icon name="plus" small />{item.label}</>)}
-                  {item.kind === "task" && (<><Icon name="check" small />{item.task.title}<span className="n">{item.list?.name}</span></>)}
-                  {item.kind === "list" && (<><Swatch colour={item.list.colour} />{item.list.name}<span className="n">{openCount(tasks, item.list.id)} open</span></>)}
+                  {item.kind === "add-task" && (<><Icon name="check" small />{item.label}</>)}
+                  {item.kind === "add-event" && (<><Icon name="cal" small />{item.label}</>)}
+                  {item.kind === "task" && (<><Icon name="check" small />{item.task.title}<span className="n">{item.task.deletedAt !== null ? "Deleted" : item.list?.name}</span></>)}
+                  {item.kind === "event" && (<><Icon name="cal" small />{item.event.title}<span className="n"> · {dayText(item.event.start.slice(0, 10), now)}</span></>)}
+                  {item.kind === "list" && (<><Swatch colour={item.list.colour} />{item.list.name}</>)}
+                  {item.kind === "project" && (<><Icon name="folder" small />{item.project.name}</>)}
                 </div>
               ))}
             </div>
           ))}
         </div>
-        {flat.some((i) => i.kind === "add") && (
+        {q && !found && (
+          <div className="no-results" role="status">
+            <b>No results for “{q}”</b>
+            <span className="t3">Nothing in tasks, events, lists or projects matches. Search covers completed tasks and the last 30 days of deleted ones.</span>
+          </div>
+        )}
+        {flat.some((i) => i.kind === "add-task") && (
           <label className="check-row search-hint">
             <input type="checkbox" className="check" checked={keep} onChange={(e) => setKeep(e.target.checked)} />
             Keep as typed
           </label>
         )}
         {!q && <p className="t3 search-hint">Type to search, or add a task in plain words.</p>}
-        {q && sections.length === 0 && <p className="t3 search-hint">No match.</p>}
       </div>
     </div>
     </Portal>

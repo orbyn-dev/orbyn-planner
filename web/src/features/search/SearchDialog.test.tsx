@@ -39,10 +39,10 @@ describe("Search or add", () => {
     const input = screen.getByRole("combobox", { name: "Search or add" });
     expect(input).toHaveFocus();
     await userEvent.type(input, "err");
-    expect(options()).toEqual(["Errands1 open", "Add task “err”"]);
+    expect(options()).toEqual(["Add task “err”", "Add event “err”", "Errands"]);
     await userEvent.clear(input);
     await userEvent.type(input, "dent");
-    expect(options()[0]).toBe("Book the dentistErrands");
+    expect(options()).toContain("Book the dentistErrands");
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByRole("dialog", { name: "Search or add" })).not.toBeInTheDocument();
     expect(field).toHaveFocus();
@@ -53,14 +53,15 @@ describe("Search or add", () => {
     await userEvent.keyboard("{Control>}k{/Control}");
     const input = screen.getByRole("combobox", { name: "Search or add" });
     await userEvent.type(input, "b");
-    // Two tasks, the Inbox list, then Add.
-    expect(options()).toEqual(["Book the dentistErrands", "Buy stampsInbox", "Inbox1 open", "Add task “b”"]);
+    // Add first (a task, then an event), then the two tasks and the Inbox list.
+    expect(options()).toEqual(["Add task “b”", "Add event “b”", "Book the dentistErrands", "Buy stampsInbox", "Inbox"]);
     expect(screen.getAllByRole("option")[0]).toHaveAttribute("aria-selected", "true");
-    await userEvent.keyboard("{ArrowDown}");
-    expect(screen.getAllByRole("option")[1]).toHaveAttribute("aria-selected", "true");
-    await userEvent.keyboard("{ArrowUp}{ArrowUp}");
+    await userEvent.keyboard("{ArrowDown}{ArrowDown}{ArrowDown}");
     expect(screen.getAllByRole("option")[3]).toHaveAttribute("aria-selected", "true");
-    await userEvent.keyboard("{ArrowDown}{ArrowDown}{Enter}");
+    await userEvent.keyboard("{ArrowUp}{ArrowUp}{ArrowUp}{ArrowUp}");
+    expect(screen.getAllByRole("option")[4]).toHaveAttribute("aria-selected", "true");
+    await userEvent.keyboard("{ArrowUp}");
+    await userEvent.keyboard("{Enter}");
     const panel = await screen.findByRole("complementary", { name: "Task" });
     expect(within(panel).getByRole("textbox", { name: "Title" })).toHaveValue("Buy stamps");
     expect(store.getState().tasks).toHaveLength(2);
@@ -69,7 +70,8 @@ describe("Search or add", () => {
   it("offers to add a task in plain words when nothing matches, and Enter adds it", async () => {
     const { store, errands } = await open();
     await userEvent.keyboard("{Control>}k{/Control}");
-    await userEvent.type(screen.getByRole("combobox", { name: "Search or add" }), "call mum friday 3pm #errands !high{Enter}");
+    await userEvent.type(screen.getByRole("combobox", { name: "Search or add" }), "call mum friday 3pm #errands !high");
+    await userEvent.keyboard("{ArrowDown}{Enter}"); // the event is first when a time is written; the task is second
     await waitFor(() => expect(store.getState().tasks).toHaveLength(3));
     const added = store.getState().tasks.find((t) => t.title === "call mum")!;
     expect(added).toMatchObject({ due: "2026-11-13T15:00", priority: "high", listId: errands.id });
@@ -87,7 +89,7 @@ describe("Search or add", () => {
     const { errands } = await open();
     await userEvent.click(screen.getByRole("button", { name: "Search or add" }));
     await userEvent.type(screen.getByRole("combobox", { name: "Search or add" }), "errands");
-    await userEvent.click(screen.getAllByRole("option")[0]!);
+    await userEvent.click(screen.getByRole("option", { name: "Errands" }));
     expect(window.location.pathname).toBe("/lists");
     expect(screen.getByRole("heading", { level: 1, name: "Errands" })).toBeInTheDocument();
     expect(errands.name).toBe("Errands");
@@ -101,5 +103,71 @@ describe("Search or add", () => {
     await userEvent.tab();
     expect(screen.getByRole("dialog", { name: "Search or add" }).contains(document.activeElement)).toBe(true);
     expect(input).toBeInTheDocument();
+  });
+
+  it("a time in the words offers an event first, with its day and time, then the task with its day only", async () => {
+    await open();
+    await userEvent.keyboard("{Control>}k{/Control}");
+    await userEvent.type(screen.getByRole("combobox", { name: "Search or add" }), "dentist friday 3pm");
+    expect(options().slice(0, 2)).toEqual(["Add event “dentist” · Fri 13 Nov, 15:00", "Add task “dentist” · due Fri 13 Nov"]);
+    expect(screen.getByText("Enter to add")).toBeInTheDocument();
+    expect(screen.getAllByRole("option")[0]).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("Enter on the event adds it for an hour at that time", async () => {
+    const { store } = await open();
+    await userEvent.keyboard("{Control>}k{/Control}");
+    await userEvent.type(screen.getByRole("combobox", { name: "Search or add" }), "call dentist friday 3pm{Enter}");
+    await waitFor(() => expect(store.getState().events).toHaveLength(1));
+    expect(store.getState().events[0]).toMatchObject({ title: "call dentist", start: "2026-11-13T15:00", end: "2026-11-13T16:00", allDay: false });
+  });
+
+  it("an event with no day or time opens the New event card with the title in", async () => {
+    await open();
+    await userEvent.keyboard("{Control>}k{/Control}");
+    await userEvent.type(screen.getByRole("combobox", { name: "Search or add" }), "plumber invoice");
+    await userEvent.click(screen.getByRole("option", { name: "Add event “plumber invoice”" }));
+    const dialog = await screen.findByRole("dialog", { name: "New event" });
+    expect(within(dialog).getByLabelText("Title")).toHaveValue("plumber invoice");
+  });
+
+  it("finds events under Calendar and opens one in the calendar", async () => {
+    const { store } = await open();
+    act(() => {
+      store.addEvent({ title: "Dentist check-up", start: "2026-08-14T09:00", end: "2026-08-14T10:00" });
+    });
+    await userEvent.keyboard("{Control>}k{/Control}");
+    await userEvent.type(screen.getByRole("combobox", { name: "Search or add" }), "dentist");
+    const group = screen.getByRole("group", { name: "Calendar" });
+    expect(within(group).getByRole("option")).toHaveTextContent("Dentist check-up · Fri 14 Aug");
+    await userEvent.click(within(group).getByRole("option"));
+    expect(window.location.pathname).toBe("/calendar");
+    expect(await screen.findByRole("complementary", { name: "Event" })).toBeInTheDocument();
+  });
+
+  it("finds projects, completed tasks and tasks deleted in the last 30 days", async () => {
+    const { store } = await open();
+    act(() => {
+      store.addProject({ name: "Kitchen plumbing", colour: "c2" });
+      const done = store.addTask({ title: "Plumber visit" });
+      store.updateTask(done.id, { done: true, completedAt: NOW.toISOString() });
+      const gone = store.addTask({ title: "Plumber quote" });
+      store.deleteTask(gone.id);
+    });
+    await userEvent.keyboard("{Control>}k{/Control}");
+    await userEvent.type(screen.getByRole("combobox", { name: "Search or add" }), "plumb");
+    expect(within(screen.getByRole("group", { name: "Projects" })).getByRole("option")).toHaveTextContent("Kitchen plumbing");
+    const tasks = within(screen.getByRole("group", { name: "Tasks" })).getAllByRole("option").map((o) => o.textContent);
+    expect(tasks).toEqual(["Plumber visitInbox", "Plumber quoteDeleted"]);
+  });
+
+  it("no results still offers the task and the event, and says what was searched", async () => {
+    await open();
+    await userEvent.keyboard("{Control>}k{/Control}");
+    await userEvent.type(screen.getByRole("combobox", { name: "Search or add" }), "plumber invoice");
+    expect(options()).toEqual(["Add task “plumber invoice”", "Add event “plumber invoice”"]);
+    const note = screen.getByText("No results for “plumber invoice”").parentElement!;
+    expect(note).toHaveTextContent("No results for “plumber invoice”");
+    expect(note).toHaveTextContent("Nothing in tasks, events, lists or projects matches. Search covers completed tasks and the last 30 days of deleted ones.");
   });
 });
