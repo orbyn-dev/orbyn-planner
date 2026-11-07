@@ -5,7 +5,8 @@ import { SyncLine, healthDelay, useSyncStatus, withPersistence, type SyncStatus 
 
 const cases: [SyncStatus, string][] = [
   [{ kind: "synced", devices: 2 }, "Synced · 2 devices"],
-  [{ kind: "connected" }, "Connected"],
+  [{ kind: "synced", devices: 1 }, "Synced · this device"],
+  [{ kind: "local" }, "On this device"],
   [{ kind: "syncing" }, "Syncing"],
   [{ kind: "offline", waiting: 3 }, "Offline · 3 changes waiting"],
   [{ kind: "offline", waiting: 1 }, "Offline · 1 change waiting"],
@@ -93,11 +94,11 @@ afterEach(() => {
 });
 
 describe("useSyncStatus", () => {
-  it("says Connected when the engine answers", async () => {
+  it("says On this device when no account is syncing and the engine answers", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => ok()));
     render(<Probe />);
     expect(screen.getByRole("status")).toHaveTextContent("Syncing");
-    expect(await screen.findByText("Connected")).toBeInTheDocument();
+    expect(await screen.findByText("On this device")).toBeInTheDocument();
   });
 
   it("ends in the error state when the check times out, never stuck on Syncing", async () => {
@@ -112,7 +113,7 @@ describe("useSyncStatus", () => {
     const fetchMock = vi.fn(async () => ok());
     vi.stubGlobal("fetch", fetchMock);
     render(<Probe />);
-    await screen.findByText("Connected");
+    await screen.findByText("On this device");
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     act(() => {
@@ -128,7 +129,7 @@ describe("useSyncStatus", () => {
       window.dispatchEvent(new Event("online"));
     });
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
-    expect(await screen.findByText("Connected")).toBeInTheDocument();
+    expect(await screen.findByText("On this device")).toBeInTheDocument();
   });
 
   it("never runs two checks at once, so focus changes cannot stack timer loops", async () => {
@@ -150,7 +151,7 @@ describe("useSyncStatus", () => {
     await act(async () => {
       release?.();
     });
-    expect(await screen.findByText("Connected")).toBeInTheDocument();
+    expect(await screen.findByText("On this device")).toBeInTheDocument();
     act(() => {
       document.dispatchEvent(new Event("visibilitychange"));
     });
@@ -167,7 +168,7 @@ describe("useSyncStatus", () => {
       await vi.advanceTimersByTimeAsync(5_100);
     });
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(await screen.findByText("Connected")).toBeInTheDocument();
+    expect(await screen.findByText("On this device")).toBeInTheDocument();
   });
 });
 

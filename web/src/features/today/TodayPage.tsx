@@ -248,7 +248,7 @@ export function TodayPage() {
   const weekList = (
     <ul aria-label="The week at a glance">
       {week.map((d) => (
-        <li className="kv" key={d.key}>
+        <li className="kv wk" key={d.key}>
           <span>{WEEKDAYS[d.date.getDay()]!.slice(0, 3)} {d.date.getDate()}</span>
           <b className={d.total === 0 ? "t3" : undefined}>{d.label}</b>
         </li>
