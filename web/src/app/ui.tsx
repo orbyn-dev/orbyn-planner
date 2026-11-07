@@ -43,9 +43,6 @@ interface Ui {
   newEventTime: string | null;
   openNewEvent: (date?: string, time?: string) => void;
   closeNewEvent: () => void;
-  calendarsOpen: boolean;
-  openCalendars: () => void;
-  closeCalendars: () => void;
   listId: string | null;
   selectList: (id: string) => void;
   newTaskOpen: boolean;
@@ -69,7 +66,6 @@ export function UiProvider({ children }: { children: ReactNode }) {
   const [eventKey, setEventKey] = useState<EventKey | null>(null);
   const [newEventDate, setNewEventDate] = useState<string | null>(null);
   const [newEventTime, setNewEventTime] = useState<string | null>(null);
-  const [calendarsOpen, setCalendarsOpen] = useState(false);
   const [listId, setListId] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [newTaskOpen, setNewTaskOpen] = useState(false);
@@ -103,9 +99,6 @@ export function UiProvider({ children }: { children: ReactNode }) {
         setNewEventDate(date ?? "");
       },
       closeNewEvent: () => setNewEventDate(null),
-      calendarsOpen,
-      openCalendars: () => setCalendarsOpen(true),
-      closeCalendars: () => setCalendarsOpen(false),
       listId,
       selectList: setListId,
       newTaskOpen,
@@ -122,7 +115,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
       showToast,
       dismissToast,
     }),
-    [newTaskDefaults, taskId, eventKey, newEventDate, newEventTime, calendarsOpen, listId, newTaskOpen, searchOpen, toast, showToast, dismissToast],
+    [newTaskDefaults, taskId, eventKey, newEventDate, newEventTime, listId, newTaskOpen, searchOpen, toast, showToast, dismissToast],
   );
   return <UiContext.Provider value={value}>{children}</UiContext.Provider>;
 }
