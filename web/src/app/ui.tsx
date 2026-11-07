@@ -72,6 +72,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
   const [eventKey, setEventKey] = useState<EventKey | null>(null);
   const [newEventDate, setNewEventDate] = useState<string | null>(null);
   const [newEventTime, setNewEventTime] = useState<string | null>(null);
+  const [newEventTitle, setNewEventTitle] = useState("");
   const [listId, setListId] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
