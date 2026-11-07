@@ -9,7 +9,7 @@ import { ClockProvider } from "../../app/clock";
 import { SIGN_IN_UNAVAILABLE, authCryptoAvailable, registerAuthCrypto } from "../../api/authCrypto";
 import { cryptoLoad, ensureRealAuthCrypto, loadRealAuthCrypto, resetCryptoLoad, setCryptoLoader } from "../../api/realCrypto";
 import { createMemoryKeyStore, type KeyStore } from "../../api/keyStore";
-import { FakeAuthCrypto } from "../../api/testing/FakeAuthCrypto";
+import { FakeAuthCrypto, fakeFreed } from "../../api/testing/FakeAuthCrypto";
 import { PROTECTION_GENESIS } from "../../api/testing/protectionFake";
 import { createMockEngine, MOCK_TOTP_CODE, type MockEngine } from "../../api/testing/MockEngine";
 import { confirmProtection, confirmTotp, enrolTotp, readProtection, scheduleDeletion, signIn, signOut, signUp } from "../../auth/flows";
@@ -2167,12 +2167,10 @@ describe("sign-up review fixes", () => {
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
     await screen.findByLabelText("Name");
     expect(screen.getByLabelText("Name")).toHaveAttribute("placeholder", "What should we call you?");
+    engine.spendInvite("K7QM-2XWH-9QXA-LC2D"); // another sign-up used it meanwhile
     await userEvent.type(screen.getByLabelText("Email"), SAM.email);
     await userEvent.type(screen.getByLabelText("Password"), SAM.password);
     await userEvent.click(screen.getByRole("button", { name: "Continue with a password" }));
-    await screen.findByLabelText("Code");
-    engine.spendInvite("K7QM-2XWH-9QXA-LC2D");
-    await verifyEmail(SAM.email);
     await userEvent.click(within(await screen.findByRole("alert")).getByRole("button", { name: "Back to the form" }));
     engine.requireInvites("AAAA-BBBB-CCCC-DDDD");
     await userEvent.type(await screen.findByLabelText("Invite code"), "AAAA-BBBB-CCCC-DDDD");
@@ -2227,6 +2225,12 @@ describe("Start over after the keys could not be held", () => {
     expect(within(card).getByRole("link", { name: "hello@orbyn.dev" })).toBeInTheDocument();
     expect(within(card).getByRole("button", { name: "Copy address" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Nothing planned today" })).toBeNull();
+  });
+
+  it("the device keys are freed when the card shows, since nothing here can use them", async () => {
+    const before = fakeFreed.keys;
+    await signUpUntilKeysLost();
+    expect(fakeFreed.keys).toBeGreaterThan(before);
   });
 
   it("Start over asks for the link and shows the same words whether or not anything was sent, with a 60 second wait", async () => {

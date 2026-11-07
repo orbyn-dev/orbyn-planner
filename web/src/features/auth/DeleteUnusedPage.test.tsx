@@ -146,7 +146,7 @@ describe("the Start over link", () => {
       if (seen.has(file)) return;
       seen.add(file);
       const text = fs.readFileSync(file, "utf8");
-      for (const m of text.matchAll(/(?:from|import\()\s*"(\.[^"]+)"/g)) {
+      for (const m of text.matchAll(/(?:from|import\(|^import)\s*"(\.[^"]+)"/gm)) {
         const base = new URL(m[1]!, `file://${file}`).pathname;
         const target = ["", ".ts", ".tsx", "/index.ts", "/index.tsx"].map((x) => base + x).find((x) => { try { return /\.(ts|tsx)$/.test(x) && fs.readFileSync(x, "utf8") !== undefined; } catch { return false; } });
         if (target) walk(target);
