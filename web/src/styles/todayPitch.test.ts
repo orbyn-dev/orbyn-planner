@@ -9,10 +9,10 @@ const rule = (selector: string) => {
   return css.slice(i, css.indexOf("}", i));
 };
 
-describe("Today pitch (Planner Designs v47 match pass)", () => {
-  it("a Today row is 40 px and the week list row 28 px, and the lists add the 2 px gap so the pitch is 42 and 30", () => {
-    expect(rule(".row {")).toContain("min-height: var(--sp-40)");
-    expect(rule(".kv.wk")).toContain("height: var(--sp-28)");
+describe("Today pitch (Planner Designs v49)", () => {
+  it("a Today row is 38 px and a week list row 26 px, and the lists add the 2 px gap, so the rows are 40 px and 28 px apart", () => {
+    expect(rule(".row {")).toContain("min-height: var(--sp-38)");
+    expect(rule(".kv.wk")).toContain("height: var(--sp-26)");
     expect(rule(".blk {")).toContain("gap: var(--sp-2)");
     const lists = rule(".blk ul");
     expect(lists).toContain("display: flex");

@@ -104,15 +104,15 @@ button { cursor: pointer; }
 
 .cols { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: var(--sp-28); padding: var(--sp-10) var(--sp-28) var(--sp-24); min-height: 0; }
 .blk { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
-/* The pitch of Today's lists is the row plus the gap: 40 + 2 for rows, 28 + 2 for the week at a glance. The gap of .blk does not reach the
-   rows (they are in a ul), so the lists carry it. */
+/* The pitch of Today's lists is the row plus the gap: 38 + 2 = 40 for rows, 26 + 2 = 28 for the week at a glance (Planner Designs v49). The gap of
+   .blk does not reach the rows (they are in a ul), so the lists carry it. */
 .blk ul { display: flex; flex-direction: column; gap: var(--sp-2); }
 .bh { display: flex; justify-content: space-between; align-items: baseline; font-size: var(--fs-12); color: var(--t3); padding: var(--sp-12) 0 var(--sp-6); }
 .bh b { font-weight: var(--fw-medium); color: var(--t1); font-size: var(--fs-13); }
 .bh b.amber { color: var(--amber-text); }
 .row {
   display: grid; grid-template-columns: var(--sp-56) var(--sp-16) minmax(0, 1fr) auto; align-items: center; gap: var(--sp-10);
-  min-height: var(--sp-40); border-top: var(--bw) solid var(--line); padding: var(--sp-6) 0;
+  min-height: var(--sp-38); border-top: var(--bw) solid var(--line); padding: var(--sp-6) 0;
 }
 .row:last-child { border-bottom: var(--bw) solid var(--line); }
 .row .time { font-family: var(--mono); font-size: var(--fs-11-5); color: var(--t3); }
@@ -133,7 +133,7 @@ button { cursor: pointer; }
 .empty p { color: var(--t3); }
 .blk .empty { flex: none; padding: calc(var(--sp-20) + var(--sp-48)) 0 var(--sp-20); }
 /* The week at a glance: 28 px between the days. */
-.kv.wk { height: var(--sp-28); }
+.kv.wk { height: var(--sp-26); }
 .pad { padding: var(--sp-6) var(--sp-28) var(--sp-24); display: flex; flex-direction: column; gap: var(--sp-12); min-height: 0; }
 .quiet { color: var(--t3); }
 
