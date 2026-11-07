@@ -141,7 +141,7 @@ export function TimeGrid({ days, occurrences, today, now, mode }: { days: string
               ))}
             </div>
             {days.map((d) => (
-              <div className="dcol" key={d} data-day={d}>
+              <div className={d === today ? "dcol today" : "dcol"} key={d} data-day={d}>
                 {Array.from({ length: 24 }, (_, h) => (
                   <div
                     className="slot"
