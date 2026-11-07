@@ -20,6 +20,9 @@ services:
     environment:
       # Where the planner is served: the account-deletion email's cancel link points to <this>/cancel-deletion#<token>.
       ORBYN_ACCOUNT_URL: http://127.0.0.1:5173
+      # The engine asks for an invite code to sign up unless this is open. The end-to-end sign-ups make fresh accounts with no code, so this
+      # throwaway server is open; the invite screens are covered by the planner's own tests against the check and finish answers.
+      ORBYN_SIGNUP: open
   worker:
     environment:
       # The worker opens the queued message with the same setup as the server.
