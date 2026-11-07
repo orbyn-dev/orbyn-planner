@@ -99,12 +99,12 @@ function todayData(store: PlannerStore, w: World): void {
   event("Standup", w.work, 9, "09:30", "10:00");
   event("Design review", w.work, 10, "11:00", "12:00");
   event("Dentist", w.personal, 13, "15:00", "16:00");
-  const task = (title: string, due: string, listId: string) => store.addTask({ title, due, listId });
-  task("Send the launch brief to Priya", `${day(7)}T12:00`, w.workList);
-  task("Fix the sign-up email bug", `${day(7)}T17:00`, w.workList);
+  const task = (title: string, due: string, listId: string, extra: { priority?: "high" | "low"; reminder?: number } = {}) => store.addTask({ title, due, listId, ...extra });
+  task("Send the launch brief to Priya", `${day(7)}T12:00`, w.workList, { priority: "high" });
+  task("Fix the sign-up email bug", `${day(7)}T17:00`, w.workList, { priority: "high", reminder: 60 });
   task("Pick up dry cleaning", day(7), w.errands);
   store.setDone(task("Reply to the school about the trip", day(7), w.inbox).id, true);
-  task("Review the Q2 budget", day(6), w.workList);
+  task("Review the Q2 budget", day(6), w.workList, { priority: "high" });
   task("Birthday candles", day(8), w.errands);
   for (const title of ["Draft the agenda", "Book the venue", "Order the cake"]) task(title, day(9), w.workList);
   task("Confirm the guest list", day(10), w.workList);
@@ -155,7 +155,6 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
       event("Call with the builder", 4, "11:00", "12:00", w.personal);
       event("Lunch with Maya", 5, "13:00", "14:00", w.family);
       event("Book club", 6, "15:00", "17:00", w.personal);
-      event("Dentist", 6, "15:30", "16:30", w.work);
       if (scenario === "day") {
         event("Team planning: spring launch", 7, "09:00", "11:00", w.work, "Room 3");
         event("Lunch with Maya", 7, "13:00", "14:00", w.family);
@@ -211,7 +210,6 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
     case "lists-empty": {
       const groceries = store.addList("Groceries", "c2");
       const home = store.addList("Home", "c4");
-      store.addList("Errands", "c2");
       for (const t of ["Oat milk", "Coffee beans", "Bread"]) store.addTask({ title: t, listId: groceries.id });
       for (const t of ["Water the plants", "Fix the shelf"]) store.addTask({ title: t, listId: home.id });
       for (const t of ["Reply to the school", "Renew library books", "Book the dentist"]) store.addTask({ title: t, listId: w.inbox });
