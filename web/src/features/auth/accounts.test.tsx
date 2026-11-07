@@ -9,7 +9,7 @@ import { ClockProvider } from "../../app/clock";
 import { SIGN_IN_UNAVAILABLE, authCryptoAvailable, registerAuthCrypto } from "../../api/authCrypto";
 import { cryptoLoad, ensureRealAuthCrypto, loadRealAuthCrypto, resetCryptoLoad, setCryptoLoader } from "../../api/realCrypto";
 import { createMemoryKeyStore, type KeyStore } from "../../api/keyStore";
-import { FakeAuthCrypto } from "../../api/testing/FakeAuthCrypto";
+import { FakeAuthCrypto, fakeFreed } from "../../api/testing/FakeAuthCrypto";
 import { PROTECTION_GENESIS } from "../../api/testing/protectionFake";
 import { createMockEngine, MOCK_TOTP_CODE, type MockEngine } from "../../api/testing/MockEngine";
 import { confirmProtection, confirmTotp, enrolTotp, readProtection, scheduleDeletion, signIn, signOut, signUp } from "../../auth/flows";
@@ -90,14 +90,14 @@ afterEach(() => {
 async function acceptInvite(code = "K7QM-2XWH-9QXA-LC2D") {
   await userEvent.type(await screen.findByLabelText("Invite code"), code);
   await userEvent.click(screen.getByRole("button", { name: "Continue" }));
-  await screen.findByLabelText("Name");
+  await screen.findByLabelText("Name (optional)");
   engine.calls.splice(0); // the tests below the sign-up form look at what the form itself sends
 }
 
 async function fillSignUp(user = SAM) {
   await userEvent.click(await screen.findByRole("button", { name: "Get started" }));
   await acceptInvite();
-  await userEvent.type(screen.getByLabelText("Name"), user.name);
+  await userEvent.type(screen.getByLabelText("Name (optional)"), user.name);
   await userEvent.type(screen.getByLabelText("Email"), user.email);
   await userEvent.type(screen.getByLabelText("Password"), user.password);
   await userEvent.click(screen.getByRole("button", { name: "Continue with a password" }));
@@ -1330,7 +1330,7 @@ describe("email verification at sign-up", () => {
     await mount(auth, "/today", strict);
     await userEvent.click(await screen.findByRole("button", { name: "Get started" }));
     await acceptInvite();
-    await userEvent.type(screen.getByLabelText("Name"), SAM.name);
+    await userEvent.type(screen.getByLabelText("Name (optional)"), SAM.name);
     await userEvent.type(screen.getByLabelText("Email"), SAM.email);
     await userEvent.type(screen.getByLabelText("Password"), SAM.password);
     await userEvent.click(screen.getByRole("button", { name: "Continue with a password" }));
@@ -1435,7 +1435,7 @@ describe("email verification at sign-up", () => {
     await mount(a);
     await userEvent.click(await screen.findByRole("button", { name: "Get started" }));
     await acceptInvite();
-    await userEvent.type(screen.getByLabelText("Name"), SAM.name);
+    await userEvent.type(screen.getByLabelText("Name (optional)"), SAM.name);
     await userEvent.type(screen.getByLabelText("Email"), SAM.email);
     await userEvent.type(screen.getByLabelText("Password"), SAM.password);
     await userEvent.click(screen.getByRole("button", { name: "Continue with a password" }));
@@ -1919,7 +1919,7 @@ describe("an account that was deleted", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Create a new account" }));
     expect(await screen.findByLabelText("Invite code")).toBeInTheDocument();
     await acceptInvite();
-    expect(await screen.findByLabelText("Name")).toBeInTheDocument();
+    expect(await screen.findByLabelText("Name (optional)")).toBeInTheDocument();
     expect(screen.queryByRole("group", { name: "This account was deleted" })).toBeNull();
   });
 });
@@ -2094,7 +2094,7 @@ describe("invite sign-up", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Get started" }));
     await userEvent.type(await screen.findByLabelText("Invite code"), CODE);
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
-    await screen.findByLabelText("Name");
+    await screen.findByLabelText("Name (optional)");
     await userEvent.type(screen.getByLabelText("Email"), SAM.email);
     await userEvent.type(screen.getByLabelText("Password"), SAM.password);
     await userEvent.click(screen.getByRole("button", { name: "Continue with a password" }));
@@ -2113,7 +2113,7 @@ describe("invite sign-up", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Get started" }));
     await userEvent.type(await screen.findByLabelText("Invite code"), CODE);
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
-    await screen.findByLabelText("Name");
+    await screen.findByLabelText("Name (optional)");
     await userEvent.type(screen.getByLabelText("Email"), SAM.email);
     await userEvent.type(screen.getByLabelText("Password"), SAM.password);
     await userEvent.click(screen.getByRole("button", { name: "Continue with a password" }));
@@ -2135,7 +2135,7 @@ describe("invite sign-up", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Get started" }));
     await userEvent.type(await screen.findByLabelText("Invite code"), CODE);
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
-    await screen.findByLabelText("Name");
+    await screen.findByLabelText("Name (optional)");
     engine.spendInvite(CODE);
     await userEvent.type(screen.getByLabelText("Email"), SAM.email);
     await userEvent.type(screen.getByLabelText("Password"), SAM.password);
@@ -2158,9 +2158,39 @@ describe("invite sign-up", () => {
 });
 
 
+describe("sign-up review fixes", () => {
+  it("Back to the form after a refused invite leaves no password in the form", async () => {
+    engine.requireInvites("K7QM-2XWH-9QXA-LC2D");
+    await mount(services());
+    await userEvent.click(await screen.findByRole("button", { name: "Get started" }));
+    await userEvent.type(await screen.findByLabelText("Invite code"), "K7QM-2XWH-9QXA-LC2D");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByLabelText("Name (optional)");
+    expect(screen.getByLabelText("Name (optional)")).toHaveAttribute("placeholder", "What should we call you?");
+    engine.spendInvite("K7QM-2XWH-9QXA-LC2D"); // another sign-up used it meanwhile
+    await userEvent.type(screen.getByLabelText("Email"), SAM.email);
+    await userEvent.type(screen.getByLabelText("Password"), SAM.password);
+    await userEvent.click(screen.getByRole("button", { name: "Continue with a password" }));
+    await userEvent.click(within(await screen.findByRole("alert")).getByRole("button", { name: "Back to the form" }));
+    engine.requireInvites("AAAA-BBBB-CCCC-DDDD");
+    await userEvent.type(await screen.findByLabelText("Invite code"), "AAAA-BBBB-CCCC-DDDD");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByLabelText("Password")).toHaveValue("");
+  });
+
+  it("the Start over page's links open the right screen: /sign-up the invite step, /sign-in the sign-in form", async () => {
+    await mount(services(), "/sign-up");
+    expect(await screen.findByLabelText("Invite code")).toBeInTheDocument();
+    cleanup();
+    document.getElementById("root")?.remove();
+    await mount(services(), "/sign-in");
+    expect(await screen.findByRole("form", { name: "Sign in" })).toBeInTheDocument();
+  });
+});
+
 describe("Start over after the keys could not be held", () => {
   /** A browser that can make the wrapping secret once (the sign-up checks) and never again, so the keys can be neither stored nor held. */
-  async function signUpUntilKeysLost() {
+  async function signUpUntilKeysLost(beforeVerify?: () => void) {
     const keys = createMemoryKeyStore();
     let calls = 0;
     const auth = createAuthServices({
@@ -2178,10 +2208,12 @@ describe("Start over after the keys could not be held", () => {
     await mount(auth);
     await userEvent.click(await screen.findByRole("button", { name: "Get started" }));
     await acceptInvite();
-    await userEvent.type(screen.getByLabelText("Name"), SAM.name);
+    await userEvent.type(screen.getByLabelText("Name (optional)"), SAM.name);
     await userEvent.type(screen.getByLabelText("Email"), SAM.email);
     await userEvent.type(screen.getByLabelText("Password"), SAM.password);
     await userEvent.click(screen.getByRole("button", { name: "Continue with a password" }));
+    await screen.findByLabelText("Code");
+    beforeVerify?.();
     await verifyEmail(SAM.email);
     return screen.findByRole("alert", { name: "Your account was created, but this browser can’t keep its keys" });
   }
@@ -2197,13 +2229,25 @@ describe("Start over after the keys could not be held", () => {
     expect(screen.queryByRole("heading", { name: "Nothing planned today" })).toBeNull();
   });
 
+  it("the device keys are freed when the card shows, since nothing here can use them", async () => {
+    // Let any delayed clean-up left by an earlier test run first: it frees keys too, and would hide a missing cancel.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    let before = -1;
+    await signUpUntilKeysLost(() => {
+      before = fakeFreed.keys; // counted from the Verify click to the card, nothing else in between
+    });
+    expect(before).toBeGreaterThanOrEqual(0);
+    expect(fakeFreed.keys).toBeGreaterThan(before);
+  });
+
   it("Start over asks for the link and shows the same words whether or not anything was sent, with a 60 second wait", async () => {
     const card = await signUpUntilKeysLost();
     await userEvent.click(within(card).getByRole("button", { name: "Start over" }));
     expect(await screen.findByRole("group", { name: "Check your email" })).toHaveTextContent("If this account can be deleted this way, we’ve sent a link to sam@example.com. It works once and expires in 24 hours.");
     expect(engine.deleteUnusedAsked).toEqual(["sam@example.com"]);
     expect(screen.getByText(/Send a new link in 1:00/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Change email" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Change email" })).toBeNull(); // the account exists and its invite is spent
+    expect(screen.getByRole("button", { name: "Back to sign in" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Send a new link" })).toBeNull();
   });
 

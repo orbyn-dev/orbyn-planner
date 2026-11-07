@@ -65,6 +65,12 @@ function RepairNotice({ onApprove, onDismiss }: { onApprove: () => void; onDismi
   );
 }
 
+/** The page a link opened: /sign-up and /sign-in (the Start over page links to them) go straight to that screen. */
+export function screenAtAddress(): AuthScreen {
+  const path = window.location.pathname.replace(/\/+$/, "");
+  return path === "/sign-up" ? "signup" : path === "/sign-in" ? "signin" : "landing";
+}
+
 /** Shows the public pages while signed out, the approval screen while a device waits, and the planner otherwise. */
 export function AuthGate({ children }: { children: ReactNode }) {
   const auth = useAuth();
@@ -72,7 +78,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const deleted = useSyncExternalStore(deletedAccount.subscribe, deletedAccount.get);
   const checking = useSyncExternalStore(accountCheck.subscribe, accountCheck.get);
   /** Where the sign-up or sign-in the person chose on the deleted-account screen opens. */
-  const [leaveTo, setLeaveTo] = useState<AuthScreen>("landing");
+  const [leaveTo, setLeaveTo] = useState<AuthScreen>(screenAtAddress);
   if (!auth) return <>{children}</>;
   // The account was deleted: nothing else opens until the person has chosen what to do with this browser's copy.
   if (deleted) {
