@@ -170,12 +170,18 @@ async function ours(theme) {
   await guardNetwork(context, "ours");
   const page = await context.newPage();
   await page.clock.setFixedTime(new Date(frame.now ?? PINNED_NOW));
-  const query = new URLSearchParams({ scenario: frame.scenario, route: frame.route, theme });
+  // A frame's own preferences (for example days shown), set before the page starts.
+  if (frame.prefs) await page.addInitScript((prefs) => localStorage.setItem("orbyn-planner.prefs", JSON.stringify(prefs)), frame.prefs);
+  const query = new URLSearchParams({ scenario: frame.scenario, route: frame.route, theme, ...(frame.now ? { now: frame.now } : {}) });
   await page.goto(`${origin}/tools/match/index.html?${query}`);
   await page.waitForSelector(".app", { timeout: 20000 });
+  if (frame.offline) await context.setOffline(true);
   for (const step of frame.steps ?? []) {
     if (step.role) await page.getByRole(step.role, { name: step.name }).first().click();
     else if (step.click) await page.locator(step.click).first().click();
+    else if (step.fill) await page.locator(step.fill).first().fill(step.value);
+    else if (step.press) await page.keyboard.press(step.press);
+    else if (step.select) await page.locator(step.select).first().selectOption(step.value);
   }
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(400);

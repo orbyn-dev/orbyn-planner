@@ -22,6 +22,8 @@ export const SCENARIOS = [
   "phone-day-empty-wed",
   "phone-day-empty-fri",
   "tasks",
+  "today-event",
+  "lists-empty",
 ] as const;
 export type Scenario = (typeof SCENARIOS)[number];
 
@@ -56,14 +58,21 @@ function lists(store: PlannerStore) {
 }
 
 /** Calendars, lists and the Spring launch project (70% done, goal today), which every frame shares. */
-function world(store: PlannerStore): World {
-  const cal = (name: string, colour: ListColour) => store.getState().calendars.find((c) => c.name === name) ?? store.addCalendar(name, colour);
+function world(store: PlannerStore, withProject = true): World {
+  const cal = (name: string, colour: ListColour) => {
+    // A new planner already has a "Personal" calendar; it takes the colour the frames draw it in.
+    const found = store.getState().calendars.find((c) => c.name === name);
+    if (!found) return store.addCalendar(name, colour);
+    if (found.colour !== colour) store.updateCalendar(found.id, { colour });
+    return found;
+  };
+  // The frames draw Lunch with Maya and Maya’s birthday green, Book club and the Home tiling purple.
   const work = cal("Work", "c1");
-  const personal = cal("Personal", "c2");
-  const family = cal("Family", "c3");
+  const family = cal("Family", "c2");
+  const personal = cal("Personal", "c3");
   const { work: workList, errands, inbox } = lists(store);
   const spring = store.addProject({ name: "Spring launch", colour: "c1", goal: day(7) });
-  for (let i = 0; i < 10; i += 1) {
+  for (let i = 0; i < (withProject ? 10 : 0); i += 1) {
     const task = store.addTask({ title: `Launch step ${i + 1}`, listId: workList.id, projectId: spring.id });
     if (i < 7) {
       store.setDone(task.id, true);
@@ -85,17 +94,17 @@ function todayData(store: PlannerStore, w: World): void {
       people: (extra.people ?? []).map((email) => ({ email, response: "accepted" as const })),
     });
   event("Team planning: spring launch", w.work, 7, "09:00", "10:00", { place: "Room 3", people: [PEOPLE.sam, PEOPLE.priya] });
-  event("Lunch with Maya", w.personal, 7, "13:00", "14:00", { people: [PEOPLE.maya] });
-  event("Book club", w.family, 7, "15:00", "16:00", { place: "Library" });
+  event("Lunch with Maya", w.family, 7, "13:00", "14:00", { people: [PEOPLE.maya] });
+  event("Book club", w.personal, 7, "15:00", "16:00", { place: "Library" });
   event("Standup", w.work, 9, "09:30", "10:00");
   event("Design review", w.work, 10, "11:00", "12:00");
   event("Dentist", w.personal, 13, "15:00", "16:00");
-  const task = (title: string, due: string, listId: string) => store.addTask({ title, due, listId });
-  task("Send the launch brief to Priya", `${day(7)}T12:00`, w.workList);
-  task("Fix the sign-up email bug", `${day(7)}T17:00`, w.workList);
+  const task = (title: string, due: string, listId: string, extra: { priority?: "high" | "low"; reminder?: number } = {}) => store.addTask({ title, due, listId, ...extra });
+  task("Send the launch brief to Priya", `${day(7)}T12:00`, w.workList, { priority: "high" });
+  task("Fix the sign-up email bug", `${day(7)}T17:00`, w.workList, { priority: "high", reminder: 60 });
   task("Pick up dry cleaning", day(7), w.errands);
   store.setDone(task("Reply to the school about the trip", day(7), w.inbox).id, true);
-  task("Review the Q2 budget", day(6), w.workList);
+  task("Review the Q2 budget", day(6), w.workList, { priority: "high" });
   task("Birthday candles", day(8), w.errands);
   for (const title of ["Draft the agenda", "Book the venue", "Order the cake"]) task(title, day(9), w.workList);
   task("Confirm the guest list", day(10), w.workList);
@@ -111,11 +120,20 @@ function clearToday(store: PlannerStore): void {
 
 /** Seeds one scenario into an empty store: the data one design frame is drawn with. */
 export function seed(store: PlannerStore, scenario: Scenario): void {
-  const w = world(store);
+  const w = world(store, scenario !== "tasks");
   switch (scenario) {
     case "today":
+      todayData(store, w);
+      return;
     case "phone-today":
       todayData(store, w);
+      // The phone frame writes the shorter titles.
+      for (const [from, to] of [["Team planning: spring launch", "Team planning"], ["Send the launch brief to Priya", "Send the launch brief"], ["Reply to the school about the trip", "Reply to the school"]] as const) {
+        const task = store.getState().tasks.find((t) => t.title === from);
+        const event = store.getState().events.find((e) => e.title === from);
+        if (task) store.updateTask(task.id, { title: to });
+        if (event) store.updateEvent(event.id, { title: to });
+      }
       return;
     case "today-empty":
       todayData(store, w);
@@ -123,8 +141,8 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
       return;
     case "today-all-day": {
       todayData(store, w);
-      const home = store.addCalendar("Home", "c4");
-      store.addEvent({ title: "Home renovation: tiling", calendarId: home.id, allDay: true, start: day(6), end: day(8) });
+      const home = store.addCalendar("Home", "c3");
+      store.addEvent({ title: "Home renovation: tiling", calendarId: home.id, allDay: true, start: day(5), end: day(8) });
       store.addEvent({ title: "Maya’s birthday", calendarId: w.family, allDay: true, start: day(7), end: day(7) });
       return;
     }
@@ -134,14 +152,13 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
         store.addEvent({ title, calendarId, start: `${day(d)}T${from}`, end: `${day(d)}T${to}`, place });
       event("Launch stand-up", 2, "09:00", "09:30", w.work);
       event("Team planning", 3, "09:00", "10:00", w.work);
-      event("Call with the builder", 4, "11:00", "12:00", w.family);
-      event("Lunch with Maya", 5, "13:00", "14:00", w.personal);
-      event("Book club", 6, "15:00", "17:00", w.family);
-      event("Dentist", 6, "15:30", "16:30", w.personal);
+      event("Call with the builder", 4, "11:00", "12:00", w.personal);
+      event("Lunch with Maya", 5, "13:00", "14:00", w.family);
+      event("Book club", 6, "15:00", "17:00", w.personal);
       if (scenario === "day") {
         event("Team planning: spring launch", 7, "09:00", "11:00", w.work, "Room 3");
-        event("Lunch with Maya", 7, "13:00", "14:00", w.personal);
-        event("Book club", 7, "15:00", "17:00", w.family, "Library");
+        event("Lunch with Maya", 7, "13:00", "14:00", w.family);
+        event("Book club", 7, "15:00", "17:00", w.personal, "Library");
         store.addEvent({ title: "Maya’s birthday", calendarId: w.family, allDay: true, start: day(7), end: day(7) });
         store.addTask({ title: "Send the launch brief", due: `${day(7)}T12:00`, listId: w.workList });
         store.addTask({ title: "Pick up dry cleaning", due: day(7), listId: w.errands });
@@ -157,20 +174,47 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
     case "phone-week":
       store.addEvent({ title: "Launch stand-up", calendarId: w.work, start: `${day(3)}T09:00`, end: `${day(3)}T09:30` });
       store.addEvent({ title: "Team planning", calendarId: w.work, start: `${day(7)}T09:00`, end: `${day(7)}T10:00`, place: "Room 3" });
-      store.addEvent({ title: "Lunch with Maya", calendarId: w.personal, start: `${day(7)}T13:00`, end: `${day(7)}T14:00` });
-      store.addEvent({ title: "Book club", calendarId: w.family, start: `${day(7)}T15:00`, end: `${day(7)}T16:00`, place: "Library" });
+      store.addEvent({ title: "Lunch with Maya", calendarId: w.family, start: `${day(7)}T13:00`, end: `${day(7)}T14:00` });
+      store.addEvent({ title: "Book club", calendarId: w.personal, start: `${day(7)}T15:00`, end: `${day(7)}T16:00`, place: "Library" });
       store.addTask({ title: "Pick up dry cleaning", due: day(7), listId: w.errands });
       return;
     case "phone-week-tue":
       store.addEvent({ title: "Launch stand-up", calendarId: w.work, start: `${day(3)}T09:00`, end: `${day(3)}T09:30` });
       return;
     case "phone-day-wed":
-      store.addEvent({ title: "Dentist", calendarId: w.personal, start: `${day(4)}T10:00`, end: `${day(4)}T11:00`, place: "Dr Lee" });
-      store.addEvent({ title: "Call with Priya", calendarId: w.work, start: `${day(4)}T14:00`, end: `${day(4)}T14:45` });
+      store.addEvent({ title: "Launch stand-up", calendarId: w.work, start: `${day(3)}T09:00`, end: `${day(3)}T09:30` });
+      store.addEvent({ title: "Dentist", calendarId: w.work, start: `${day(4)}T10:00`, end: `${day(4)}T11:00`, place: "Dr Lee" });
+      store.addEvent({ title: "Call with Priya", calendarId: w.family, start: `${day(4)}T14:00`, end: `${day(4)}T14:45` });
       return;
     case "phone-day-empty-wed":
     case "phone-day-empty-fri":
       return;
+    case "today-event": {
+      // The event panel frames: Book club with a place, a repeat and a reminder, and Monday's agenda items.
+      todayData(store, w);
+      const club = store.getState().events.find((e) => e.title === "Book club")!;
+      store.deleteEvent(club.id);
+      store.addEvent({
+        title: "Book club",
+        calendarId: w.personal,
+        start: `${day(7)}T15:00`,
+        end: `${day(7)}T17:00`,
+        place: "Library, level 2",
+        reminder: 30,
+        repeat: { frequency: "weekly", interval: 2, weekdays: [], end: { type: "never" } },
+      });
+      store.addEvent({ title: "Launch stand-up", calendarId: w.work, start: `${day(9)}T09:00`, end: `${day(9)}T09:30` });
+      store.addEvent({ title: "Swim", calendarId: w.personal, start: `${day(9)}T18:00`, end: `${day(9)}T19:00` });
+      return;
+    }
+    case "lists-empty": {
+      const groceries = store.addList("Groceries", "c2");
+      const home = store.addList("Home", "c4");
+      for (const t of ["Oat milk", "Coffee beans", "Bread"]) store.addTask({ title: t, listId: groceries.id });
+      for (const t of ["Water the plants", "Fix the shelf"]) store.addTask({ title: t, listId: home.id });
+      for (const t of ["Reply to the school", "Renew library books", "Book the dentist"]) store.addTask({ title: t, listId: w.inbox });
+      return;
+    }
     case "tasks": {
       const home = store.addList("Book club", "c3");
       const reno = store.addList("Home renovation", "c4");

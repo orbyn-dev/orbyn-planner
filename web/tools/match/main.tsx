@@ -12,4 +12,4 @@ const query = new URLSearchParams(window.location.search);
 const scenario = query.get("scenario") ?? "";
 const theme = (THEMES as readonly string[]).includes(query.get("theme") ?? "") ? (query.get("theme") as Theme) : "light";
 if (!isScenario(scenario)) throw new Error(`Unknown scenario "${scenario}"`);
-void mountMatch(createRoot(document.getElementById("root")!), { scenario, route: query.get("route") ?? "/today", theme });
+void mountMatch(createRoot(document.getElementById("root")!), { scenario, route: query.get("route") ?? "/today", theme, now: query.get("now") ?? undefined });

@@ -12,15 +12,17 @@ export interface MatchOptions {
   scenario: Scenario;
   route: string;
   theme: Theme;
+  /** An ISO time to pin instead of the fixture's, for a frame drawn at another time of day. */
+  now?: string;
 }
 
 /** An in-memory planner with one scenario seeded and every change acknowledged, so the screen shows a settled planner. Nothing is stored or sent. */
-export async function seededStore(scenario: Scenario): Promise<LocalStore> {
+export async function seededStore(scenario: Scenario, pinned: string = PINNED_NOW): Promise<LocalStore> {
   let n = 0;
   const store = new LocalStore({
     persistence: new MemoryPersistence(),
     broadcast: false,
-    now: () => new Date(PINNED_NOW),
+    now: () => new Date(pinned),
     newId: () => `match-${String(++n).padStart(4, "0")}`,
     onReload: () => undefined,
   });
@@ -31,13 +33,13 @@ export async function seededStore(scenario: Scenario): Promise<LocalStore> {
 }
 
 /** Renders the planner (no accounts, no engine) on a seeded store at the pinned time. */
-export async function mountMatch(root: Root, { scenario, route, theme }: MatchOptions): Promise<void> {
-  const store = await seededStore(scenario);
+export async function mountMatch(root: Root, { scenario, route, theme, now = PINNED_NOW }: MatchOptions): Promise<void> {
+  const store = await seededStore(scenario, now);
   applyChoice(theme);
   window.history.replaceState(null, "", route);
   root.render(
     <StrictMode>
-      <ClockProvider value={() => new Date(PINNED_NOW)}>
+      <ClockProvider value={() => new Date(now)}>
         <App store={store} />
       </ClockProvider>
     </StrictMode>,

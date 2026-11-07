@@ -28,13 +28,15 @@
     "design": "calendar-week",
     "kind": "desktop",
     "route": "/calendar",
-    "scenario": "week"
+    "scenario": "week",
+    "now": "2026-11-07T11:40:00.000Z"
   },
   "calendar-day": {
     "design": "calendar-day",
     "kind": "desktop",
     "route": "/calendar",
     "scenario": "day",
+    "now": "2026-11-07T11:40:00.000Z",
     "steps": [
       {
         "role": "radio",
@@ -54,28 +56,60 @@
     "app": 1,
     "kind": "phone",
     "route": "/calendar",
-    "scenario": "phone-week-tue"
+    "scenario": "phone-week-tue",
+    "steps": [
+      {
+        "click": "button:has-text(\"Thu\")"
+      },
+      {
+        "click": "button:has-text(\"Wed\")"
+      },
+      {
+        "click": "button:has-text(\"Tue\")"
+      }
+    ]
   },
   "p-phone-day-nav": {
     "design": "p-phone-day-nav",
     "app": 0,
     "kind": "phone",
     "route": "/calendar",
-    "scenario": "phone-day-wed"
+    "scenario": "phone-day-wed",
+    "steps": [
+      {
+        "click": "button:has-text(\"Thu\")"
+      },
+      {
+        "click": "button:has-text(\"Wed\")"
+      }
+    ]
   },
   "p-cal-day-empty-phone": {
     "design": "p-cal-day-empty-phone",
     "app": 0,
     "kind": "phone",
     "route": "/calendar",
-    "scenario": "phone-day-empty-wed"
+    "scenario": "phone-day-empty-wed",
+    "steps": [
+      {
+        "click": "button:has-text(\"Thu\")"
+      },
+      {
+        "click": "button:has-text(\"Wed\")"
+      }
+    ]
   },
   "p-cal-day-empty-phone@1": {
     "design": "p-cal-day-empty-phone",
     "app": 1,
     "kind": "phone",
     "route": "/calendar",
-    "scenario": "phone-day-empty-fri"
+    "scenario": "phone-day-empty-fri",
+    "steps": [
+      {
+        "click": "button:has-text(\"Fri\")"
+      }
+    ]
   },
   "work-list": {
     "design": "work-list",
@@ -87,7 +121,31 @@
     "design": "p-lists-no-results",
     "kind": "desktop",
     "route": "/tasks",
-    "scenario": "tasks"
+    "scenario": "tasks",
+    "steps": [
+      {
+        "select": "select:has(option[value=\"high\"])",
+        "value": "high"
+      }
+    ]
+  },
+  "p-phone-month-picker": {
+    "design": "p-phone-month-picker",
+    "app": 0,
+    "kind": "phone",
+    "route": "/calendar",
+    "scenario": "phone-day-wed",
+    "steps": [
+      {
+        "click": "button:has-text(\"Thu\")"
+      },
+      {
+        "click": "button:has-text(\"Wed\")"
+      },
+      {
+        "click": "button:has-text(\"November\")"
+      }
+    ]
   },
   "p-cal-calendars-popover": {
     "design": "p-cal-calendars-popover",
@@ -100,6 +158,247 @@
         "name": "Calendars"
       }
     ]
+  },
+  "p-today-no-name": {
+    "kind": "desktop",
+    "design": "p-today-no-name",
+    "route": "/today",
+    "scenario": "today"
+  },
+  "p-cal-week-weekdays": {
+    "kind": "desktop",
+    "design": "p-cal-week-weekdays",
+    "route": "/calendar",
+    "scenario": "week",
+    "now": "2026-11-07T11:40:00.000Z",
+    "prefs": {
+      "weekDays": 5
+    }
+  },
+  "p-cal-week-nav": {
+    "kind": "desktop",
+    "design": "p-cal-week-nav",
+    "route": "/calendar",
+    "scenario": "week",
+    "now": "2026-11-07T11:40:00.000Z",
+    "steps": [
+      {
+        "role": "button",
+        "name": "Next"
+      }
+    ]
+  },
+  "p-view-options-list": {
+    "kind": "desktop",
+    "design": "p-view-options-list",
+    "route": "/tasks",
+    "scenario": "tasks",
+    "steps": [
+      {
+        "role": "button",
+        "name": "View options"
+      }
+    ]
+  },
+  "p-view-options-board": {
+    "kind": "desktop",
+    "design": "p-view-options-board",
+    "route": "/tasks",
+    "scenario": "tasks",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Board"
+      },
+      {
+        "role": "button",
+        "name": "View options"
+      }
+    ]
+  },
+  "p-lists-empty": {
+    "kind": "desktop",
+    "design": "p-lists-empty",
+    "route": "/lists",
+    "scenario": "lists-empty",
+    "steps": [
+      {
+        "click": "a:has-text(\"Errands\"), button:has-text(\"Errands\")"
+      }
+    ]
+  },
+  "p-row-due": {
+    "kind": "desktop",
+    "design": "p-row-due",
+    "route": "/tasks",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button:has-text(\"Fix the sign-up email bug\")"
+      },
+      {
+        "click": "button[aria-label^=\"Due,\"]"
+      }
+    ]
+  },
+  "p-row-list": {
+    "kind": "desktop",
+    "design": "p-row-list",
+    "route": "/tasks",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button:has-text(\"Fix the sign-up email bug\")"
+      },
+      {
+        "click": "button[aria-label^=\"List,\"]"
+      }
+    ]
+  },
+  "p-row-priority": {
+    "kind": "desktop",
+    "design": "p-row-priority",
+    "route": "/tasks",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button:has-text(\"Fix the sign-up email bug\")"
+      },
+      {
+        "click": "button[aria-label^=\"Priority,\"]"
+      }
+    ]
+  },
+  "p-row-repeat": {
+    "kind": "desktop",
+    "design": "p-row-repeat",
+    "route": "/tasks",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button:has-text(\"Fix the sign-up email bug\")"
+      },
+      {
+        "click": "button[aria-label^=\"Repeat,\"]"
+      }
+    ]
+  },
+  "p-row-reminder": {
+    "kind": "desktop",
+    "design": "p-row-reminder",
+    "route": "/tasks",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button:has-text(\"Fix the sign-up email bug\")"
+      },
+      {
+        "click": "button[aria-label^=\"Reminder,\"]"
+      }
+    ]
+  },
+  "p-row-event-when": {
+    "kind": "desktop",
+    "design": "p-row-event-when",
+    "route": "/calendar",
+    "scenario": "today-event",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Agenda"
+      },
+      {
+        "click": "button.link-btn:has-text(\"Book club\")"
+      },
+      {
+        "click": "button[aria-label^=\"When,\"]"
+      }
+    ]
+  },
+  "p-row-calendar": {
+    "kind": "desktop",
+    "design": "p-row-calendar",
+    "route": "/calendar",
+    "scenario": "today-event",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Agenda"
+      },
+      {
+        "click": "button.link-btn:has-text(\"Book club\")"
+      },
+      {
+        "click": "button[aria-label^=\"Calendar,\"]"
+      }
+    ]
+  },
+  "p-when-event": {
+    "kind": "desktop",
+    "design": "p-when-event",
+    "route": "/calendar",
+    "scenario": "week",
+    "steps": [
+      {
+        "role": "button",
+        "name": "New event"
+      },
+      {
+        "fill": "#ne-title",
+        "value": "Dentist"
+      },
+      {
+        "click": "button[aria-label=\"Open the calendar\"]"
+      }
+    ]
+  },
+  "p-when-event-typing": {
+    "kind": "desktop",
+    "design": "p-when-event-typing",
+    "route": "/calendar",
+    "scenario": "week",
+    "steps": [
+      {
+        "role": "button",
+        "name": "New event"
+      },
+      {
+        "fill": "#ne-title",
+        "value": "Dentist"
+      },
+      {
+        "fill": ".when input.field",
+        "value": "Fri 14:00\u201315:00"
+      }
+    ]
+  },
+  "p-when-unreadable": {
+    "kind": "desktop",
+    "design": "p-when-unreadable",
+    "route": "/calendar",
+    "scenario": "week",
+    "steps": [
+      {
+        "role": "button",
+        "name": "New event"
+      },
+      {
+        "fill": "#ne-title",
+        "value": "Dentist"
+      },
+      {
+        "fill": ".when input.field",
+        "value": "sometime next fortnight maybe"
+      }
+    ]
+  },
+  "p-phone-offline": {
+    "design": "p-phone-offline",
+    "app": 1,
+    "kind": "phone",
+    "route": "/calendar",
+    "scenario": "phone-week",
+    "offline": true
   },
   "p-phone-menu": {
     "design": "p-phone-menu",
