@@ -312,6 +312,37 @@ async function openManage() {
   await screen.findByRole("list", { name: "Calendars" });
 }
 
+describe("Calendar toolbar (Planner Designs v47)", () => {
+  it("is the same in Month, Week, Day and Agenda: arrows, the view switch, Calendars, then New event, and nothing else", async () => {
+    await open();
+    for (const view of ["Month", "Week", "Day", "Agenda"]) {
+      await userEvent.click(screen.getByRole("radio", { name: view }));
+      expect(screen.getByRole("radio", { name: view })).toBeChecked();
+      const acts = document.querySelector(".ph .acts")!;
+      const order = [...acts.querySelectorAll("button, [role=radiogroup]")].filter((e) => !e.closest("[role=radiogroup]") || e.getAttribute("role") === "radiogroup").map((e) => e.getAttribute("aria-label") ?? e.textContent?.trim());
+      expect(order.filter((x) => x !== "Today"), view).toEqual(["Previous", "Next", "View", "Calendars", "New event"]);
+      expect(within(acts as HTMLElement).getAllByRole("radio").map((r) => r.textContent)).toEqual(["Month", "Week", "Day", "Agenda"]);
+    }
+  });
+
+  it("the Today button sits between the arrows and only shows when another period is shown", async () => {
+    await open();
+    expect(screen.queryByRole("button", { name: "Today" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    const buttons = [...document.querySelectorAll(".ph .acts > button")].map((b) => b.getAttribute("aria-label") ?? b.textContent?.trim());
+    expect(buttons.slice(0, 3)).toEqual(["Previous", "Today", "Next"]);
+    await userEvent.click(screen.getByRole("button", { name: "Today" }));
+    expect(screen.queryByRole("button", { name: "Today" })).toBeNull();
+  });
+
+  it("Calendars keeps its name and a tooltip when only its icon shows", async () => {
+    await open();
+    const button = screen.getByRole("button", { name: "Calendars" });
+    expect(button).toHaveAttribute("title", "Calendars");
+    expect(button.querySelector(".lbl")).not.toBeNull();
+  });
+});
+
 describe("Calendars popover", () => {
   it("lists the calendars with a checkbox each; unchecking one hides its events from every view", async () => {
     const store = await open({ seed: seedWeek });

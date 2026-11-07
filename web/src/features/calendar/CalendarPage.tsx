@@ -106,11 +106,11 @@ function CalendarGrid() {
         <button type="button" className="ghost icon" aria-label="Previous" onClick={() => setAnchor(shift(view, anchor, -1))}>
           <Icon name="left" small />
         </button>
+        {elsewhere && <button type="button" className="ghost" onClick={() => setAnchor(today)}>Today</button>}
         {view === "week" && <span className="range">{weekRange(anchor, prefs.weekStart)}</span>}
         <button type="button" className="ghost icon" aria-label="Next" onClick={() => setAnchor(shift(view, anchor, 1))}>
           <Icon name="right" small />
         </button>
-        {elsewhere && <button type="button" className="ghost" onClick={() => setAnchor(today)}>Today</button>}
         <div role="radiogroup" aria-label="View" className="pills">
           {VIEWS.map((v) => (
             <button key={v.id} type="button" role="radio" aria-checked={view === v.id} className="pill" onClick={() => setView(v.id)}>
