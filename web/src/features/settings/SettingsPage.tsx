@@ -4,7 +4,7 @@ import { useState } from "react";
 import { CHOICES, chooseTheme, readStoredChoice, type ThemeChoice } from "../../app/theme";
 import { usePrefs } from "../../app/prefs";
 import { Icon } from "../../components/Icon";
-import { CalendarForms, CalendarList } from "../calendar/CalendarList";
+import { CalendarForms, CalendarList, UnsupportedRepeats } from "../calendar/CalendarList";
 import { AccountSettings } from "../auth/AccountSettings";
 import { NotificationsSettings } from "./NotificationsSettings";
 import { DeleteAccountRow } from "../auth/DeleteAccount";
@@ -16,7 +16,11 @@ const LABELS: Record<ThemeChoice, string> = { system: "System", light: "Light", 
 const CATEGORIES = ["Account", "Planning", "Notifications", "Connected apps", "Calendars", "Tags", "Privacy"] as const;
 
 export function SettingsPage() {
-  const [category, setCategory] = useState<(typeof CATEGORIES)[number]>(() => CATEGORIES.find((c) => c === takeSettingsTarget()) ?? "Planning");
+  const [category, setCategory] = useState<(typeof CATEGORIES)[number]>(() => {
+    // Taken once: reading it inside the find would consume it for the first category only.
+    const wanted = takeSettingsTarget();
+    return CATEGORIES.find((c) => c === wanted) ?? "Planning";
+  });
   const [find, setFind] = useState("");
   const [choice, setChoice] = useState<ThemeChoice>(readStoredChoice);
   const { prefs, setPrefs } = usePrefs();
@@ -102,6 +106,7 @@ export function SettingsPage() {
                 <CalendarList />
               </div>
               <CalendarForms />
+              <UnsupportedRepeats />
               <span className="t3" style={{ fontSize: "var(--fs-12-5)" }}>
                 Subscribed calendars are read from their link in this browser, once an hour while Orbyn Planner is open. Some servers don’t allow that yet.
               </span>

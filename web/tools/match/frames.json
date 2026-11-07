@@ -146,5 +146,17 @@
         "click": "button:has-text(\"November\")"
       }
     ]
+  },
+  "p-cal-calendars-popover": {
+    "design": "p-cal-calendars-popover",
+    "kind": "desktop",
+    "route": "/calendar",
+    "scenario": "week",
+    "steps": [
+      {
+        "role": "button",
+        "name": "Calendars"
+      }
+    ]
   }
 }

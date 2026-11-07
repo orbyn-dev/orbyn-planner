@@ -9,6 +9,7 @@ import { MONTHS, WEEKDAYS, addDays, dateKey, dateOf, isoWeek, weekStartOf } from
 import { usePlanner } from "../../store/context";
 import { expandEvents } from "../../store/occurrences";
 import { AgendaView } from "./AgendaView";
+import { CalendarsMenu } from "./CalendarsMenu";
 import { MonthView } from "./MonthView";
 import { PhoneCalendar } from "./PhoneCalendar";
 import { TimeGrid } from "./TimeGrid";
@@ -117,7 +118,7 @@ function CalendarGrid() {
             </button>
           ))}
         </div>
-        <button type="button" className="ghost" onClick={ui.openCalendars}>Calendars</button>
+        <CalendarsMenu />
         <button type="button" className="btn keep" onClick={() => ui.openNewEvent(view === "day" ? anchor : today)}>
           <Icon name="plus" small />
           New event

@@ -2,36 +2,37 @@
 
 - **Designs commit:** `718fa7bea400b0d70594d9e61259d89f8d4ef55a` (orbyn-designs `origin/main`, committed 2026-11-07), files `artifacts/planner-designs.html`, `account-designs.html`, `motion-designs.html`.
 - **Page versions:** the brief says Planner Designs v36 and Account Designs v53. The HTML files carry no version marker (the version lives on the artifact server), so these are taken from the brief and not verified here.
-- **Planner main checked:** `50b5bc2a3eceba9dbe429ad9ec90cc8d41a8a1b3`. Date: 2026-11-08.
+- **Planner main checked:** first run on `50b5bc2a3eceba9dbe429ad9ec90cc8d41a8a1b3` (2026-11-08); refreshed on `387a2d4` (2026-11-08) for everything merged since (#46 to #57: settings, sign-in, export, Today, calendar, tasks).
+- **Refresh method:** rows for work merged since the first run were updated from the code, the tests and each PR’s notes; they were not re-screenshotted, so none moves to *matched*. Frames built to v39 to v41 name the PR. Rows for work not yet merged (row popovers, the When line) are left as they were.
 - **Method:** `npx vite --port 5340` on `web/`, headless Chromium (Playwright), device-only mode on sample data from the designs, clock fixed to Sat 7 Nov 2026 08:30 UTC, reduced motion on. Each checked frame was rendered at the design frame size in Light, Dark and Dim next to the design frame (window title bar hidden) and read in all three themes. Copy was also diffed as text.
 - **Screenshots** are not committed. Files live in the author’s scratch folder as `design-<id>-<theme>.png`, `build-<id>-<theme>.png` and a three-theme side-by-side `cmp-<id>.png`.
-- **Status words.** *matched*: layout, copy, sizes and colours agree in all three themes and I looked at it. *partial*: built, with the listed differences. *not built*: no code for it (the cell says how that was established). *gated*: the frame’s own note says it is not shown today or is Planned. *in progress*: Settings frames being built on the unmerged `feat/settings-copy`; not screenshotted. *not checked yet*: not compared; the component is only a pointer from reading the code.
+- **Status words.** *matched*: layout, copy, sizes and colours agree in all three themes and I looked at it. *partial*: built, with the listed differences. *not built*: no code for it (the cell says how that was established). *gated*: the frame’s own note says it is not shown today or is Planned. *in progress*: built on a branch that has not merged (none at the last refresh). *not checked yet*: not compared; the component is only a pointer from reading the code.
 - **Left out of every “differs” cell** because they hold for all frames and need things this device-only run cannot provide: (G1) the design sidebar has a Booking item and a Notifications count, the build has neither (nav.ts:11; booking and sharing are not built); (G2) the sync pill reads “Synced · 3 devices” in the design and “Connected” in the build, since real sync needs an account and engine; (G3) “Good morning, Sam” needs an account name, the build says “Good morning”; (G4) the design draws a window title bar, the web build has none.
 
 ## Counts
 
 | Page / area | Frames | matched | partial | not built | gated | in progress | not checked yet |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Planner Designs (all)** | **126** | **0** | **35** | **30** | **8** | **26** | **27** |
+| **Planner Designs (all)** | **126** | **0** | **58** | **29** | **8** | **0** | **31** |
 | Planner · Getting started | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
 | Planner · Search | 2 | 0 | 0 | 0 | 0 | 0 | 2 |
 | Planner · Empty, loading and error states | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
 | Planner · Today | 13 | 0 | 12 | 0 | 1 | 0 | 0 |
-| Planner · Calendar | 18 | 0 | 8 | 4 | 0 | 0 | 6 |
-| Planner · Tasks | 20 | 0 | 10 | 9 | 0 | 0 | 1 |
+| Planner · Calendar | 18 | 0 | 9 | 3 | 0 | 0 | 6 |
+| Planner · Tasks | 20 | 0 | 11 | 9 | 0 | 0 | 0 |
 | Planner · Lists | 5 | 0 | 1 | 3 | 0 | 0 | 1 |
 | Planner · Sharing | 5 | 0 | 0 | 5 | 0 | 0 | 0 |
 | Planner · Completed and deleted | 1 | 0 | 1 | 0 | 0 | 0 | 0 |
 | Planner · Projects | 4 | 0 | 3 | 0 | 0 | 0 | 1 |
 | Planner · Booking | 8 | 0 | 0 | 8 | 0 | 0 | 0 |
 | Planner · Notifications | 4 | 0 | 0 | 0 | 2 | 0 | 2 |
-| Planner · Settings | 31 | 0 | 0 | 0 | 5 | 26 | 0 |
-| Planner · Account and auth | 8 | 0 | 0 | 0 | 0 | 0 | 8 |
-| Planner · Phone | 5 | 0 | 0 | 0 | 0 | 0 | 5 |
-| **Account Designs (all)** | **128** | **0** | **0** | **0** | **13** | **14** | **101** |
+| Planner · Settings | 31 | 0 | 13 | 0 | 5 | 0 | 13 |
+| Planner · Account and auth | 8 | 0 | 6 | 0 | 0 | 0 | 2 |
+| Planner · Phone | 5 | 0 | 2 | 0 | 0 | 0 | 3 |
+| **Account Designs (all)** | **128** | **0** | **14** | **0** | **13** | **0** | **101** |
 | Account · Account site | 14 | 0 | 0 | 0 | 5 | 0 | 9 |
 | Account · Delete account | 40 | 0 | 0 | 0 | 0 | 0 | 40 |
-| Account · Protection | 24 | 0 | 0 | 0 | 8 | 14 | 2 |
+| Account · Protection | 24 | 0 | 14 | 0 | 8 | 0 | 2 |
 | Account · Sign-up | 2 | 0 | 0 | 0 | 0 | 0 | 2 |
 | Account · Keys and devices | 10 | 0 | 0 | 0 | 0 | 0 | 10 |
 | Account · Two-factor | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
@@ -43,7 +44,7 @@
 | Account · Launcher | 3 | 0 | 0 | 0 | 0 | 0 | 3 |
 | Account · Phone | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
 
-Deep pass (Today, calendar, tasks) is complete. Everything else is marked *not checked yet* unless the code shows the feature is absent or the frame note says it is gated. Frames outside this repository (account site, email, witness, key service, launcher) are listed with the owner and not compared.
+Deep pass (Today, calendar, tasks) was complete at the first run; the refresh above adds what merged after it. Everything else is marked *not checked yet* unless the code shows the feature is absent or the frame note says it is gated. Frames outside this repository (account site, email, witness, key service, launcher) are listed with the owner and not compared.
 
 ## Planner Designs (v36 per the brief)
 
@@ -57,17 +58,17 @@ Deep pass (Today, calendar, tasks) is complete. Everything else is marked *not c
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `today` Today | `features/today/TodayPage.tsx:150` | partial | `cmp-today.png` | no difference left after fix/done-rows (to re-check) |
+| `today` Today | `features/today/TodayPage.tsx:150` | partial | `cmp-today.png` | no difference left after #50 (to re-check) |
 | `sync-waiting` Offline, waiting to sync | `features/today/TodayPage.tsx:291, features/sync/SyncLine.tsx:29` | partial | `cmp-sync-waiting.png` | popover is narrower |
 | `p-today-empty` Today · Nothing planned | `features/today/TodayPage.tsx:316` | partial | `cmp-p-today-empty.png` | empty block sits higher and has a hairline above it (app.css:131); design starts the heading about 45px lower with no rule |
 | `p-today-loading` Today · Loading | `features/today/TodayPage.tsx:266` | partial | `cmp-p-today-loading.png` | "New task" is disabled and dimmed (TodayPage.tsx:271), design keeps it active; skeleton rows are one full-width bar with no row dot, design uses varied widths and a dot; the 400 ms wait is built (TodayPage.tsx:66) |
 | `p-today-error` Today · Error | `features/today/TodayPage.tsx:40 (TodayError, exported, never rendered)` | gated | – | frame note: shown only when the local store reports a read failure, which it does not yet; not screenshotted |
-| `p-today-syncing` Today · Syncing | `features/sync/SyncLine.tsx:72` | partial | `cmp-p-today-syncing.png` | no difference left after feat/sync-pill (to re-check by eye) |
-| `p-today-sync-failed` Today · Couldn’t sync | `features/sync/SyncLine.tsx:90` | partial | `cmp-p-today-sync-failed.png` | no difference left after feat/sync-pill (to re-check by eye) |
+| `p-today-syncing` Today · Syncing | `features/sync/SyncLine.tsx:72` | partial | `cmp-p-today-syncing.png` | no difference left after #52 (to re-check by eye) |
+| `p-today-sync-failed` Today · Couldn’t sync | `features/sync/SyncLine.tsx:90` | partial | `cmp-p-today-sync-failed.png` | no difference left after #52 (to re-check by eye) |
 | `p-today-all-day` Today · All-day events | `features/today/TodayPage.tsx:87-109, :330` | partial | `cmp-p-today-all-day.png` | week column counts the tiling event on Sun 8 (Coming up 12, design 11: the design data says "day 2 of 3" yet leaves Sun 8 alone) |
 | `p-today-long` Today · A long day | `features/today/TodayPage.tsx:150` | partial | `cmp-p-today-long.png` | Today shows 13 vs 14: the 07:30 event has ended at 08:30 and the build counts only what is still to come (TodayPage.tsx:223) |
 | `p-today-goal-labels` Today · Progress goal labels | `features/today/TodayPage.tsx:29 (goalLabel), :212` | partial | – | "goal yesterday" can never show: Progress keeps only goals from today on (TodayPage.tsx:212). Today, tomorrow and weekday labels read as designed in the DOM; "goal 14 Nov" is by code only. No screenshots |
-| `p-today-week-empty` Today · Empty days in the week | `features/today/TodayPage.tsx:139` | partial | `cmp-p-today-week-empty.png` | no difference left after fix/done-rows; "Nothing planned" in the quiet colour matches. |
+| `p-today-week-empty` Today · Empty days in the week | `features/today/TodayPage.tsx:139` | partial | `cmp-p-today-week-empty.png` | no difference left after #50; "Nothing planned" in the quiet colour matches. |
 | `p-today-overnight` Today · Events across midnight | `features/today/TodayPage.tsx:87-109, :124` | partial | `cmp-p-today-overnight.png` | "Until 06:00" and "Started yesterday 22:00" match |
 | `p-today-overnight-long` Today · Events across several days | `features/today/TodayPage.tsx:87-109` | partial | `cmp-p-today-overnight-long.png` | multi-day all-day event reads "Conference: Lisbon · day 3 of 5" with the calendar name; design shows the plain title and "Mon 9 Nov – Fri 13 Nov" (the design frames disagree: p-today-all-day wants "· day 2 of 3"); week column lists 6 days, design 4 |
 
@@ -75,20 +76,20 @@ Deep pass (Today, calendar, tasks) is complete. Everything else is marked *not c
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `work-list` Tasks · List | `features/tasks/TasksPage.tsx:80` | partial | `cmp-work-list.png` | View options popover built to v41 (p-view-options-list); filters are now the chips Any due date / Any priority / Any list (feat/tasks-frames); "Anyone" and the Owner column stay out until sharing exists (data-gated); no Blocked status (needs the status field) |
+| `work-list` Tasks · List | `features/tasks/TasksPage.tsx:80` | partial | `cmp-work-list.png` | View options popover built to v41 (p-view-options-list); filters are now the chips Any due date / Any priority / Any list (#56); "Anyone" and the Owner column stay out until sharing exists (data-gated); no Blocked status (needs the status field) |
 | `work-board` Tasks · Board | `features/tasks/TasksPage.tsx:178` | partial | `cmp-work-board.png` | two lanes (To do, Done); design has four (To do, In progress, Blocked, Done) and a progress bar on cards; Task has no status field (types.ts:19) |
-| `new-task` New task | `features/tasks/NewTaskDialog.tsx:15` | partial | `cmp-new-task.png` | fields Title, Due, List then the rows Repeat, Reminder, Priority (feat/tasks-frames); Due is the one combined line with typing, a live preview and the calendar popover (p-due-task); still: a Project select the frame does not show; "Add task" card width not compared |
+| `new-task` New task | `features/tasks/NewTaskDialog.tsx:15` | partial | `cmp-new-task.png` | fields Title, Due, List then the rows Repeat, Reminder, Priority (#56); Due is the one combined line with typing, a live preview and the calendar popover (p-due-task); still: a Project select the frame does not show; "Add task" card width not compared |
 | `task-panel` Task panel | `features/tasks/TaskPanel.tsx:26` | partial | `cmp-task-panel.png` | rows are label and value; Due, List, Priority, Repeat and Reminder open row popovers built to v41 (p-row-due, -list, -priority, -repeat, -reminder); no Status row (needs the status field); "Linked" cross-app card not built |
 | `p-task-loading` Task panel · Loading | none found | not built | – | TaskPanel renders from the store at once; no loading state (grep: no skeleton in features/tasks) |
 | `p-task-error` Task panel · Error | `features/tasks/TaskPanel.tsx:101` | not built | – | only a save error ("Couldn’t save that change."); no "can’t be opened" state with Retry |
 | `p-task-subtasks` Task panel · Subtasks | `features/tasks/TaskPanel.tsx (checklist)` | partial | – | checklist steps have title and done only (types.ts:11), no date or person; not looked at |
 | `p-task-attachments` Task panel · Attachments | none found | not built | – | grep for "attach" finds nothing |
 | `p-task-recurring` Task panel · Repeat | `features/tasks/RepeatPicker.tsx:92` | partial | `cmp-p-task-recurring.png` | Repeat is a select of presets; design opens an inline editor (Daily / Weekly / Monthly / Yearly, weekday dots, Every N, Ends, a "Next: …" line, Never repeat / Done) |
-| `p-task-reminder` Task panel · Reminder picker | `features/tasks/RowPopovers.tsx` | matches | – | the Reminder row popover (p-row-reminder) has None, At time, 5/15/30 minutes, 1 hour, 1 day and Custom… |
+| `p-task-reminder` Task panel · Reminder picker | `features/tasks/RowPopovers.tsx` | partial | – | the Reminder row popover (p-row-reminder) has None, At time, 5/15/30 minutes, 1 hour, 1 day and Custom…; built to v41, not re-compared by screenshot |
 | `p-task-comments` Task panel · Comments and activity | none found | not built | – | grep for "comment" finds nothing |
 | `p-task-assignee` Task panel · Assignee picker | none found | not built | – | Task has no assignee field (types.ts:19) |
-| `p-task-date` Task panel · Date picker | `features/tasks/RowPopovers.tsx` | matches | – | the Due row popover (p-row-due): month, 24-hour time with No time, four shortcuts; the old frame draws Nov 1 on a Friday, the build follows the real calendar |
-| `p-task-move` Task panel · Move to a list | `features/tasks/RowPopovers.tsx` | matches | – | the List row popover (p-row-list): searchable, colour dots, No list, New list… |
+| `p-task-date` Task panel · Date picker | `features/tasks/RowPopovers.tsx` | partial | – | the Due row popover (p-row-due): month, 24-hour time with No time, four shortcuts; the old frame draws Nov 1 on a Friday, the build follows the real calendar; built to v41, not re-compared by screenshot |
+| `p-task-move` Task panel · Move to a list | `features/tasks/RowPopovers.tsx` | partial | – | the List row popover (p-row-list): searchable, colour dots, No list, New list…; built to v41, not re-compared by screenshot |
 | `p-task-delete` Task panel · Deleted, with undo | `features/tasks/TaskPanel.tsx:132, components/Toast.tsx:62` | partial | `cmp-p-task-delete.png` | toast is a centred dark pill "Task deleted · Undo"; design: bottom-right card with the task name and "Kept for 30 days"; panel closes to nothing, design shows "No task selected" |
 | `p-lists-no-results` Tasks · Filtered with no results | `features/tasks/TasksPage.tsx:153` | partial | `cmp-p-lists-no-results.png` | build says "No tasks match / Try another filter." with no way to clear; design names the filters, shows removable chips and "Remove Owner" / "Clear filters" buttons |
 | `p-lists-bulk` Tasks · Bulk select | none found | not built | – | grep for "bulk" finds nothing |
@@ -135,13 +136,13 @@ Deep pass (Today, calendar, tasks) is complete. Everything else is marked *not c
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `p-cal-day-empty-phone` Calendar · Phone day view, empty day | `features/calendar/CalendarPage.tsx:47` | not built | partial | built to v39: month title with chevron, centred five-day strip, Today button, sub line, place or duration; with the offline sub line and the Last synced row (to re-check by eye) |
-| `calendar-week` Calendar · Week | `features/calendar/CalendarPage.tsx:47, features/calendar/TimeGrid.tsx:36` | partial | `cmp-calendar-week.png` | seven columns Mon–Sun with the setting, today pill and soft column fill, range with arrows and a Today button on other weeks, arrow keys, minimum event height (feat/week-v40); not changed: the header row stretches too tall above the hours (was there before), the toolbar still has a Calendars button, hours are labelled every hour, "Due this week" lists today's tasks too, event time "09:00" vs "9:00" |
+| `p-cal-day-empty-phone` Calendar · Phone day view, empty day | `features/calendar/CalendarPage.tsx:47` | partial | – | built to v39 in #49: month title with chevron, centred five-day strip, swipes, month sheet, Today button, sub line "Week N · day[ · offline]", place or duration, Last synced row; not re-compared by screenshot |
+| `calendar-week` Calendar · Week | `features/calendar/CalendarPage.tsx:47, features/calendar/TimeGrid.tsx:36` | partial | `cmp-calendar-week.png` | seven columns Mon–Sun with the setting, today pill and soft column fill, range with arrows and a Today button on other weeks, arrow keys, minimum event height (#55); not changed: the header row stretches too tall above the hours (was there before), the toolbar still has a Calendars button, hours are labelled every hour, "Due this week" lists today's tasks too, event time "09:00" vs "9:00" |
 | `calendar-day` Calendar · Day | `features/calendar/CalendarPage.tsx:47, features/calendar/TimeGrid.tsx:36` | partial | `cmp-calendar-day.png` | toolbar has Month and Calendars, design Week / Day / Agenda only; hours every hour from 07:00 vs every two hours; "Tasks today" lists all open tasks |
 | `calendar-agenda` Calendar · Agenda | `features/calendar/AgendaView.tsx:17` | partial | `cmp-calendar-agenda.png` | matches in structure; toolbar pills differ (Month, Day, Calendars extra); row meta joins place and length ("Room 3 · 1h"), design shows one; no "Every Tuesday" note |
 | `calendar-month` Calendar · Month | `features/calendar/MonthView.tsx:11` | partial | `cmp-calendar-month.png` | toolbar as above; cells show three items then "+1 more", design lists items as dot and title |
 | `event-panel` Event panel | `features/calendar/EventPanel.tsx:16` | partial | `cmp-event-panel.png` | Calendar, Repeat and Reminder open row popovers (p-row-calendar); When opens the combined date-and-time popover (p-row-event-when); with the panel open the toolbar pills wrap onto several lines |
-| `new-event` New event | `features/calendar/NewEventDialog.tsx:13` | partial | `cmp-new-event.png` | "Invite people" is a row (feat/tasks-frames); When is the one combined line with typing, a live preview, a quiet "Couldn’t read that" and the calendar popover (p-when-event, -typing, -unreadable); still: calendar is a select without the colour swatch |
+| `new-event` New event | `features/calendar/NewEventDialog.tsx:13` | partial | `cmp-new-event.png` | "Invite people" is a row (#56); When is the one combined line with typing, a live preview, a quiet "Couldn’t read that" and the calendar popover (p-when-event, -typing, -unreadable); still: calendar is a select without the colour swatch |
 | `calendar-manage` Calendars | `features/calendar/CalendarsDialog.tsx:9, features/calendar/CalendarList.tsx:86` | partial | `cmp-calendar-manage.png` | rows carry four colour swatches, Rename and a Shown toggle; design rows are name and "Shown" text; "Family · shared" needs sharing (not built); a failed subscription row exists (CalendarList.tsx:72) |
 | `p-event-invitees` Event panel · Invitees and replies | `features/calendar/EventPanel.tsx:16` | not checked yet | – | Event has `people` with responses (types.ts:112) |
 | `p-event-recurring` Event panel · Edit a repeating event | `features/calendar/ScopeDialog.tsx:22` | not checked yet | – |  |
@@ -150,7 +151,7 @@ Deep pass (Today, calendar, tasks) is complete. Everything else is marked *not c
 | `p-event-delete` Event panel · Delete | `features/calendar/EventPanel.tsx:16` | not checked yet | – |  |
 | `p-cal-loading` Calendar · Loading | none found | not built | – | CalendarPage never reads `ready`; no loading state |
 | `p-cal-sync-error` Calendar · Sync error, outside calendar | `features/calendar/CalendarList.tsx:72` | not checked yet | – | a subscription refresh error shows in the Calendars dialog only |
-| `p-cal-all-day` Calendar · All-day and multi-day | `features/calendar/TimeGrid.tsx:36` | partial | `cmp-p-cal-all-day.png` | the multi-day bar is one bar across the days labelled "… · Tue 3 to Thu 5" (feat/multiday-bar); the design frame also has no side summary |
+| `p-cal-all-day` Calendar · All-day and multi-day | `features/calendar/TimeGrid.tsx:36` | partial | `cmp-p-cal-all-day.png` | the multi-day bar is one bar across the days labelled "… · Tue 3 to Thu 5" (#53); the design frame also has no side summary |
 | `p-cal-time-zone` Calendar · Time zones | `store/occurrences.ts:52` | not checked yet | – |  |
 | `p-cal-busy-only` Calendar · Busy-only shared calendar | none found | not built | – | needs shared calendars (not built) |
 
@@ -193,50 +194,50 @@ Deep pass (Today, calendar, tasks) is complete. Everything else is marked *not c
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `settings-account` Settings · Account and devices | `features/settings/SettingsPage.tsx:18, features/auth/AccountSettings.tsx:317` | in progress (feat/settings-copy) | – |  |
-| `add-device` Approve a new sign-in | `features/auth/PendingScreen.tsx:11` | in progress (feat/settings-copy) | – |  |
-| `settings` Settings · Planning | `features/settings/SettingsPage.tsx:18` | in progress (feat/settings-copy) | – |  |
-| `settings-notifications` Settings · Notifications | `features/settings/NotificationsSettings.tsx:21` | in progress (feat/settings-copy) | – |  |
-| `p-set-notif-reminders-off` Settings · Notifications · Reminders off | `features/settings/NotificationsSettings.tsx:21` | in progress (feat/settings-copy) | – |  |
-| `p-set-notif-reminders-asking` Settings · Notifications · Asking for permission | `features/settings/NotificationsSettings.tsx:21` | in progress (feat/settings-copy) | – |  |
-| `p-set-notif-reminders-blocked` Settings · Notifications · Blocked in the browser | `features/settings/NotificationsSettings.tsx:21` | in progress (feat/settings-copy) | – |  |
-| `p-set-notif-unsupported` Settings · Notifications · No notification support | `features/settings/NotificationsSettings.tsx:21` | in progress (feat/settings-copy) | – |  |
-| `connected-apps` Settings · Connected apps | none found | in progress (feat/settings-copy) | – |  |
-| `settings-calendars` Settings · Calendars | `features/calendar/CalendarList.tsx:86` | in progress (feat/settings-copy) | – |  |
-| `settings-privacy` Settings · Data protection | `features/auth/ProtectionSettings.tsx:164` | in progress (feat/settings-copy) | – |  |
+| `settings-account` Settings · Account and devices | `features/settings/SettingsPage.tsx:18, features/auth/AccountSettings.tsx:317` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh; Passkeys row is Planned |
+| `add-device` Approve a new sign-in | `features/auth/PendingScreen.tsx:11` | not checked yet | – | the frame was not part of #46 and has not been compared |
+| `settings` Settings · Planning | `features/settings/SettingsPage.tsx:18` | not checked yet | – | the frame was not part of #46 and has not been compared |
+| `settings-notifications` Settings · Notifications | `features/settings/NotificationsSettings.tsx:21` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh: Reminders heading and status, quiet hours with an allow switch, Planned rows |
+| `p-set-notif-reminders-off` Settings · Notifications · Reminders off | `features/settings/NotificationsSettings.tsx:21` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
+| `p-set-notif-reminders-asking` Settings · Notifications · Asking for permission | `features/settings/NotificationsSettings.tsx:21` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
+| `p-set-notif-reminders-blocked` Settings · Notifications · Blocked in the browser | `features/settings/NotificationsSettings.tsx:21` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
+| `p-set-notif-unsupported` Settings · Notifications · No notification support | `features/settings/NotificationsSettings.tsx:21` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
+| `connected-apps` Settings · Connected apps | none found | not checked yet | – | the frame was not part of #46 and has not been compared |
+| `settings-calendars` Settings · Calendars | `features/calendar/CalendarList.tsx:86` | not checked yet | – | the frame was not part of #46 and has not been compared |
+| `settings-privacy` Settings · Data protection | `features/auth/ProtectionSettings.tsx:164` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh: Data protection page with radio group semantics, no device name beside a signed change |
 | `advanced-on` Turn on Advanced protection | `features/auth/ProtectionSettings.tsx:164` | gated | – | frame note: Advanced is Planned |
-| `web-approve` Approve the web for an hour | none found | in progress (feat/settings-copy) | – |  |
-| `p-set-account-loading` Settings · Account · Loading | `features/settings/SettingsPage.tsx:18` | in progress (feat/settings-copy) | – |  |
-| `p-set-account-error` Settings · Account · Save error | `features/settings/SettingsPage.tsx:18` | in progress (feat/settings-copy) | – |  |
-| `p-set-planning-loading` Settings · Planning · Loading | `features/settings/SettingsPage.tsx:18` | in progress (feat/settings-copy) | – |  |
-| `p-set-planning-error` Settings · Planning · Save error | `features/settings/SettingsPage.tsx:18` | in progress (feat/settings-copy) | – |  |
+| `web-approve` Approve the web for an hour | none found | not checked yet | – | the frame was not part of #46 and has not been compared |
+| `p-set-account-loading` Settings · Account · Loading | `features/settings/SettingsPage.tsx:18` | not checked yet | – | the frame was not part of #46 and has not been compared |
+| `p-set-account-error` Settings · Account · Save error | `features/settings/SettingsPage.tsx:18` | not checked yet | – | the frame was not part of #46 and has not been compared |
+| `p-set-planning-loading` Settings · Planning · Loading | `features/settings/SettingsPage.tsx:18` | not checked yet | – | the frame was not part of #46 and has not been compared |
+| `p-set-planning-error` Settings · Planning · Save error | `features/settings/SettingsPage.tsx:18` | not checked yet | – | the frame was not part of #46 and has not been compared |
 | `p-set-notifications-loading` Settings · Notifications · Loading | `features/settings/NotificationsSettings.tsx:21` | gated | – | frame note: not shown today (preferences are local); settings-copy also touches this file |
 | `p-set-notifications-error` Settings · Notifications · Save error | `features/settings/NotificationsSettings.tsx:21` | gated | – | frame note: not shown today (preferences are local); settings-copy also touches this file |
-| `p-set-connected-apps-loading` Settings · Connected apps · Loading | none found | in progress (feat/settings-copy) | – |  |
-| `p-set-connected-apps-error` Settings · Connected apps · Save error | none found | in progress (feat/settings-copy) | – |  |
-| `p-set-calendars-loading` Settings · Calendars · Loading | `features/calendar/CalendarList.tsx:86` | in progress (feat/settings-copy) | – |  |
-| `p-set-calendars-error` Settings · Calendars · Save error | `features/calendar/CalendarList.tsx:86` | in progress (feat/settings-copy) | – |  |
+| `p-set-connected-apps-loading` Settings · Connected apps · Loading | none found | not checked yet | – | the frame was not part of #46 and has not been compared |
+| `p-set-connected-apps-error` Settings · Connected apps · Save error | none found | not checked yet | – | the frame was not part of #46 and has not been compared |
+| `p-set-calendars-loading` Settings · Calendars · Loading | `features/calendar/CalendarList.tsx:86` | not checked yet | – | the frame was not part of #46 and has not been compared |
+| `p-set-calendars-error` Settings · Calendars · Save error | `features/calendar/CalendarList.tsx:86` | not checked yet | – | the frame was not part of #46 and has not been compared |
 | `p-set-privacy-loading` Settings · Privacy · Loading | `features/auth/ProtectionSettings.tsx:164` | gated | – | frame note: not shown today (preferences are local); settings-copy also touches this file |
 | `p-set-privacy-error` Settings · Privacy · Save error | `features/auth/ProtectionSettings.tsx:164` | gated | – | frame note: not shown today (preferences are local); settings-copy also touches this file |
-| `p-export-dialog` Settings · Privacy · Export your data | `features/export/ExportSettings.tsx:15` | in progress (feat/settings-copy) | – |  |
-| `p-export-busy` Settings · Privacy · Exporting | `features/export/ExportSettings.tsx:15` | in progress (feat/settings-copy) | – |  |
-| `p-export-done` Settings · Privacy · Exported | `features/export/ExportSettings.tsx:15` | in progress (feat/settings-copy) | – |  |
-| `p-export-failed` Settings · Privacy · Export failed | `features/export/ExportSettings.tsx:15` | in progress (feat/settings-copy) | – |  |
-| `p-set-privacy-verified-removed` Settings · Privacy · Verified, other device | `features/auth/ProtectionSettings.tsx:164` | in progress (feat/settings-copy) | – |  |
-| `p-set-privacy-verified-this-device` Settings · Privacy · Verified, signed on this device | `features/auth/ProtectionSettings.tsx:164` | in progress (feat/settings-copy) | – |  |
+| `p-export-dialog` Settings · Privacy · Export your data | `features/export/ExportSettings.tsx:15` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh: JSON default, format descriptions, settings stay on this device |
+| `p-export-busy` Settings · Privacy · Exporting | `features/export/ExportSettings.tsx:15` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
+| `p-export-done` Settings · Privacy · Exported | `features/export/ExportSettings.tsx:15` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
+| `p-export-failed` Settings · Privacy · Export failed | `features/export/ExportSettings.tsx:15` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
+| `p-set-privacy-verified-removed` Settings · Privacy · Verified, other device | `features/auth/ProtectionSettings.tsx:164` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
+| `p-set-privacy-verified-this-device` Settings · Privacy · Verified, signed on this device | `features/auth/ProtectionSettings.tsx:164` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
 
 ### Account and auth
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
 | `landing` Landing | `features/auth/AuthScreens.tsx:20` | not checked yet | – | grep matches 4 of 6 lines |
-| `sign-up` Sign up | `features/auth/AuthScreens.tsx:197` | not checked yet | – |  |
-| `verify` Verify your email | `features/auth/AuthScreens.tsx:46` | not checked yet | – |  |
-| `p-verify-ready` Verify your email · Send a new code | `features/auth/AuthScreens.tsx:46` | not checked yet | – |  |
-| `p-verify-throttled` Verify your email · Too many codes | `features/auth/AuthScreens.tsx:46` | not checked yet | – |  |
-| `sign-in` Sign in | `features/auth/AuthScreens.tsx:256` | not checked yet | – |  |
+| `sign-up` Sign up | `features/auth/AuthScreens.tsx:197` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh: dimmed Planned passkey button, "Continue with a password", sign-up note keeps the email code |
+| `verify` Verify your email | `features/auth/AuthScreens.tsx:46` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh: verify states |
+| `p-verify-ready` Verify your email · Send a new code | `features/auth/AuthScreens.tsx:46` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
+| `p-verify-throttled` Verify your email · Too many codes | `features/auth/AuthScreens.tsx:46` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
+| `sign-in` Sign in | `features/auth/AuthScreens.tsx:256` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh: Planned passkey button, "Continue with a password", "Forgot your password?" |
 | `p-sign-in-local` Sign in · from inside the planner | `features/auth/AuthScreens.tsx:256` | not checked yet | – |  |
-| `recovery` Recover your account | `features/auth/AuthScreens.tsx:398` | not checked yet | – |  |
+| `recovery` Recover your account | `features/auth/AuthScreens.tsx:398` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh: final recovery text |
 
 ### Phone
 
@@ -244,9 +245,9 @@ Deep pass (Today, calendar, tasks) is complete. Everything else is marked *not c
 | --- | --- | --- | --- | --- |
 | `phone` Today, a list and offline on a phone | `app/App.tsx:103 (tab bar), features/today/TodayPage.tsx:150` | not checked yet | – | phone Today uses the "Today" title and a week fold (TodayPage.tsx:353) |
 | `p-phone-task` Phone · Task as a sheet | `features/tasks/TaskPanel.tsx:26` | not checked yet | – |  |
-| `p-phone-week` Phone · Calendar week | `features/calendar/CalendarPage.tsx:47` | not checked yet | partial | built to v39 with p-cal-day-empty-phone (to re-check by eye) |
+| `p-phone-week` Phone · Calendar week | `features/calendar/CalendarPage.tsx:47` | partial | – | built to v39 in #49 with p-cal-day-empty-phone; not re-compared by screenshot |
 | `p-phone-empty` Phone · Empty states | `features/today/TodayPage.tsx:316` | not checked yet | – |  |
-| `p-phone-offline` Phone · Offline | `features/sync/SyncLine.tsx:29` | not checked yet | – |  |
+| `p-phone-offline` Phone · Offline | `features/sync/SyncLine.tsx:29` | partial | – | the offline sub line and banner use the sync pill (#49, #52); not re-compared by screenshot |
 
 ## Account Designs (v53 per the brief)
 
@@ -318,7 +319,7 @@ Deep pass (Today, calendar, tasks) is complete. Everything else is marked *not c
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `pv-standard-planned` Standard protection, Planned (today) | `features/auth/ProtectionSettings.tsx:164` | in progress (feat/settings-copy) | – | file touched by the branch |
+| `pv-standard-planned` Standard protection, Planned (today) | `features/auth/ProtectionSettings.tsx:164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
 | `pv-standard-offer` Turn on Standard protection? (After slice 8; not built) | none found | gated | – | title says "After slice 8; not built" |
 | `pv-standard-offer-planner` Standard offer in Planner Settings (After slice 8; not built) | none found | gated | – | title says "After slice 8; not built" |
 | `pv-standard-offer-untrusted` Standard offer on a device that isn’t trusted (After slice 8; not built) | none found | gated | – | title says "After slice 8; not built" |
@@ -327,20 +328,20 @@ Deep pass (Today, calendar, tasks) is complete. Everything else is marked *not c
 | `pv-standard-offer-failed` Couldn’t turn on Standard (After slice 8; not built) | none found | gated | – | title says "After slice 8; not built" |
 | `pv-advanced-confirm` Turn on Advanced protection? Switching from Standard | none found | gated | – | frame note: Advanced and recovery are Planned |
 | `pv-advanced-confirm-new` Turn on Advanced protection? Account never had a server copy | none found | gated | – | frame note: Advanced and recovery are Planned |
-| `pv-card` Protection card, every state | `features/auth/ProtectionSettings.tsx:164` | in progress (feat/settings-copy) | – | frame also says "not shown today" |
-| `pv-card-loading` Protection card, checking | `features/auth/ProtectionSettings.tsx:71, :124, :164` | in progress (feat/settings-copy) | – | file touched by the branch |
-| `pv-card-error` Protection card, couldn’t check | `features/auth/ProtectionSettings.tsx:71, :124, :164` | in progress (feat/settings-copy) | – | file touched by the branch |
-| `pv-verified` Protection, verified | `features/auth/ProtectionSettings.tsx:164` | in progress (feat/settings-copy) | – | frame also says "not shown today" |
-| `pv-rollback` Protection, can’t confirm | `features/auth/ProtectionSettings.tsx:71, :124, :164` | in progress (feat/settings-copy) | – | file touched by the branch |
-| `pv-details` Protection details | `features/auth/ProtectionSettings.tsx:71, :124, :164` | in progress (feat/settings-copy) | – | file touched by the branch |
-| `pv-details-unlisted` Protection details: signer not listed | `features/auth/ProtectionSettings.tsx:71, :124, :164` | in progress (feat/settings-copy) | – | file touched by the branch |
+| `pv-card` Protection card, every state | `features/auth/ProtectionSettings.tsx:164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-card-loading` Protection card, checking | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-card-error` Protection card, couldn’t check | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-verified` Protection, verified | `features/auth/ProtectionSettings.tsx:164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-rollback` Protection, can’t confirm | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-details` Protection details | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-details-unlisted` Protection details: signer not listed | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
 | `pv-notif-row` Protection change in an app’s notifications | `features/notifications/NotificationsPage.tsx:14` | not checked yet | – |  |
-| `pv-confirm` Confirm your protection level | `features/auth/ProtectionSettings.tsx:71, :124, :164` | in progress (feat/settings-copy) | – | file touched by the branch |
-| `pv-confirm-unset` Confirm: no level set yet | `features/auth/ProtectionSettings.tsx:71, :124, :164` | in progress (feat/settings-copy) | – | file touched by the branch |
-| `pv-confirm-failed` Confirm couldn’t finish | `features/auth/ProtectionSettings.tsx:71, :124, :164` | in progress (feat/settings-copy) | – | file touched by the branch |
-| `pv-busy` Busy buttons | `features/auth/ProtectionSettings.tsx:71, :124, :164` | in progress (feat/settings-copy) | – | file touched by the branch |
-| `pv-confirm-conflict` Changed on another device first | `features/auth/ProtectionSettings.tsx:71, :124, :164` | in progress (feat/settings-copy) | – | file touched by the branch |
-| `pv-notice` Protection was changed on another device | `features/auth/ProtectionSettings.tsx:71, :124, :164` | in progress (feat/settings-copy) | – | file touched by the branch |
+| `pv-confirm` Confirm your protection level | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-confirm-unset` Confirm: no level set yet | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-confirm-failed` Confirm couldn’t finish | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-busy` Busy buttons | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-confirm-conflict` Changed on another device first | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-notice` Protection was changed on another device | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
 | `pv-phone` Protection and sign-up on a phone | `features/auth/ProtectionSettings.tsx:164` | not checked yet | – |  |
 
 ### Sign-up

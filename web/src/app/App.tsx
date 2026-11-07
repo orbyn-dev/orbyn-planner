@@ -30,7 +30,6 @@ import type { AuthServices } from "../auth/services";
 import { DeviceDataOffer } from "../features/auth/DeviceDataOffer";
 import { AuthGate } from "../features/auth/AuthGate";
 import { PrefsProvider } from "./prefs";
-import { CalendarsDialog } from "../features/calendar/CalendarsDialog";
 import { EventPanel } from "../features/calendar/EventPanel";
 import { NewEventDialog } from "../features/calendar/NewEventDialog";
 import { useReminders } from "../features/reminders/useReminders";
@@ -163,7 +162,6 @@ function Shell() {
       {more && <MoreSheet onClose={() => setMore(false)} />}
       {ui.newTaskOpen && <NewTaskDialog />}
       {ui.newEventDate !== null && <NewEventDialog />}
-      {ui.calendarsOpen && <CalendarsDialog />}
       {ui.searchOpen && <SearchDialog />}
       <Toast />
     </div>

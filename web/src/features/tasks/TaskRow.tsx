@@ -38,7 +38,7 @@ const LIST_COLS = "var(--sp-22) minmax(0,1fr) var(--sp-110)";
 const priorityLabel = (t: Task) => (t.priority === "none" ? "" : t.priority[0]!.toUpperCase() + t.priority.slice(1));
 
 /** One aligned table row: Tasks (list, due, priority), a list's own tasks, or Completed. */
-export function TaskRow({ task, layout = "tasks", extra }: { task: Task; layout?: "tasks" | "list" | "completed"; extra?: string }) {
+export function TaskRow({ task, layout = "tasks", extra, unsynced = false }: { task: Task; layout?: "tasks" | "list" | "completed"; extra?: string; /** The change to it has not left this device yet (offline). */ unsynced?: boolean }) {
   const { lists, tags } = usePlanner();
   const { open } = useTaskActions(task);
   const now = useNow();
@@ -70,7 +70,7 @@ export function TaskRow({ task, layout = "tasks", extra }: { task: Task; layout?
           <span>{priorityLabel(task)}</span>
         </>
       )}
-      {layout === "list" && <span>{due}</span>}
+      {layout === "list" && <span>{unsynced && !task.done ? <span className="due">Not synced yet</span> : due}</span>}
       {layout === "completed" && (
         <>
           <span>{tag}</span>
