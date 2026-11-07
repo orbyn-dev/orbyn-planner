@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from "react";
-import { addDays, dateKey, dateOf } from "../lib/dates";
+import { addDays, dateKey, dateOf, type WeekStart } from "../lib/dates";
 import { formatWhen, parseWhen, readTime, type When, type WhenKind } from "../lib/whenParser";
 import { Icon } from "./Icon";
 import { MonthGrid } from "./MonthGrid";
@@ -56,7 +56,7 @@ function TimeField({ label, time, onCommit }: { label: string; time: string; onC
  * What the calendar popover holds (Planner Designs p-when-event, p-due-task, p-row-event-when): a month, then for an event a start and an
  * end time and an All day switch, for a task one time with No time and four shortcuts. Changes apply as you go; Done closes.
  */
-export function WhenBody({ kind, value, today, weekStart, onChange, onDone }: { kind: WhenKind; value: When; today: string; weekStart: "mon" | "sun"; onChange: (w: When | null) => void; onDone: () => void }) {
+export function WhenBody({ kind, value, today, weekStart, onChange, onDone }: { kind: WhenKind; value: When; today: string; weekStart: WeekStart; onChange: (w: When | null) => void; onDone: () => void }) {
   const quick = (label: string, to: string) => (
     <button key={label} type="button" className="pill" onClick={() => onChange(withDay(value, to))}>{label}</button>
   );
@@ -101,7 +101,7 @@ export function WhenBody({ kind, value, today, weekStart, onChange, onDone }: { 
  * words that cannot be read leave the value as it was, keep what was typed, and say so quietly. The calendar icon opens the popover; Escape
  * closes it and focus returns to the line. A task's line may be empty (no date).
  */
-export function WhenField({ label, kind, value, now, weekStart, onChange }: { label: string; kind: WhenKind; value: When | null; now: Date; weekStart: "mon" | "sun"; onChange: (w: When | null) => void }) {
+export function WhenField({ label, kind, value, now, weekStart, onChange }: { label: string; kind: WhenKind; value: When | null; now: Date; weekStart: WeekStart; onChange: (w: When | null) => void }) {
   const id = useId();
   const [draft, setDraft] = useState<string | null>(null);
   const [open, setOpen] = useState(false);

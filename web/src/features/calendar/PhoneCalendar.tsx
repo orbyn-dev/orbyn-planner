@@ -3,7 +3,7 @@ import { usePrefs } from "../../app/prefs";
 import { useUi } from "../../app/ui";
 import { Icon } from "../../components/Icon";
 import { Modal } from "../../components/Modal";
-import { MONTHS, WEEKDAYS, addDays, dateKey, dateOf, formatTime, isoWeek, parseDue } from "../../lib/dates";
+import { addDays, dateKey, dateOf, formatTime, isoWeek, MONTHS, parseDue, WEEKDAYS, weekLead, weekOrder } from "../../lib/dates";
 import { wallMinutes } from "../../lib/wall";
 import { usePlanner } from "../../store/context";
 import { expandEvents, type Occurrence } from "../../store/occurrences";
@@ -52,12 +52,12 @@ function MonthPicker({ selected, today, onPick, onClose }: { selected: string; t
   const { prefs } = usePrefs();
   const [month, setMonth] = useState(() => dateKey(new Date(dateOf(selected).getFullYear(), dateOf(selected).getMonth(), 1)));
   const first = dateOf(month);
-  const lead = (first.getDay() - (prefs.weekStart === "mon" ? 1 : 0) + 7) % 7;
+  const lead = weekLead(first, prefs.weekStart);
   const count = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
   // Days of the neighbouring months fill the first and last weeks, quietly.
   const total = Math.ceil((lead + count) / 7) * 7;
   const cells = Array.from({ length: total }, (_, i) => shift(month, i - lead));
-  const heads = prefs.weekStart === "mon" ? [1, 2, 3, 4, 5, 6, 0] : [0, 1, 2, 3, 4, 5, 6];
+  const heads = weekOrder(prefs.weekStart);
   const move = (by: number) => setMonth(dateKey(new Date(first.getFullYear(), first.getMonth() + by, 1)));
   return (
     <Modal label="Choose a day" onClose={onClose} className="month-sheet">

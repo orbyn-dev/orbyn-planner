@@ -1,4 +1,5 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
+import { firstRunDoneForTests } from "../../test-setup";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../app/App";
@@ -33,6 +34,7 @@ async function open(options: { path?: string; seed?: (store: LocalStore) => void
 beforeEach(() => {
   vi.unstubAllGlobals();
   localStorage.clear();
+  firstRunDoneForTests();
 });
 afterEach(() => {
   document.getElementById("root")?.remove();

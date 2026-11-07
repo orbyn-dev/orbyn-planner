@@ -119,7 +119,13 @@ async function fillSignIn(email = SAM.email, password = SAM.password) {
   await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
 }
 
-const todayShown = () => screen.findByRole("heading", { name: "Nothing planned today" });
+/** The planner is open on Today. A new account's first launch shows first run, which this skips (it is tested in features/firstRun). */
+const todayShown = async () => {
+  await waitFor(() => expect(screen.queryByRole("heading", { name: "Nothing planned today" }) ?? screen.queryByRole("region", { name: "Welcome to Orbyn Planner" })).not.toBeNull());
+  const welcome = screen.queryByRole("region", { name: "Welcome to Orbyn Planner" });
+  if (welcome) await userEvent.click(within(welcome).getByRole("button", { name: "Skip for now" }));
+  return screen.findByRole("heading", { name: "Nothing planned today" });
+};
 const openAccount = async () => {
   await userEvent.click(await screen.findByRole("button", { name: "Account" }));
 };
@@ -712,6 +718,8 @@ describe("keys the browser will not store", () => {
     expect(done).toHaveTextContent("This browser still can’t keep them, so you’ll sign in again here next time.");
     expect(within(done).getByRole("button", { name: "Sign out of this browser" })).toBeInTheDocument();
     await userEvent.click(within(done).getByRole("button", { name: "Continue" }));
+    // Two planners are mounted: first run (a new account's first launch) is skipped in this one.
+    await userEvent.click(within(await within(onA.root).findByRole("region", { name: "Welcome to Orbyn Planner" })).getByRole("button", { name: "Skip for now" }));
     expect(await within(onA.root).findByRole("heading", { name: "Nothing planned today" })).toBeInTheDocument();
     expect(a.keys.inMemory).toBe(true);
     onB.unmount();

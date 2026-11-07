@@ -1,4 +1,5 @@
 import { act, render, screen, within } from "@testing-library/react";
+import { firstRunDoneForTests } from "../test-setup";
 import userEvent from "@testing-library/user-event";
 import html from "../../index.html?raw";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -82,6 +83,7 @@ describe("theme before first paint", () => {
     new Function(script)();
     expect(document.documentElement.dataset.theme).toBe("dark");
     localStorage.clear();
+  firstRunDoneForTests();
     stubSystem(false);
     new Function(script)();
     expect(document.documentElement.dataset.theme).toBe("light");

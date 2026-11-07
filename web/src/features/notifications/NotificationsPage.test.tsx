@@ -1,4 +1,5 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
+import { firstRunDoneForTests } from "../../test-setup";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { takeSettingsTarget } from "../../app/settingsTarget";
@@ -37,6 +38,7 @@ const ui = () => render(<NotificationsProvider><Count /><NotificationsPage /></N
 
 beforeEach(() => {
   localStorage.clear();
+  firstRunDoneForTests();
   read.mockReset();
   read.mockResolvedValue({ ...changed, changedBy: null });
   navigate.mockReset();

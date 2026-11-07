@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { firstRunDoneForTests } from "../../test-setup";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../app/App";
@@ -51,6 +52,7 @@ async function open(path = "/settings", seed?: (s: LocalStore) => void) {
 beforeEach(() => {
   vi.unstubAllGlobals();
   localStorage.clear();
+  firstRunDoneForTests();
 });
 afterEach(() => {
   vi.useRealTimers();

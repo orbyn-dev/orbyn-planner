@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { dateKey, dateOf, MONTHS, WEEKDAYS } from "../lib/dates";
+import { dateKey, dateOf, MONTHS, WEEKDAYS, weekLead, weekOrder, type WeekStart } from "../lib/dates";
 import { Icon } from "./Icon";
 
 const shift = (day: string, n: number) => {
@@ -20,7 +20,7 @@ const dayName = (day: string) => {
  * the neighbouring months are quiet. One day is in the Tab order; arrow keys move by a day or a week (into the next month when they
  * cross it), Page Up and Page Down by a month, and Enter or Space picks. `value` is `YYYY-MM-DD` or empty.
  */
-export function MonthGrid({ value, today, weekStart, label = "Days", autoFocus, onPick }: { value: string; today: string; weekStart: "mon" | "sun"; label?: string; autoFocus?: boolean; onPick: (day: string) => void }) {
+export function MonthGrid({ value, today, weekStart, label = "Days", autoFocus, onPick }: { value: string; today: string; weekStart: WeekStart; label?: string; autoFocus?: boolean; onPick: (day: string) => void }) {
   const [focus, setFocus] = useState(value || today);
   const [month, setMonth] = useState(() => monthOf(value || today));
   const grid = useRef<HTMLDivElement>(null);
@@ -32,11 +32,11 @@ export function MonthGrid({ value, today, weekStart, label = "Days", autoFocus, 
   }, [focus, month]);
 
   const first = dateOf(month);
-  const lead = (first.getDay() - (weekStart === "mon" ? 1 : 0) + 7) % 7;
+  const lead = weekLead(first, weekStart);
   const count = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
   const total = Math.ceil((lead + count) / 7) * 7;
   const cells = Array.from({ length: total }, (_, i) => shift(month, i - lead));
-  const heads = weekStart === "mon" ? [1, 2, 3, 4, 5, 6, 0] : [0, 1, 2, 3, 4, 5, 6];
+  const heads = weekOrder(weekStart);
   // The day that takes the Tab stop: the focused one when it is on this page, else the first of the month.
   const stop = cells.includes(focus) && monthOf(focus) === month ? focus : month;
 

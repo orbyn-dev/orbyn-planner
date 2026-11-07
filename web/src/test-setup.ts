@@ -7,6 +7,9 @@ import { afterEach, beforeEach } from "vitest";
 // what makes a UI test slow and timing-dependent, and nothing here depends on them, so the direct calls run without the delay.
 beforeEach(() => {
   if (typeof document === "undefined") return;
+  // Most tests are about a planner already in use: first run is done for the local-only planner unless a test says otherwise (it
+  // removes the key). A test that clears storage in its own beforeEach calls `firstRunDoneForTests()` after.
+  if (typeof localStorage !== "undefined") localStorage.setItem("orbyn-planner.first-run.local", "done");
   const instant = userEvent.setup({ delay: null });
   for (const name of Object.keys(instant) as (keyof typeof instant)[]) {
     if (name !== "setup") (userEvent as unknown as Record<string, unknown>)[name] = instant[name];
@@ -18,3 +21,8 @@ afterEach(() => {
   if (typeof localStorage !== "undefined") localStorage.clear();
   if (typeof document !== "undefined") document.documentElement.removeAttribute("data-theme");
 });
+
+/** For a test file that clears localStorage itself: first run is done again afterwards. */
+export function firstRunDoneForTests(): void {
+  localStorage.setItem("orbyn-planner.first-run.local", "done");
+}

@@ -11,6 +11,8 @@ import { ProjectPage } from "../features/projects/ProjectPage";
 import { ProjectsPage } from "../features/projects/ProjectsPage";
 import { SettingsPage } from "../features/settings/SettingsPage";
 import { CompletedPage } from "../features/completed/CompletedPage";
+import { FirstRun } from "../features/firstRun/FirstRun";
+import { useFirstRun } from "../features/firstRun/useFirstRun";
 import { SearchDialog } from "../features/search/SearchDialog";
 import { NewTaskDialog } from "../features/tasks/NewTaskDialog";
 import { TaskPanel } from "../features/tasks/TaskPanel";
@@ -131,6 +133,7 @@ function Shell() {
   useSubscriptionRefresh();
   useReminders((message) => ui.showToast(message));
   const project = /^\/projects\/([^/]+)$/.exec(path);
+  const firstRun = useFirstRun();
   const page = project ? () => <ProjectPage id={decodeURIComponent(project[1]!)} /> : (PAGES[path === "/" ? "/today" : path] ?? PAGES["/today"]!);
 
   return (
@@ -157,7 +160,7 @@ function Shell() {
       <main id="content" ref={main} tabIndex={-1} className="sheet">
         <DeletionBanner />
         <div className={ui.taskId || ui.eventKey ? "sheet-grid has-panel" : "sheet-grid"}>
-          <div className="sheet-main">{page()}</div>
+          <div className="sheet-main">{firstRun.active && (path === "/" || path === "/today") ? <FirstRun onDone={firstRun.finish} /> : page()}</div>
           <TaskPanel />
           <EventPanel />
         </div>

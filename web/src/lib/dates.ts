@@ -81,10 +81,34 @@ export function formatDue(due: string, now: Date): string {
   return hasTime ? `${day} ${formatTime(date)}` : day;
 }
 
-/** The first day of the week containing `d`: Monday, or Sunday. */
-export function weekStartOf(d: Date, first: "mon" | "sun"): Date {
-  const back = first === "mon" ? (d.getDay() + 6) % 7 : d.getDay();
-  return addDays(startOfDay(d), -back);
+/** The day a week starts on: Monday, Sunday or Saturday (Settings › Planning, and the first-run steps). */
+export type WeekStart = "mon" | "sun" | "sat";
+const FIRST_DAY: Record<WeekStart, number> = { mon: 1, sun: 0, sat: 6 };
+
+/** The seven weekdays (0 is Sunday) in the order a week reads for this start. */
+export function weekOrder(first: WeekStart): number[] {
+  return Array.from({ length: 7 }, (_, i) => (FIRST_DAY[first] + i) % 7);
+}
+
+/** How many days of the previous week come before the 1st of a month in a month grid. */
+export function weekLead(firstOfMonth: Date, first: WeekStart): number {
+  return (firstOfMonth.getDay() - FIRST_DAY[first] + 7) % 7;
+}
+
+/** The first day of the week containing `d`. */
+export function weekStartOf(d: Date, first: WeekStart): Date {
+  return addDays(startOfDay(d), -weekLead(d, first));
+}
+
+/** The week start the browser's locale uses (Monday where it says nothing): the default of the first-run step. */
+export function localeWeekStart(): WeekStart {
+  try {
+    const locale = new Intl.Locale(typeof navigator !== "undefined" ? navigator.language : "en") as Intl.Locale & { weekInfo?: { firstDay: number }; getWeekInfo?: () => { firstDay: number } };
+    const first = (locale.getWeekInfo?.() ?? locale.weekInfo)?.firstDay; // 1 is Monday, 6 Saturday, 7 Sunday
+    return first === 7 ? "sun" : first === 6 ? "sat" : "mon";
+  } catch {
+    return "mon";
+  }
 }
 
 /** ISO 8601 week number: the week with the year's first Thursday is week 1. */
