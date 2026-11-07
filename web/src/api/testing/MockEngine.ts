@@ -100,7 +100,14 @@ export function createMockEngine(now: () => number = () => Date.now()) {
   const waiting = new Map<string, { email: string; device: LoginFinish["device"]; wrong: number }>();
   const calls: Call[] = [];
   /** Sign-ups waiting for their email code, and the code each was last sent (the mock has no mailbox: tests read it here). */
-  const signups = new Map<string, { email: string; upload: Uint8Array; device: RegisterFinish["device"]; code: string; wrong: number; sentAt: number; resends: number }>();
+  const signups = new Map<string, { email: string; upload: Uint8Array; device: RegisterFinish["device"]; code: string; wrong: number; sentAt: number; resends: number; invite?: string }>();
+  /**
+   * Sign-up mode, as `ORBYN_SIGNUP`: "open" (the default here) ignores invites and the check answers 204 for anything; "invite" needs a
+   * code that is known and unused at the time. Codes are kept normalised (case, dashes and spaces ignored, O as 0, I and L as 1).
+   */
+  const invitesState = { mode: "open" as "open" | "invite", codes: new Map<string, { used: boolean }>(), failures: 0 };
+  const normalInvite = (code: unknown) => (typeof code === "string" ? code.toUpperCase().replace(/[\s-]/g, "").replace(/O/g, "0").replace(/[IL]/g, "1") : "");
+  const inviteUsable = (code: unknown) => invitesState.codes.get(normalInvite(code))?.used === false;
   let codeCounter = 100000;
   const nextCode = () => String(codeCounter++);
   const subscribers = new Set<(accountId: string, zone: string, token: string, author: string) => void>();
@@ -163,6 +170,15 @@ export function createMockEngine(now: () => number = () => Date.now()) {
       return fail(refusal.status, refusal.code, refusal.message);
     }
 
+    if (method === "POST" && path === "/v1/invites/check") {
+      if (invitesState.mode === "open") return json(204, null);
+      // Only failures count, and past ten an hour even a good code is refused.
+      if (invitesState.failures >= 10) return fail(429, "too_many_attempts", "Too many attempts.");
+      if (inviteUsable((body as { invite?: string }).invite)) return json(204, null);
+      invitesState.failures++;
+      return fail(400, "invite_invalid", "That invite code can't be used.");
+    }
+
     if (method === "POST" && path === "/v1/accounts/register/start") {
       const b = body as RegisterStart;
       if (!normalizeEmail(b.email)) return fail(400, "invalid_email", "The email address is not valid.");
@@ -173,6 +189,10 @@ export function createMockEngine(now: () => number = () => Date.now()) {
       const b = body as RegisterFinish;
       const email = normalizeEmail(b.email);
       if (!email) return fail(400, "invalid_email", "The email address is not valid.");
+      if (invitesState.mode === "invite" && !inviteUsable(b.invite)) {
+        invitesState.failures++;
+        return fail(400, "invite_invalid", "That invite code can't be used.");
+      }
       const upload = decodeBytes(b.registration_upload);
       const keys = publicKeys(b.device);
       if (!fakeVerify(keys.signing, DEVICE_REGISTER_CONTEXT, registerMessage(email, upload, keys), decodeBytes(b.device_signature))) {
@@ -180,7 +200,7 @@ export function createMockEngine(now: () => number = () => Date.now()) {
       }
       // No account and no session yet: the sign-up waits for a code. A taken address gets the same answer, belonging to nobody.
       const signupId = uuid();
-      if (!accounts.has(email)) signups.set(signupId, { email, upload, device: b.device, code: nextCode(), wrong: 0, sentAt: now(), resends: 0 });
+      if (!accounts.has(email)) signups.set(signupId, { email, upload, device: b.device, code: nextCode(), wrong: 0, sentAt: now(), resends: 0, invite: normalInvite(b.invite) });
       return json(201, { signup_id: signupId });
     }
 
@@ -199,6 +219,12 @@ export function createMockEngine(now: () => number = () => Date.now()) {
       }
       signups.delete(b.signup_id);
       if (accounts.has(pending.email)) return refuse();
+      // The invite is used up here, in the transaction that makes the account; one spent by another sign-up first is no account.
+      if (invitesState.mode === "invite") {
+        const invite = invitesState.codes.get(pending.invite ?? "");
+        if (!invite || invite.used) return fail(400, "invite_invalid", "That invite code can't be used.");
+        invite.used = true;
+      }
       const device: Device = {
         id: uuid(), name: pending.device.name, platform: pending.device.platform, state: "trusted", signing_key: pending.device.signing_key,
         agreement_key: pending.device.agreement_key, created_at: new Date(now()).toISOString(), approved_by: null, approval_signature: null, current: false,
@@ -537,6 +563,19 @@ export function createMockEngine(now: () => number = () => Date.now()) {
     emailCode: (signupId: string) => signups.get(signupId)?.code,
     /** The code last "emailed" to an address with a live sign-up. */
     latestEmailCode: (address: string) => [...signups.values()].filter((s) => s.email === normalizeEmail(address)).at(-1)?.code,
+    /** Turns sign-up to invite-only (`ORBYN_SIGNUP=invite`) and makes these codes; with no codes, every code is refused. */
+    requireInvites(...codes: string[]) {
+      invitesState.mode = "invite";
+      invitesState.failures = 0;
+      for (const code of codes) invitesState.codes.set(normalInvite(code), { used: false });
+    },
+    /** Another sign-up verified with this code first. */
+    spendInvite(code: string) {
+      const invite = invitesState.codes.get(normalInvite(code));
+      if (invite) invite.used = true;
+    },
+    /** Whether the code is still unused. */
+    inviteUnused: (code: string) => invitesState.codes.get(normalInvite(code))?.used === false,
     refuseNext(path: string, status: number, code: string, message = "Refused.", times = 1) {
       refusals.push({ path, status, code, message, times });
     },

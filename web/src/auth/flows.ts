@@ -81,7 +81,7 @@ export const NO_MEMORY = "This browser can’t hold the keys of an Orbyn account
 export const KEYS_NOT_SAVED = "Account created, but this browser couldn’t save its keys. Sign in with your email and password to continue.";
 
 /** Starts a sign-up: the password steps and the device's first signature, then the engine sends a code to the address. */
-export async function signUp(services: AuthServices, input: { name: string; email: string; password: string }): Promise<PendingSignUp> {
+export async function signUp(services: AuthServices, input: { name: string; email: string; password: string; invite?: string }): Promise<PendingSignUp> {
   const crypto = services.crypto(); // refuses before anything is sent when sign-in is not in this build
   // Before anything is created: if this browser cannot even hold the keys in memory, say so while nothing exists yet.
   try {
@@ -108,6 +108,8 @@ export async function signUp(services: AuthServices, input: { name: string; emai
       registration_upload: encodeBytes(upload),
       device: describeDevice(keys),
       device_signature: encodeBytes(keys.signRegistration(email, upload)),
+      // Judged first by the engine, before any address logic; it is spent only when the email code is right. Ignored when sign-up is open.
+      invite: input.invite,
     });
     held = true;
     const mine = keys;

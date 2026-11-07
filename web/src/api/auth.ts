@@ -26,6 +26,7 @@ import type { CreateApproval } from "../generated/CreateApproval";
 import type { CurrentDevice } from "../generated/CurrentDevice";
 import type { Device } from "../generated/Device";
 import type { DeviceList } from "../generated/DeviceList";
+import type { InviteCheck } from "../generated/InviteCheck";
 import type { LoginFinish } from "../generated/LoginFinish";
 import type { LoginStart } from "../generated/LoginStart";
 import type { LoginStarted } from "../generated/LoginStarted";
@@ -53,6 +54,7 @@ const MESSAGES: Record<string, string> = {
   email_unavailable: "That email can’t be used for a new account. If it’s yours, sign in instead.",
   login_failed: "That email and password don’t match.",
   invalid_email_code: "That code didn’t work.",
+  invite_invalid: "This invite code didn’t work. Check it and try again.",
   second_factor_required: "Enter the code from your authenticator app to finish signing in.",
   second_factor_failed: "That code didn’t work.",
   protection_conflict: "Another device changed the protection level first. Check it, then try again.",
@@ -165,6 +167,8 @@ export function createAuthApi(options: AuthApiOptions) {
   }
 
   return {
+    /** Whether an invite code could be used to sign up now. Spends nothing and records nothing: 204, or `invite_invalid`, or 429 `too_many_attempts` after ten failures an hour. */
+    inviteCheck: (body: InviteCheck) => call<void>("POST", "/v1/invites/check", body),
     registerStart: (body: RegisterStart) => call<RegisterStarted>("POST", "/v1/accounts/register/start", body),
     /** No account and no session yet: a sign-up waits for the code sent to the address. */
     registerFinish: (body: RegisterFinish) => call<SignUpPending>("POST", "/v1/accounts/register/finish", body),
