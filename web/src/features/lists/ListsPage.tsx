@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MotionList } from "../../components/MotionList";
 import { useNow } from "../../app/clock";
 import { Link } from "../../app/router";
 import { useUi } from "../../app/ui";
 import { EmptyState } from "../../components/EmptyState";
 import { motionMs } from "../../styles/tokens";
-import { SyncLine, useSyncStatus, withPersistence } from "../sync/SyncLine";
+import { useSyncStatus, withPersistence } from "../sync/SyncLine";
 import { useSyncController, useSyncState } from "../../sync/SyncProvider";
 import { QuickAddField } from "../tasks/TasksPage";
 import { Icon } from "../../components/Icon";
+import { usePopover } from "../../components/usePopover";
 import { usePlanner, useStore } from "../../store/context";
 import { StrandedZones } from "../sync/StrandedZones";
 import { LIST_COLOURS, type ListColour, type TaskList } from "../../store/types";
@@ -17,45 +18,74 @@ import { Swatch, TaskRow } from "../tasks/TaskRow";
 
 const COLOUR_NAMES: Record<ListColour, string> = { c1: "Blue", c2: "Green", c3: "Purple", c4: "Orange" };
 
-function ListTitle({ list }: { list: TaskList }) {
+/**
+ * The list header (Planner Designs lists, p-list-menu): the colour dot and the name (click the name to rename it), the open count, the
+ * primary Add a task and a … menu with Rename, Colour and Completed and deleted. The sync state is global, not part of this header, and
+ * there is no Share yet (sharing is Planned). The Inbox keeps its name and colour, so its menu has only Completed and deleted.
+ */
+function ListHeader({ list, sub }: { list: TaskList; sub: string }) {
   const store = useStore();
+  const ui = useUi();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(list.name);
+  const [menu, setMenu] = useState<"closed" | "items" | "colour">("closed");
+  const anchor = useRef<HTMLButtonElement>(null);
+  const pop = usePopover(menu !== "closed", () => setMenu("closed"), anchor);
 
+  const rename = () => {
+    setName(list.name);
+    setEditing(true);
+  };
   const save = () => {
     const next = name.trim();
     if (next && next !== list.name) store.updateList(list.id, { name: next });
     setEditing(false);
   };
 
-  return editing ? (
-    <form
-      className="rename"
-      onSubmit={(e) => {
-        e.preventDefault();
-        save();
-      }}
-    >
-      <input className="field" aria-label="List name" value={name} autoFocus onChange={(e) => setName(e.target.value)} onBlur={save} />
-    </form>
-  ) : (
-    <>
-      <h1>
-        <Swatch colour={list.colour} /> {list.name}
-      </h1>
-      {!list.isInbox && (
-        <button
-          type="button"
-          className="ghost"
-          onClick={() => {
-            setName(list.name);
-            setEditing(true);
-          }}
-        >
-          Rename
-        </button>
+  return (
+    <div className="ph" key={list.id}>
+      {editing ? (
+        <form className="rename" onSubmit={(e) => { e.preventDefault(); save(); }}>
+          <input className="field" aria-label="List name" value={name} autoFocus onChange={(e) => setName(e.target.value)} onBlur={save} />
+        </form>
+      ) : (
+        <h1>
+          <Swatch colour={list.colour} />{" "}
+          {list.isInbox ? list.name : <button type="button" className="name-btn" onClick={rename}>{list.name}</button>}
+        </h1>
       )}
-    </>
+      <span className="sub">{sub}</span>
+      <div className="acts">
+        <div className="sync-wrap">
+          <button ref={anchor} type="button" className="ghost" aria-label="More" title="More" aria-haspopup="menu" aria-expanded={menu !== "closed"} onClick={() => setMenu(menu === "closed" ? "items" : "closed")}>
+            <svg viewBox="0 0 16 16" className="ic sm" fill="currentColor" aria-hidden="true"><circle cx="3.5" cy="8" r="1.3" /><circle cx="8" cy="8" r="1.3" /><circle cx="12.5" cy="8" r="1.3" /></svg>
+          </button>
+          {menu !== "closed" && (
+            <div ref={pop} className="card popover list-menu" role="menu" aria-label="List menu">
+              {menu === "colour" ? (
+                <div role="radiogroup" aria-label="Colour" className="colours">
+                  {LIST_COLOURS.map((c) => (
+                    <button key={c} type="button" role="radio" aria-checked={list.colour === c} aria-label={COLOUR_NAMES[c]} className="colour-btn" onClick={() => { store.updateList(list.id, { colour: c }); setMenu("closed"); anchor.current?.focus(); }}>
+                      <Swatch colour={c} />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  {!list.isInbox && <button type="button" role="menuitem" className="mi" autoFocus onClick={() => { setMenu("closed"); rename(); }}>Rename</button>}
+                  {!list.isInbox && <button type="button" role="menuitem" className="mi" onClick={() => setMenu("colour")}>Colour</button>}
+                  <Link to="/completed" role="menuitem" className="mi" onClick={() => setMenu("closed")}>Completed and deleted</Link>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+        <button type="button" className="btn" onClick={() => ui.openNewTask()}>
+          <Icon name="plus" small />
+          Add a task
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -120,7 +150,7 @@ export function ListsPage() {
   const sync = useSyncState();
   const controller = useSyncController();
   const syncNow = useCallback(() => controller?.syncNow(), [controller]);
-  const { status: health, retry } = useSyncStatus(outbox.length, sync, syncNow);
+  const { status: health } = useSyncStatus(outbox.length, sync, syncNow);
   const status = withPersistence(health, persistence);
   const offline = status.kind === "offline";
   const unsynced = new Set(offline ? waiting.map((w) => w.id) : []);
@@ -182,27 +212,7 @@ export function ListsPage() {
       </nav>
 
       <div className="r" aria-label={selected?.name ?? "List"} role="region">
-        {selected && (
-          <div className="ph" key={selected.id}>
-            <ListTitle list={selected} />
-            <span className="sub">{[shown.length === 0 ? "Nothing here" : `${openCount(tasks, selected.id)} open`, offline && "offline"].filter(Boolean).join(" · ")}</span>
-            <div className="acts">
-              <SyncLine status={status} onRetry={retry} waiting={waiting} />
-              <Link to="/completed" className="ghost">Completed and deleted</Link>
-              <div role="radiogroup" aria-label="Colour" className="colours">
-                {LIST_COLOURS.map((c) => (
-                  <button key={c} type="button" role="radio" aria-checked={selected.colour === c} aria-label={COLOUR_NAMES[c]} className="colour-btn" onClick={() => store.updateList(selected.id, { colour: c })}>
-                    <Swatch colour={c} />
-                  </button>
-                ))}
-              </div>
-              <button type="button" className="btn" onClick={() => ui.openNewTask()}>
-                <Icon name="plus" small />
-                Add a task
-              </button>
-            </div>
-          </div>
-        )}
+        {selected && <ListHeader list={selected} sub={[`${openCount(tasks, selected.id)} open`, offline && "offline"].filter(Boolean).join(" · ")} />}
         {offline && <p className="t3 offline-note">You’re offline. Everything here is saved on this device and will sync when you’re back.</p>}
         {!ready ? (
           <div className="tbl-wrap" role="status" aria-label="Loading tasks" aria-busy="true">

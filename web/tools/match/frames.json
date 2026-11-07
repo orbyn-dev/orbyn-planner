@@ -412,5 +412,17 @@
         "name": "Menu"
       }
     ]
+  },
+  "p-list-menu": {
+    "design": "p-list-menu",
+    "kind": "desktop",
+    "route": "/lists",
+    "scenario": "tasks",
+    "steps": [
+      {
+        "role": "button",
+        "name": "More"
+      }
+    ]
   }
 }

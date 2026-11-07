@@ -791,3 +791,8 @@ button.pillx { border: 0; }
 .drop-hint { margin: 0; text-align: center; font-size: var(--fs-12); }
 .tcard[draggable="true"] { cursor: grab; }
 .tcard .move-btn { border: 0; background: none; padding: 0; color: var(--t3); font: inherit; font-size: var(--fs-11-5); cursor: pointer; }
+/* The list header: the name is a button that renames in place, and the … menu is a short list (p-list-menu). */
+.name-btn { border: 0; background: none; padding: 0; color: inherit; font: inherit; letter-spacing: inherit; cursor: text; }
+.list-menu { width: var(--sp-216); padding: var(--sp-6); display: flex; flex-direction: column; gap: var(--sp-2); }
+.list-menu .mi { display: flex; align-items: center; width: 100%; border: 0; border-radius: var(--r-7); background: none; color: var(--t1); font: inherit; padding: var(--sp-8) var(--sp-9); text-align: left; text-decoration: none; cursor: pointer; }
+.list-menu .mi:hover, .list-menu .mi:focus-visible { background: var(--raise); }
