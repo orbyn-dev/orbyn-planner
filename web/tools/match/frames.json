@@ -231,7 +231,7 @@
     "kind": "desktop",
     "design": "p-row-due",
     "route": "/tasks",
-    "scenario": "today",
+    "scenario": "task-panel",
     "steps": [
       {
         "click": "button:has-text(\"Fix the sign-up email bug\")"
@@ -245,7 +245,7 @@
     "kind": "desktop",
     "design": "p-row-list",
     "route": "/tasks",
-    "scenario": "today",
+    "scenario": "task-panel",
     "steps": [
       {
         "click": "button:has-text(\"Fix the sign-up email bug\")"
@@ -259,7 +259,7 @@
     "kind": "desktop",
     "design": "p-row-priority",
     "route": "/tasks",
-    "scenario": "today",
+    "scenario": "task-panel",
     "steps": [
       {
         "click": "button:has-text(\"Fix the sign-up email bug\")"
@@ -273,7 +273,7 @@
     "kind": "desktop",
     "design": "p-row-repeat",
     "route": "/tasks",
-    "scenario": "today",
+    "scenario": "task-panel",
     "steps": [
       {
         "click": "button:has-text(\"Fix the sign-up email bug\")"
@@ -287,7 +287,7 @@
     "kind": "desktop",
     "design": "p-row-reminder",
     "route": "/tasks",
-    "scenario": "today",
+    "scenario": "task-panel",
     "steps": [
       {
         "click": "button:has-text(\"Fix the sign-up email bug\")"
@@ -410,6 +410,298 @@
       {
         "role": "button",
         "name": "Menu"
+      }
+    ]
+  },
+  "first-run": {
+    "kind": "desktop",
+    "design": "first-run",
+    "route": "/today",
+    "scenario": "first-run"
+  },
+  "fr-week": {
+    "kind": "desktop",
+    "design": "fr-week",
+    "route": "/today",
+    "scenario": "first-run",
+    "steps": [
+      {
+        "click": "button:text-is(\"Start\")"
+      }
+    ]
+  },
+  "fr-calendar": {
+    "kind": "desktop",
+    "design": "fr-calendar",
+    "route": "/today",
+    "scenario": "first-run",
+    "steps": [
+      {
+        "click": "button:text-is(\"Start\")"
+      },
+      {
+        "click": "button:text-is(\"Continue\")"
+      }
+    ]
+  },
+  "fr-calendar-error": {
+    "kind": "desktop",
+    "design": "fr-calendar-error",
+    "route": "/today",
+    "scenario": "first-run",
+    "steps": [
+      {
+        "click": "button:text-is(\"Start\")"
+      },
+      {
+        "click": "button:text-is(\"Continue\")"
+      },
+      {
+        "fill": "#fr-cal-name",
+        "value": ""
+      },
+      {
+        "click": "button:text-is(\"Continue\")"
+      }
+    ]
+  },
+  "fr-calendar-feed-error": {
+    "kind": "desktop",
+    "design": "fr-calendar-feed-error",
+    "route": "/today",
+    "scenario": "first-run",
+    "feedHost": "calendar.example.com",
+    "feed": "error",
+    "steps": [
+      {
+        "click": "button:text-is(\"Start\")"
+      },
+      {
+        "click": "button:text-is(\"Continue\")"
+      },
+      {
+        "click": "button[role=\"radio\"]:has-text(\"Subscribe\")"
+      },
+      {
+        "fill": "#fr-cal-url",
+        "value": "https://calendar.example.com/feed.ics"
+      },
+      {
+        "click": "button:text-is(\"Continue\")"
+      }
+    ]
+  },
+  "fr-calendar-checking": {
+    "kind": "desktop",
+    "design": "fr-calendar-checking",
+    "route": "/today",
+    "scenario": "first-run",
+    "feedHost": "calendar.example.com",
+    "feed": "hang",
+    "steps": [
+      {
+        "click": "button:text-is(\"Start\")"
+      },
+      {
+        "click": "button:text-is(\"Continue\")"
+      },
+      {
+        "click": "button[role=\"radio\"]:has-text(\"Subscribe\")"
+      },
+      {
+        "fill": "#fr-cal-url",
+        "value": "https://calendar.example.com/feed.ics"
+      },
+      {
+        "click": "button:text-is(\"Continue\")"
+      }
+    ]
+  },
+  "fr-list": {
+    "kind": "desktop",
+    "design": "fr-list",
+    "route": "/today",
+    "scenario": "first-run",
+    "steps": [
+      {
+        "click": "button:text-is(\"Start\")"
+      },
+      {
+        "click": "button:text-is(\"Continue\")"
+      },
+      {
+        "click": "button:text-is(\"Continue\")"
+      },
+      {
+        "fill": "#fr-list-name",
+        "value": "Work"
+      }
+    ]
+  },
+  "fr-list-empty": {
+    "kind": "desktop",
+    "design": "fr-list-empty",
+    "route": "/today",
+    "scenario": "first-run",
+    "steps": [
+      {
+        "click": "button:text-is(\"Start\")"
+      },
+      {
+        "click": "button:text-is(\"Continue\")"
+      },
+      {
+        "click": "button:text-is(\"Continue\")"
+      }
+    ]
+  },
+  "fr-phone": {
+    "design": "fr-phone",
+    "app": 0,
+    "kind": "phone",
+    "route": "/today",
+    "scenario": "first-run",
+    "steps": [
+      {
+        "click": "button:text-is(\"Start\")"
+      }
+    ]
+  },
+  "fr-phone@1": {
+    "design": "fr-phone",
+    "app": 1,
+    "kind": "phone",
+    "route": "/today",
+    "scenario": "first-run",
+    "steps": [
+      {
+        "click": "button:text-is(\"Start\")"
+      },
+      {
+        "click": "button:text-is(\"Continue\")"
+      }
+    ]
+  },
+  "fr-phone@2": {
+    "design": "fr-phone",
+    "app": 2,
+    "kind": "phone",
+    "route": "/today",
+    "scenario": "first-run",
+    "steps": [
+      {
+        "click": "button:text-is(\"Start\")"
+      },
+      {
+        "click": "button:text-is(\"Continue\")"
+      },
+      {
+        "click": "button:text-is(\"Continue\")"
+      }
+    ]
+  },
+  "p-today-long": {
+    "kind": "desktop",
+    "design": "p-today-long",
+    "route": "/today",
+    "scenario": "today-long"
+  },
+  "p-today-week-empty": {
+    "kind": "desktop",
+    "design": "p-today-week-empty",
+    "route": "/today",
+    "scenario": "today-week-empty"
+  },
+  "p-today-overnight": {
+    "kind": "desktop",
+    "design": "p-today-overnight",
+    "route": "/today",
+    "scenario": "today-overnight"
+  },
+  "p-today-overnight-long": {
+    "kind": "desktop",
+    "design": "p-today-overnight-long",
+    "route": "/today",
+    "scenario": "today-overnight-long"
+  },
+  "p-today-syncing": {
+    "kind": "desktop",
+    "design": "p-today-syncing",
+    "route": "/today",
+    "scenario": "today",
+    "health": "hang"
+  },
+  "p-today-sync-failed": {
+    "kind": "desktop",
+    "design": "p-today-sync-failed",
+    "route": "/today",
+    "scenario": "today",
+    "health": "fail"
+  },
+  "calendar-month": {
+    "kind": "desktop",
+    "design": "calendar-month",
+    "route": "/calendar",
+    "scenario": "month",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Month"
+      }
+    ]
+  },
+  "calendar-agenda": {
+    "kind": "desktop",
+    "design": "calendar-agenda",
+    "route": "/calendar",
+    "scenario": "agenda",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Agenda"
+      }
+    ]
+  },
+  "p-cal-all-day": {
+    "kind": "desktop",
+    "design": "p-cal-all-day",
+    "route": "/calendar",
+    "scenario": "week-all-day",
+    "now": "2026-11-07T11:40:00.000Z"
+  },
+  "task-panel": {
+    "kind": "desktop",
+    "design": "task-panel",
+    "route": "/tasks",
+    "scenario": "task-panel",
+    "steps": [
+      {
+        "click": "button:has-text(\"Fix the sign-up email bug\")"
+      }
+    ]
+  },
+  "task-panel-status-open": {
+    "kind": "desktop",
+    "design": "task-panel-status-open",
+    "route": "/tasks",
+    "scenario": "task-panel-progress",
+    "steps": [
+      {
+        "click": "button:has-text(\"Fix the sign-up email bug\")"
+      },
+      {
+        "click": "button[aria-label^=\"Status,\"]"
+      }
+    ]
+  },
+  "task-panel-status-set": {
+    "kind": "desktop",
+    "design": "task-panel-status-set",
+    "route": "/tasks",
+    "scenario": "task-panel-blocked",
+    "steps": [
+      {
+        "click": "button:has-text(\"Fix the sign-up email bug\")"
       }
     ]
   }

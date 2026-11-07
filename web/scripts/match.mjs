@@ -1,6 +1,6 @@
 /* global document */
 // DEVELOPMENT ONLY: renders one planner screen and the design frame it should match, side by side. See docs/match-kit.md.
-//   node scripts/match.mjs <frame-id> [--theme light|dark|dim|all] [--out <folder>] [--pr <name>]
+//   node scripts/match.mjs <frame-id>... [--theme light|dark|dim|all] [--out <folder>] [--pr <name>]   (several frames share one server; "all" is every frame)
 // Needs Playwright and a Chrome it can launch already on this machine (nothing is downloaded): see the doc.
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -31,7 +31,7 @@ function fail(message) {
 }
 
 function args() {
-  const out = { frame: null, theme: "all", out: null, pr: null };
+  const out = { frames: [], theme: "all", out: null, pr: null };
   const argv = process.argv.slice(2);
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
@@ -39,10 +39,11 @@ function args() {
     else if (a === "--out") out.out = argv[++i];
     else if (a === "--pr") out.pr = argv[++i];
     else if (a.startsWith("-")) fail(`unknown option ${a}`);
-    else out.frame = a;
+    else out.frames.push(a);
   }
-  if (!out.frame) fail(`give a frame id. Known: ${Object.keys(frames).join(", ")}`);
-  if (!frames[out.frame]) fail(`unknown frame "${out.frame}". Known: ${Object.keys(frames).join(", ")}`);
+  if (out.frames.includes("all")) out.frames = Object.keys(frames);
+  if (out.frames.length === 0) fail(`give a frame id. Known: ${Object.keys(frames).join(", ")}`);
+  for (const f of out.frames) if (!frames[f]) fail(`unknown frame "${f}". Known: ${Object.keys(frames).join(", ")}`);
   if (out.theme !== "all" && !THEMES.includes(out.theme)) fail("--theme is light, dark, dim or all");
   return out;
 }
@@ -109,7 +110,9 @@ const FONT_CSS = `
 `;
 
 const options = args();
-const frame = frames[options.frame];
+/** The frame being compared (set by the loop at the end). */
+let frame;
+let name;
 const themes = options.theme === "all" ? THEMES : [options.theme];
 const outDir = resolve(options.out ?? join(repo, ".match", options.pr ?? branchName()));
 mkdirSync(outDir, { recursive: true });
@@ -138,17 +141,25 @@ await server.listen();
 const origin = server.resolvedUrls.local[0].replace(/\/$/, "");
 const browser = await chromium.launch({ executablePath: findChrome(), headless: true });
 const problems = [];
+const failed = [];
 
 /** Only the dev server's own address may be reached; an engine path on it fails too. */
 async function guardNetwork(context, label, strict = true) {
   await context.route("**/*", (route) => {
     const url = new URL(route.request().url());
     if (url.protocol === "data:" || url.protocol === "blob:") return route.continue();
+    if (url.origin !== origin && frame.feedHost && url.hostname === frame.feedHost) {
+      // A calendar feed the frame subscribes to: answered here (never reaches a real host).
+      if (frame.feed === "hang") return;
+      return route.fulfill({ status: 404, contentType: "text/plain", body: "not found" });
+    }
     if (url.origin !== origin) {
       // The design page asks Google Fonts for its fonts; they are provided locally, so that request just fails.
       if (strict) problems.push(`${label}: request to ${url.origin}${url.pathname}`);
       return route.abort();
     }
+    if (url.pathname === `${STUB_ENGINE}/health` && frame.health === "hang") return; // the planner keeps waiting: "syncing"
+    if (url.pathname === `${STUB_ENGINE}/health` && frame.health === "fail") return route.fulfill({ status: 503, contentType: "application/json", body: "{}" });
     if (url.pathname === `${STUB_ENGINE}/health`) {
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ status: "ok", version: "match", database: "ok" }) });
     }
@@ -185,7 +196,7 @@ async function ours(theme) {
   }
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(400);
-  const png = join(outDir, `${options.frame.replace("@", "-")}-${theme}-ours.png`);
+  const png = join(outDir, `${name.replace("@", "-")}-${theme}-ours.png`);
   await page.screenshot({ path: png });
   const text = await page.evaluate(() => document.body.innerText);
   await context.close();
@@ -210,7 +221,7 @@ async function design(theme) {
   const box = await app.boundingBox();
   const size = SIZE[frame.kind];
   const top = frame.kind === "phone" ? 51 : 1; // the phone's status bar is device chrome; the desktop title bar is hidden
-  const png = join(outDir, `${options.frame.replace("@", "-")}-${theme}-design.png`);
+  const png = join(outDir, `${name.replace("@", "-")}-${theme}-design.png`);
   await page.screenshot({ path: png, clip: { x: box.x + 1, y: box.y + top, width: size.width, height: size.height } });
   const text = await app.evaluate((el) => el.innerText);
   await context.close();
@@ -226,7 +237,7 @@ async function sideBySide(a, b, theme) {
       `<figure style="margin:0"><figcaption>ours · ${theme}</figcaption><img src="${data(a)}"></figure>` +
       `<figure style="margin:0"><figcaption>design · ${theme}</figcaption><img src="${data(b)}"></figure></div></body>`,
   );
-  const png = join(outDir, `${options.frame.replace("@", "-")}-${theme}-side.png`);
+  const png = join(outDir, `${name.replace("@", "-")}-${theme}-side.png`);
   await page.screenshot({ path: png, fullPage: true });
   await context.close();
   return png;
@@ -243,17 +254,28 @@ function textDiff(ourText, designText) {
 }
 
 try {
-  for (const theme of themes) {
-    const o = await ours(theme);
-    const d = await design(theme);
-    const side = await sideBySide(o.png, d.png, theme);
-    writeFileSync(join(outDir, `${options.frame.replace("@", "-")}-${theme}-text.txt`), textDiff(o.text, d.text) + "\n");
-    console.log(side);
+  for (const id of options.frames) {
+    frame = frames[id];
+    name = id;
+    try {
+      for (const theme of themes) {
+        const o = await ours(theme);
+        const d = await design(theme);
+        const side = await sideBySide(o.png, d.png, theme);
+        writeFileSync(join(outDir, `${name.replace("@", "-")}-${theme}-text.txt`), textDiff(o.text, d.text) + "\n");
+        console.log(side);
+      }
+    } catch (error) {
+      // One frame that cannot be rendered (a step that finds nothing) does not stop the others.
+      console.error(`match: ${id} failed: ${String(error.message ?? error).split("\n")[0]}`);
+      failed.push(id);
+    }
   }
 } finally {
   await browser.close();
   await server.close();
 }
+if (failed.length > 0) console.error(`match: frames that failed: ${failed.join(", ")}`);
 if (problems.length > 0) {
   console.error(`match: the fixture reached outside the dev server:\n  ${[...new Set(problems)].join("\n  ")}`);
   process.exit(1);
