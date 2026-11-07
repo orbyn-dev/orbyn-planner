@@ -22,6 +22,8 @@ export const SCENARIOS = [
   "phone-day-empty-wed",
   "phone-day-empty-fri",
   "tasks",
+  "today-event",
+  "lists-empty",
 ] as const;
 export type Scenario = (typeof SCENARIOS)[number];
 
@@ -188,6 +190,33 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
     case "phone-day-empty-wed":
     case "phone-day-empty-fri":
       return;
+    case "today-event": {
+      // The event panel frames: Book club with a place, a repeat and a reminder, and Monday's agenda items.
+      todayData(store, w);
+      const club = store.getState().events.find((e) => e.title === "Book club")!;
+      store.deleteEvent(club.id);
+      store.addEvent({
+        title: "Book club",
+        calendarId: w.personal,
+        start: `${day(7)}T15:00`,
+        end: `${day(7)}T17:00`,
+        place: "Library, level 2",
+        reminder: 30,
+        repeat: { frequency: "weekly", interval: 2, weekdays: [], end: { type: "never" } },
+      });
+      store.addEvent({ title: "Launch stand-up", calendarId: w.work, start: `${day(9)}T09:00`, end: `${day(9)}T09:30` });
+      store.addEvent({ title: "Swim", calendarId: w.personal, start: `${day(9)}T18:00`, end: `${day(9)}T19:00` });
+      return;
+    }
+    case "lists-empty": {
+      const groceries = store.addList("Groceries", "c2");
+      const home = store.addList("Home", "c4");
+      store.addList("Errands", "c2");
+      for (const t of ["Oat milk", "Coffee beans", "Bread"]) store.addTask({ title: t, listId: groceries.id });
+      for (const t of ["Water the plants", "Fix the shelf"]) store.addTask({ title: t, listId: home.id });
+      for (const t of ["Reply to the school", "Renew library books", "Book the dentist"]) store.addTask({ title: t, listId: w.inbox });
+      return;
+    }
     case "tasks": {
       const home = store.addList("Book club", "c3");
       const reno = store.addList("Home renovation", "c4");
