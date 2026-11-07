@@ -195,7 +195,7 @@ async function ours(theme) {
     else if (step.select) await page.locator(step.select).first().selectOption(step.value);
   }
   await page.evaluate(() => document.fonts.ready);
-  await page.waitForTimeout(400);
+  await page.waitForTimeout(1300); // the sync label holds its first state for a second (SyncLine.tsx)
   const png = join(outDir, `${name.replace("@", "-")}-${theme}-ours.png`);
   await page.screenshot({ path: png });
   const text = await page.evaluate(() => document.body.innerText);

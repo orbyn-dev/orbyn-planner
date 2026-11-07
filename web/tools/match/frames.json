@@ -124,8 +124,10 @@
     "scenario": "tasks",
     "steps": [
       {
-        "select": "select:has(option[value=\"high\"])",
-        "value": "high"
+        "click": "button.chip[aria-label^=\"Priority\"]"
+      },
+      {
+        "click": ".chip-menu [role=\"menuitemradio\"]:has-text(\"High\"), .chip-menu button:has-text(\"High\"), .chip-menu li:has-text(\"High\")"
       }
     ]
   },
