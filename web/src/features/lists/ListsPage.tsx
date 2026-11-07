@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { MotionList } from "../../components/MotionList";
 import { useNow } from "../../app/clock";
 import { Link } from "../../app/router";
 import { useUi } from "../../app/ui";
@@ -222,11 +223,11 @@ export function ListsPage() {
           </EmptyState>
         ) : (
           <div className="tbl-wrap">
-            <ul className="tbl">
+            <MotionList className="tbl">
               {shown.map((t) => (
                 <TaskRow key={t.id} task={t} layout="list" unsynced={unsynced.has(t.id)} />
               ))}
-            </ul>
+            </MotionList>
           </div>
         )}
         {selected && <QuickAddField listId={selected.id} example="Post the parcel tomorrow" />}

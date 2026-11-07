@@ -218,11 +218,18 @@ a.ghost, a.btn { text-decoration: none; }
 input.check {
   appearance: none; -webkit-appearance: none; position: relative; flex: none; width: var(--sp-15); height: var(--sp-15); margin: 0;
   border-radius: var(--r-5); border: var(--bw-1-5) solid var(--line2); background: transparent; cursor: pointer;
+  transition: background-color var(--m-fast) var(--m-out), border-color var(--m-fast) var(--m-out);
 }
 input.check:checked { background: var(--t1); border-color: var(--t1); }
-input.check:checked::after {
+/* Motion Designs `checkbox`: the box fills and the tick fades in from scale .4 to full size (150 ms). Under reduced motion the tick is full size. */
+input.check::after {
   content: ""; position: absolute; left: var(--sp-4); top: var(--sp-1); width: var(--sp-4); height: var(--sp-8);
-  border: solid var(--main); border-width: 0 var(--bw-2) var(--bw-2) 0; transform: rotate(45deg);
+  border: solid var(--main); border-width: 0 var(--bw-2) var(--bw-2) 0; opacity: 0; transform: rotate(45deg) scale(.4);
+  transition: opacity var(--m-fast) var(--m-out), transform var(--m-fast) var(--m-out);
+}
+input.check:checked::after { opacity: 1; transform: rotate(45deg) scale(1); }
+@media (prefers-reduced-motion: reduce) {
+  input.check::after { transform: rotate(45deg) scale(1); }
 }
 
 /* Tasks */
@@ -237,9 +244,20 @@ button.pill { border: 0; }
 .tr.h { color: var(--t3); font-size: var(--fs-11-5); border-top: 0; min-height: var(--sp-26); }
 .tbl > .tr:last-child { border-bottom: var(--bw) solid var(--line); }
 .tr .tt { color: var(--t1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tr.done .tt, .row.done .what, .tcard[data-done="true"] .tt, .step-row[data-done="true"] .what {
-  color: var(--t3); text-decoration: line-through; /* the strike is the text colour, as the designs draw it */
+/* Motion Designs `checkoff`: the strike is a line that grows from the left (scaleX, 300 ms) in the text colour, and the text turns quiet (200 ms). */
+.tr .tt, .row .what, .tcard .tt, .step-row .what { position: relative; width: fit-content; max-width: 100%; justify-self: start; transition: color var(--m-base) var(--m-out); }
+.tr .tt::after, .row .what::after, .tcard .tt::after, .step-row .what::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 50%; height: var(--bw); background: currentColor;
+  transform: scaleX(0); transform-origin: left center; transition: transform var(--m-slow) var(--m-out); pointer-events: none;
 }
+.tr.done .tt, .row.done .what, .tcard[data-done="true"] .tt, .step-row[data-done="true"] .what { color: var(--t3); }
+.tr.done .tt::after, .row.done .what::after, .tcard[data-done="true"] .tt::after, .step-row[data-done="true"] .what::after { transform: scaleX(1); }
+@media (prefers-reduced-motion: reduce) {
+  .tr .tt::after, .row .what::after, .tcard .tt::after, .step-row .what::after { transform: scaleX(1); opacity: 0; transition-property: opacity; }
+  .tr.done .tt::after, .row.done .what::after, .tcard[data-done="true"] .tt::after, .step-row[data-done="true"] .what::after { opacity: 1; }
+}
+.row, .tr { transition: opacity var(--m-base) var(--m-out); }
+.tbl, .today-list ul { position: relative; }
 .tag { display: inline-flex; align-items: center; gap: var(--sp-6); font-size: var(--fs-12); color: var(--t2); }
 .due { font-size: var(--fs-12); color: var(--t3); }
 .due.amber { color: var(--amber-text); font-weight: var(--fw-medium); }

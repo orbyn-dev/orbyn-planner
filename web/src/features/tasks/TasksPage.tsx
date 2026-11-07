@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { MotionList } from "../../components/MotionList";
 import { useNow } from "../../app/clock";
 import { useUi } from "../../app/ui";
 import { EmptyState, PageHeader } from "../../components/EmptyState";
@@ -187,11 +188,11 @@ export function TasksPage() {
                   <span>{g.tasks.length}</span>
                 </div>
               )}
-              <ul className="tbl">
+              <MotionList className="tbl">
                 {g.tasks.map((t) => (
                   <TaskRow key={t.id} task={t} />
                 ))}
-              </ul>
+              </MotionList>
             </section>
           ))}
         </div>

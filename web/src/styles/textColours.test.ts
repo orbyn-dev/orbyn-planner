@@ -20,9 +20,9 @@ describe("text uses t1 to t3; t4 is for icons, borders and dividers", () => {
 
   it("a done row is struck through in its own text colour, not a paler line", () => {
     const css = fs.readFileSync(path.join(SRC, "styles/app.css"), "utf8");
-    const rule = css.slice(css.indexOf(".tr.done .tt"), css.indexOf("}", css.indexOf(".tr.done .tt")));
-    expect(rule).toContain("text-decoration: line-through");
-    expect(rule).not.toContain("text-decoration-color");
+    const rule = css.slice(css.indexOf(".tr .tt::after"), css.indexOf("}", css.indexOf(".tr .tt::after")));
+    expect(rule).toContain("background: currentColor"); // the line is drawn in the text colour
+    expect(rule).not.toMatch(/background:\s*var\(--t4\)/);
   });
 
   it("a notes textarea uses the page font, not the browser's monospace", () => {
