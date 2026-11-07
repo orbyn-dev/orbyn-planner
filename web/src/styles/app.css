@@ -361,6 +361,7 @@ button.pillx { border: 0; }
 .cal .dh.today b { display: inline-grid; place-items: center; width: var(--sp-28); height: var(--sp-28); border-radius: var(--r-pill); background: var(--btn); color: var(--btnt); font-size: var(--fs-14); }
 .cal .dh.today { color: var(--t1); }
 .cal .adl { font-size: var(--fs-11); color: var(--t3); padding: var(--sp-6) var(--sp-4) var(--sp-6) 0; text-align: right; }
+.cal .adb { padding: var(--sp-3) var(--sp-4); border-left: var(--bw) solid var(--line); border-bottom: var(--bw) solid var(--line); min-width: 0; }
 .cal .adc { border-left: var(--bw) solid var(--line); padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-2); border-bottom: var(--bw) solid var(--line); }
 .calscroll { flex: 1; min-height: 0; overflow: auto; }
 .cal .hr { font-family: var(--mono); font-size: var(--fs-10-5); color: var(--t3); padding-top: var(--sp-2); height: var(--hour); text-align: right; padding-right: var(--sp-8); }

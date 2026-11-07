@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useUi } from "../../app/ui";
 import { WEEKDAYS, dateOf, formatTime, parseDue } from "../../lib/dates";
-import { touchesDay } from "../../lib/wall";
+import { lastDayOf, touchesDay } from "../../lib/wall";
 import { usePlanner } from "../../store/context";
 import type { Occurrence } from "../../store/occurrences";
 import type { CalendarEvent, Task } from "../../store/types";
@@ -45,6 +45,21 @@ export function TimeGrid({ days, occurrences, today, now, mode }: { days: string
     return map;
   }, [days, occurrences]);
   const allDay = occurrences.filter(isAllDayLike);
+  // An event lasting several days is one bar across the columns it covers; a one-day all-day event is a chip in its column.
+  const bars = useMemo(() => {
+    const out: { occ: Occurrence; start: number; len: number; from: string; to: string }[] = [];
+    for (const occ of occurrences.filter(isAllDayLike)) {
+      const from = occ.start.slice(0, 10);
+      const to = lastDayOf(occ.start, occ.end, occ.allDay);
+      if (from >= to) continue;
+      const shown = days.map((d, i) => ({ d, i })).filter(({ d }) => d >= from && d <= to);
+      if (shown.length > 0 && days.length > 1) out.push({ occ, start: shown[0]!.i, len: shown.length, from, to });
+    }
+    return out;
+  }, [days, occurrences]);
+  const barIds = new Set(bars.map((b) => b.occ));
+  const singles = allDay.filter((o) => !barIds.has(o));
+  const dayWord = (d: string) => `${WEEKDAYS[dateOf(d).getDay()]!.slice(0, 3)} ${dateOf(d).getDate()}`;
   const overlaps = useMemo(() => countOverlaps(byDay), [byDay]);
 
   useEffect(() => {
@@ -98,10 +113,17 @@ export function TimeGrid({ days, occurrences, today, now, mode }: { days: string
           })}
           {allDay.length > 0 && (
             <>
-              <div className="adl">All day</div>
-              {days.map((d) => (
-                <div key={d} className="adc">
-                  {byDay.get(d)!.filter(isAllDayLike).map((o) => (
+              <div className="adl" style={{ gridRow: `2 / span ${bars.length + (singles.length > 0 ? 1 : 0)}` }}>All day</div>
+              {bars.map((b, k) => (
+                <div key={`${b.occ.event.id}-${b.occ.date}`} className="adb" style={{ gridColumn: `${b.start + 2} / span ${b.len}`, gridRow: 2 + k }}>
+                  <button type="button" className="chipx allday" style={{ borderLeft: `var(--bw-3) solid ${colourOf(calendars, b.occ.event)}` }} onClick={() => ui.openEvent(b.occ.event.id, b.occ.date)}>
+                    {b.occ.event.title} · {dayWord(b.from)} to {dayWord(b.to)}
+                  </button>
+                </div>
+              ))}
+              {singles.length > 0 && days.map((d, i) => (
+                <div key={d} className="adc" style={{ gridColumn: i + 2, gridRow: 2 + bars.length }}>
+                  {byDay.get(d)!.filter((o) => singles.includes(o)).map((o) => (
                     <button key={`${o.event.id}-${o.date}`} type="button" className="chipx allday" style={{ borderLeft: `var(--bw-3) solid ${colourOf(calendars, o.event)}` }} onClick={() => ui.openEvent(o.event.id, o.date)}>
                       {o.event.title}
                     </button>
