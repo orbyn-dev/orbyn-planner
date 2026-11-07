@@ -150,7 +150,7 @@ Deep pass (Today, calendar, tasks) is complete. Everything else is marked *not c
 | `p-event-delete` Event panel · Delete | `features/calendar/EventPanel.tsx:16` | not checked yet | – |  |
 | `p-cal-loading` Calendar · Loading | none found | not built | – | CalendarPage never reads `ready`; no loading state |
 | `p-cal-sync-error` Calendar · Sync error, outside calendar | `features/calendar/CalendarList.tsx:72` | not checked yet | – | a subscription refresh error shows in the Calendars dialog only |
-| `p-cal-all-day` Calendar · All-day and multi-day | `features/calendar/TimeGrid.tsx:36` | partial | `cmp-p-cal-all-day.png` | a multi-day event is cut into one small chip per day column ("Home renova…"); design draws one bar across Tue–Thu labelled "… · Tue 3 to Thu 5"; the design frame also has no side summary |
+| `p-cal-all-day` Calendar · All-day and multi-day | `features/calendar/TimeGrid.tsx:36` | partial | `cmp-p-cal-all-day.png` | the multi-day bar is one bar across the days labelled "… · Tue 3 to Thu 5" (feat/multiday-bar); the design frame also has no side summary |
 | `p-cal-time-zone` Calendar · Time zones | `store/occurrences.ts:52` | not checked yet | – |  |
 | `p-cal-busy-only` Calendar · Busy-only shared calendar | none found | not built | – | needs shared calendars (not built) |
 
