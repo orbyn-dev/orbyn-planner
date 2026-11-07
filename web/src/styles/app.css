@@ -104,6 +104,9 @@ button { cursor: pointer; }
 
 .cols { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: var(--sp-28); padding: var(--sp-10) var(--sp-28) var(--sp-24); min-height: 0; }
 .blk { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
+/* The pitch of Today's lists is the row plus the gap: 40 + 2 for rows, 28 + 2 for the week at a glance. The gap of .blk does not reach the
+   rows (they are in a ul), so the lists carry it. */
+.blk ul { display: flex; flex-direction: column; gap: var(--sp-2); }
 .bh { display: flex; justify-content: space-between; align-items: baseline; font-size: var(--fs-12); color: var(--t3); padding: var(--sp-12) 0 var(--sp-6); }
 .bh b { font-weight: var(--fw-medium); color: var(--t1); font-size: var(--fs-13); }
 .bh b.amber { color: var(--amber-text); }
