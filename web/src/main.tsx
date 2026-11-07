@@ -23,6 +23,16 @@ async function start() {
     );
     return;
   }
+  // The Start over link opens a page of its own in the same way: it deletes an empty account, with no sign-in.
+  if (window.location.pathname === "/delete-unused") {
+    const { DeleteUnusedPage } = await import("./features/auth/DeleteUnusedPage");
+    root.render(
+      <StrictMode>
+        <DeleteUnusedPage />
+      </StrictMode>,
+    );
+    return;
+  }
   const { bootApp } = await import("./bootApp");
   bootApp(root);
 }
