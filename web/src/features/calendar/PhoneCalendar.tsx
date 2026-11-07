@@ -147,6 +147,7 @@ export function PhoneCalendar({ today }: { today: string }) {
   const count = [occurrences.length > 0 && plural(occurrences.length, "event", "events"), dayTasks.length > 0 && plural(dayTasks.length, "task", "tasks")].filter(Boolean).join(" · ");
   const month = MONTHS[dateOf(day).getMonth()]!;
   const sub = `Week ${isoWeek(dateOf(day))} · ${day === today ? "Today" : dayName(day)}${status.kind === "offline" ? " · offline" : ""}`;
+  const lastSynced = status.kind === "offline" ? status.lastSynced : null;
 
   return (
     <>
@@ -187,6 +188,9 @@ export function PhoneCalendar({ today }: { today: string }) {
                 ),
               )}
             </ul>
+          )}
+          {lastSynced && (
+            <div className="bh"><b>Last synced</b><span>{formatTime(new Date(lastSynced))}</span></div>
           )}
         </div>
       </div>

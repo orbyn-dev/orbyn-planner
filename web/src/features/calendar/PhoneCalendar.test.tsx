@@ -131,6 +131,20 @@ describe("the Calendar on a phone", () => {
   });
 });
 
+describe("the Calendar on a phone, offline", () => {
+  it("the sub line says offline and the list ends with when it last synced (p-phone-offline)", async () => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    try {
+      await open();
+      expect(screen.getByText("Week 45 · Today · offline")).toBeInTheDocument();
+      // No sync has run in this test, so there is no time to give; the row only appears once the device has synced before.
+      expect(screen.queryByText("Last synced")).toBeNull();
+    } finally {
+      vi.restoreAllMocks();
+    }
+  });
+});
+
 describe("rule 3: an event row shows the place, else the length, never both", () => {
   const o = (over: object) => ({ allDay: false, start: "2026-11-07T09:00", end: "2026-11-07T09:30", event: { place: "" }, ...over });
   it("place first, then duration, nothing for all-day", () => {
