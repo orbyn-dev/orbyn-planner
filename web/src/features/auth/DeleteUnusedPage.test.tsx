@@ -113,11 +113,14 @@ describe("the Start over link", () => {
     expect(screen.getByRole("button", { name: "Delete this account" })).toHaveClass("danger");
   });
 
-  it("a 429 is a neutral banner with nothing to press, not 'Orbyn didn’t answer'", async () => {
+  it("a 429 is a neutral card (clock, Too many tries, Wait a while, then try again.) with nothing to press, not 'Orbyn didn’t answer'", async () => {
     fetchMock.mockResolvedValue(answer(429, { code: "too_many_attempts", message: "x" }));
     render(<DeleteUnusedPage />);
     await press();
-    expect(await screen.findByRole("alert")).toHaveTextContent("Too many tries. Wait a while, then try again.");
+    const card = await screen.findByRole("status", { name: "Too many tries" });
+    expect(card).toHaveTextContent("Too many tries");
+    expect(card).toHaveTextContent("Wait a while, then try again.");
+    expect(card.querySelector("svg")).not.toBeNull();
     expect(screen.queryByText(/didn’t answer/)).toBeNull();
     expect(screen.queryByRole("button")).toBeNull();
     expect(screen.queryByRole("link")).toBeNull();
@@ -133,6 +136,13 @@ describe("the Start over link", () => {
     forgetDeleteUnusedTokenForTests();
     render(<DeleteUnusedPage />);
     expect(screen.getByRole("link", { name: "Back to sign-up" })).toHaveAttribute("href", "/sign-up");
+  });
+
+  it("a link that is no longer empty offers Sign in at /sign-in", async () => {
+    fetchMock.mockResolvedValueOnce(answer(409, { code: "delete_unused_not_possible", message: "x" }));
+    render(<DeleteUnusedPage />);
+    await press();
+    expect(await screen.findByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/sign-in");
   });
 
   it("is isolated: main.tsx loads it before the app, and nothing it imports reaches accounts, stores, sync or the wasm module", () => {

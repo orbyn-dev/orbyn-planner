@@ -271,7 +271,7 @@ function SignUp({ go }: { go: (s: AuthScreen) => void }) {
         </div>
       )}
       <div className="form" style={{ width: "auto" }}>
-        <label htmlFor="su-name">Name</label>
+        <label htmlFor="su-name">Name (optional)</label>
         <input id="su-name" className="field" autoComplete="name" placeholder="What should we call you?" value={name} onChange={(e) => setName(e.target.value)} />
         <label htmlFor="su-email">Email</label>
         <input id="su-email" className="field" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />

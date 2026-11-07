@@ -134,8 +134,10 @@ export function DeleteUnusedPage() {
           </div>
         </div>
       ) : result === "limited" ? (
-        <div className="authcard keys-card">
-          <div className="banner" role="alert">Too many tries. Wait a while, then try again.</div>
+        <div className="authcard keys-card" role="status" aria-label="Too many tries">
+          <Icon name="clock" size={22} />
+          <h1 className="keys-title">Too many tries</h1>
+          <span className="t2">Wait a while, then try again.</span>
         </div>
       ) : result === "error" ? (
         <div className="authcard keys-card" role="alert" aria-label="Couldn’t delete the account">
