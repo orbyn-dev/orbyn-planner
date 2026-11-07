@@ -160,7 +160,7 @@ function Shell() {
       <main id="content" ref={main} tabIndex={-1} className="sheet">
         <DeletionBanner />
         <div className={ui.taskId || ui.eventKey ? "sheet-grid has-panel" : "sheet-grid"}>
-          <div className="sheet-main">{firstRun.active ? <FirstRun onDone={firstRun.finish} /> : page()}</div>
+          <div className="sheet-main">{firstRun.active && (path === "/" || path === "/today") ? <FirstRun onDone={firstRun.finish} /> : page()}</div>
           <TaskPanel />
           <EventPanel />
         </div>

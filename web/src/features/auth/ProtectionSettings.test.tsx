@@ -1,4 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { firstRunDoneForTests } from "../../test-setup";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiFailure } from "../../api/auth";
@@ -22,6 +23,7 @@ const report = (over: Partial<ProtectionReport>): ProtectionReport => ({
 
 beforeEach(() => {
   localStorage.clear();
+  firstRunDoneForTests();
   read.mockReset();
   confirm.mockReset();
 });

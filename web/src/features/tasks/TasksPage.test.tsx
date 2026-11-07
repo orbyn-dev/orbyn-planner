@@ -1,4 +1,5 @@
 import { act, render, screen, waitFor, within } from "@testing-library/react";
+import { firstRunDoneForTests } from "../../test-setup";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../app/App";
@@ -143,6 +144,7 @@ describe("quick add preview", () => {
 
   it("View options groups, hides completed tasks, remembers and holds Completed and deleted", async () => {
     window.localStorage.clear();
+    firstRunDoneForTests();
     const { field } = await openTasks();
     await add(field, "alpha tomorrow");
     await add(field, "beta !high");
