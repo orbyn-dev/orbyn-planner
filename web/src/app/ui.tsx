@@ -41,7 +41,9 @@ interface Ui {
   newEventDate: string | null;
   /** The hour a new event starts at (`HH:00`), when it was started from a time slot. */
   newEventTime: string | null;
-  openNewEvent: (date?: string, time?: string) => void;
+  /** The title the New event dialog starts with, when it was opened from Search or add. */
+  newEventTitle: string;
+  openNewEvent: (date?: string, time?: string, title?: string) => void;
   closeNewEvent: () => void;
   listId: string | null;
   selectList: (id: string) => void;
@@ -70,6 +72,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
   const [eventKey, setEventKey] = useState<EventKey | null>(null);
   const [newEventDate, setNewEventDate] = useState<string | null>(null);
   const [newEventTime, setNewEventTime] = useState<string | null>(null);
+  const [newEventTitle, setNewEventTitle] = useState("");
   const [listId, setListId] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -99,7 +102,9 @@ export function UiProvider({ children }: { children: ReactNode }) {
       closeEvent: () => setEventKey(null),
       newEventDate,
       newEventTime,
-      openNewEvent: (date?: string, time?: string) => {
+      newEventTitle,
+      openNewEvent: (date?: string, time?: string, title?: string) => {
+        setNewEventTitle(title ?? "");
         setNewEventTime(time ?? null);
         setNewEventDate(date ?? "");
       },
@@ -123,7 +128,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
       showToast,
       dismissToast,
     }),
-    [newTaskDefaults, taskId, eventKey, newEventDate, newEventTime, listId, newTaskOpen, searchOpen, menuOpen, toast, showToast, dismissToast],
+    [newTaskDefaults, taskId, eventKey, newEventDate, newEventTime, newEventTitle, listId, newTaskOpen, searchOpen, menuOpen, toast, showToast, dismissToast],
   );
   return <UiContext.Provider value={value}>{children}</UiContext.Provider>;
 }
