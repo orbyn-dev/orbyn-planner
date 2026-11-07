@@ -33,9 +33,9 @@ export function CalendarsMenu() {
 
   return (
     <div className="sync-wrap">
-      <button ref={anchor} type="button" className="ghost" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+      <button ref={anchor} type="button" className="ghost cal-btn" aria-label="Calendars" title="Calendars" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
         <Icon name="cal" small />
-        Calendars
+        <span className="lbl">Calendars</span>
       </button>
       {open && (
         <div ref={menu} className="card popover cal-menu" role="menu" aria-label="Calendars" onKeyDown={onKey}>

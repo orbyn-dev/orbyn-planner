@@ -739,3 +739,15 @@ button.pillx { border: 0; }
   .banner { animation-name: m-fade; }
   .err, small.err { animation-name: m-fade; }
 }
+
+/* The Calendar toolbar never wraps: the title gives way (ellipsis) first, and at 1240 px and below Calendars is icon-only (tooltip Calendars). */
+@media (min-width: 768px) {
+  .ph:has(.pills) { flex-wrap: nowrap; }
+  .ph:has(.pills) h1, .ph:has(.pills) h2 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ph:has(.pills) .sub { white-space: nowrap; }
+  .ph:has(.pills) .acts { flex: none; flex-wrap: nowrap; }
+}
+@media (max-width: 1240px) {
+  .cal-btn .lbl { display: none; }
+  .cal-btn { padding: 0; width: var(--sp-30); justify-content: center; }
+}
