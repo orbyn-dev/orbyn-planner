@@ -18,3 +18,11 @@ npm run dev        # http://localhost:5173
 
 - `VITE_ENGINE_URL`: engine base URL, default `http://localhost:8080`.
 - `ORBYN_ENGINE_DIR`: orbyn-engine checkout for `generate` and `generate:check`; required, with no default, and it must be at the pinned commit (`src/generated/wasm/manifest.json`; the script refuses any other). It reads `crates/orbyn-contracts/bindings/*.ts`. Moving the pin is deliberate: `npm run wasm` on Linux from the new commit, then `npm run generate` from that same commit, in one change.
+
+## Container image
+
+`Dockerfile` builds the app and serves it with nginx on port 8080 (`/healthz` answers 200). Build from `web/`; the engine address is fixed at build time and the Content-Security-Policy allows only that origin:
+
+```bash
+docker build --build-arg VITE_ENGINE_URL=https://api-staging.orbyn.dev -t orbyn-planner-web web
+```
