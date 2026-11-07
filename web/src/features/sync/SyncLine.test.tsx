@@ -97,7 +97,7 @@ describe("useSyncStatus", () => {
   it("says On this device when no account is syncing and the engine answers", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => ok()));
     render(<Probe />);
-    expect(screen.getByRole("status")).toHaveTextContent("Syncing");
+    expect(screen.getByRole("status")).toHaveTextContent("On this device"); // at once: nothing syncs, so there is no Syncing flash
     expect(await screen.findByText("On this device", {}, { timeout: 3000 })).toBeInTheDocument();
   });
 

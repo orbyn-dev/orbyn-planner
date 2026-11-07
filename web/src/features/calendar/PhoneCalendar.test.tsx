@@ -55,12 +55,24 @@ describe("the Calendar on a phone", () => {
     expect(strip()).toEqual(["Mon 2", "Tue 3", "Wed 4", "Thu 5", "Fri 6"]); // Wed 4 in the middle
     expect(screen.getByRole("button", { name: "Wed 4" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "Wed 4" })).toHaveClass("on");
-    const dots = within(screen.getByRole("group", { name: "Days" })).getAllByRole("button").filter((b) => (b.querySelector("i") as HTMLElement).style.visibility === "visible");
-    expect(dots.length).toBe(0); // today (Sat 7) is not in this strip: no dot
+    // A ring marks today (not selected), the filled pill is the selected day.
     await userEvent.click(screen.getByRole("button", { name: "Fri 6" }));
     const today = screen.getByRole("button", { name: "Sat 7" });
     expect(today).toHaveAttribute("aria-current", "date");
-    expect((today.querySelector("i") as HTMLElement).style.visibility).toBe("visible");
+    expect(today).toHaveClass("today");
+    expect(screen.getByRole("button", { name: "Fri 6" })).toHaveClass("on");
+  });
+
+  it("a small dot under a day marks that it has events; a day without any has none", async () => {
+    await open((st) => {
+      st.addEvent({ title: "Dentist", start: "2026-11-06T09:00", end: "2026-11-06T10:00" });
+      st.addEvent({ title: "Walk", start: "2026-11-09T09:00", end: "2026-11-09T10:00" });
+    });
+    const dot = (name: string) => (screen.getByRole("button", { name }).querySelector("i") as HTMLElement).style.visibility;
+    expect(dot("Fri 6")).toBe("visible");
+    expect(dot("Mon 9")).toBe("visible");
+    expect(dot("Thu 5")).toBe("hidden");
+    expect(dot("Sun 8")).toBe("hidden");
   });
 
   it("rule 1: swiping the strip moves five days, swiping the list one; the strip follows; Today comes back", async () => {

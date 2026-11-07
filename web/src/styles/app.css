@@ -797,3 +797,5 @@ button.pillx { border: 0; }
 .list-menu { width: var(--sp-216); padding: var(--sp-6); display: flex; flex-direction: column; gap: var(--sp-2); }
 .list-menu .mi { display: flex; align-items: center; width: 100%; border: 0; border-radius: var(--r-7); background: none; color: var(--t1); font: inherit; padding: var(--sp-8) var(--sp-9); text-align: left; text-decoration: none; cursor: pointer; }
 .list-menu .mi:hover, .list-menu .mi:focus-visible { background: var(--raise); }
+/* The day strip: a filled pill is the selected day, a ring marks today, and a small dot marks a day that has events. */
+.pm-day button.today:not(.on) { box-shadow: inset 0 0 0 var(--bw-1-5) var(--t3); }

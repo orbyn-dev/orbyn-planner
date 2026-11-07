@@ -25,9 +25,9 @@ describe("the sync line follows real sync when it runs", () => {
     expect(status({ ...base, phase: "error", error: "x" })).toEqual({ kind: "error" });
   });
 
-  it("without sync it is the health check's, as before", () => {
+  it("without sync it is On this device, never a Syncing flash", () => {
     vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new Error("down"))));
-    expect(status(null).kind).toBe("syncing");
+    expect(status(null).kind).toBe("local");
     vi.unstubAllGlobals();
   });
 });

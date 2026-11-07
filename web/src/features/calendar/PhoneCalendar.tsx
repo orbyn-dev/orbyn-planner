@@ -113,6 +113,11 @@ export function PhoneCalendar({ today }: { today: string }) {
     const visible = new Set(calendars.filter((c) => c.visible).map((c) => c.id));
     return expandEvents(events.filter((e) => visible.has(e.calendarId)), day, day);
   }, [events, calendars, day]);
+  /** The days of the strip that have an event: a small dot under the day. */
+  const withEvents = useMemo(() => {
+    const visible = new Set(calendars.filter((c) => c.visible).map((c) => c.id));
+    return new Set(expandEvents(events.filter((e) => visible.has(e.calendarId)), strip[0]!, strip[4]!).map((o) => o.date));
+  }, [events, calendars, strip]);
   const dayTasks = useMemo(() => tasks.filter((t) => t.deletedAt === null && t.due !== null && t.due.slice(0, 10) === day), [tasks, day]);
 
   const go = (to: string) => {
@@ -157,15 +162,16 @@ export function PhoneCalendar({ today }: { today: string }) {
         </h1>
         {day !== today && <button type="button" className="link-btn quiet-link pm-today" onClick={() => go(today)}>Today</button>}
         <span className="sub">{sub}</span>
-        <div className="acts"><SyncLine status={status} onRetry={retry} /></div>
+        {/* On a phone the pill is only for a planner that lives here ("On this device"), or when something is wrong or offline: a synced account has none. */}
+        <div className="acts">{status.kind !== "synced" && <SyncLine status={status} onRetry={retry} />}</div>
       </div>
       <div className="pad">
         <div className="pm-day" role="group" aria-label="Days" onKeyDown={keys} {...touch(5)}>
           {strip.map((d) => (
-            <button key={d} type="button" className={d === day ? "on" : undefined} aria-pressed={d === day} aria-current={d === today ? "date" : undefined} aria-label={dayName(d)} onClick={() => go(d)}>
+            <button key={d} type="button" className={[d === day && "on", d === today && "today"].filter(Boolean).join(" ") || undefined} aria-pressed={d === day} aria-current={d === today ? "date" : undefined} aria-label={dayName(d)} onClick={() => go(d)}>
               {WEEKDAYS[dateOf(d).getDay()]!.slice(0, 3)}
               <b>{dateOf(d).getDate()}</b>
-              <i style={{ visibility: d === today ? "visible" : "hidden" }} />
+              <i style={{ visibility: withEvents.has(d) ? "visible" : "hidden" }} />
             </button>
           ))}
         </div>

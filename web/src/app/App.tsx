@@ -107,6 +107,16 @@ function PhoneMenu({ onClose, unread }: { onClose: () => void; unread: number })
         {PHONE_MENU.map((item) => (
           <NavLink key={item.path} item={item} onNavigate={onClose} badge={item.path === "/notifications" && unread > 0 ? String(unread) : undefined} />
         ))}
+        {auth && !session && (
+          <>
+            <hr className="msep" />
+            <div className="menu-account">
+              <span className="avatar" aria-hidden="true">{initialsOf(undefined, undefined)}</span>
+              <span className="what">This device only</span>
+              <button type="button" className="link-btn" onClick={() => { onClose(); auth.openAuth("signin"); }}>Sign in</button>
+            </div>
+          </>
+        )}
         {session && (
           <>
             <hr className="msep" />
