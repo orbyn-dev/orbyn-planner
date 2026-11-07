@@ -8,6 +8,7 @@ import { formatDue } from "../../lib/dates";
 import { usePlanner, useStore } from "../../store/context";
 import { describeParse, parseQuickAdd } from "./quickAdd";
 import { DUE_FILTERS, activeTasks, isOpen, matchesDue, type DueFilter } from "./selectors";
+import { FilterChip } from "./FilterChip";
 import { ViewOptionsButton } from "./ViewOptionsButton";
 import { groupFor, lanesFor, loadViewOptions, saveViewOptions, type ViewOptions } from "./viewOptions";
 import { tagLabels } from "./TagChips";
@@ -124,43 +125,27 @@ export function TasksPage() {
           ))}
         </div>
         <span style={{ width: "var(--sp-12)" }} />
-        <label className="pill select-pill">
-          <span className="visually-hidden">Due date</span>
-          <select value={due} onChange={(e) => setDue(e.target.value as DueFilter)}>
-            {DUE_FILTERS.map((f) => (
-              <option key={f.id} value={f.id}>{f.label}</option>
-            ))}
-          </select>
-        </label>
-        <label className="pill select-pill">
-          <span className="visually-hidden">Filter by priority</span>
-          <select value={priority} onChange={(e) => setPriority(e.target.value as Priority | "any")}>
-            <option value="any">Any priority</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-            <option value="none">None</option>
-          </select>
-        </label>
-        <label className="pill select-pill">
-          <span className="visually-hidden">List</span>
-          <select value={listId} onChange={(e) => setListId(e.target.value)}>
-            <option value="">Any list</option>
-            {lists.map((l) => (
-              <option key={l.id} value={l.id}>{l.name}</option>
-            ))}
-          </select>
-        </label>
+        <FilterChip label="Due date" value={due} options={DUE_FILTERS.map((f) => ({ value: f.id, label: f.label }))} onChange={setDue} />
+        <FilterChip
+          label="Priority"
+          value={priority}
+          options={[
+            { value: "any", label: "Any priority" },
+            { value: "high", label: "High" },
+            { value: "medium", label: "Medium" },
+            { value: "low", label: "Low" },
+            { value: "none", label: "None" },
+          ]}
+          onChange={setPriority}
+        />
+        <FilterChip label="List" value={listId} options={[{ value: "", label: "Any list" }, ...lists.map((l) => ({ value: l.id, label: l.name }))]} onChange={setListId} />
         {liveTags.length > 0 && (
-          <label className="pill select-pill">
-            <span className="visually-hidden">Tag</span>
-            <select value={liveTags.some((t) => t.id === tagId) ? tagId : ""} onChange={(e) => setTagId(e.target.value)}>
-              <option value="">Any tag</option>
-              {liveTags.map((t) => (
-                <option key={t.id} value={t.id}>{labels.get(t.id) ?? t.name}</option>
-              ))}
-            </select>
-          </label>
+          <FilterChip
+            label="Tag"
+            value={liveTags.some((t) => t.id === tagId) ? tagId : ""}
+            options={[{ value: "", label: "Any tag" }, ...liveTags.map((t) => ({ value: t.id, label: labels.get(t.id) ?? t.name }))]}
+            onChange={setTagId}
+          />
         )}
         <button type="button" className="pill" style={{ marginLeft: "auto" }} onClick={ui.openSearch}>
           <Icon name="search" small />

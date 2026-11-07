@@ -110,7 +110,7 @@
   --sp-78: 78px; --sp-84: 84px; --sp-90: 90px; --sp-110: 110px; --sp-120: 120px; --sp-140: 140px;
   --sp-160: 160px; --sp-200: 200px; --sp-176: 176px; --sp-220: 220px; --sp-224: 224px; --sp-260: 260px; --sp-320: 320px;
   --sp-340: 340px; --sp-360: 360px; --sp-420: 420px; --sp-440: 440px; --sp-480: 480px; --sp-520: 520px;
-  --sp-620: 620px; --sp-640: 640px;
+  --sp-280: 280px; --sp-620: 620px; --sp-640: 640px;
   --sp-n14: -14px; --sp-n4-5: -4.5px; --sp-n4: -4px; --sp-n2: -2px; --sp-n1: -1px;
   /* The height of one hour in the time grid (also HOUR_PX in tokens.ts). */
   --hour: 52px;

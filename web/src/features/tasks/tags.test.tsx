@@ -70,8 +70,8 @@ describe("tags in the planner", () => {
     await open("/tasks", (store, task) => {
       store.setTaskTag(task.id, store.addTag("Home", "c2").id, true);
     });
-    const home = (await screen.findByRole("combobox", { name: "Tag" })).querySelector("option[value]:not([value=''])") as HTMLOptionElement;
-    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Tag" }), home.value);
+    await userEvent.click(await screen.findByRole("button", { name: "Tag: Any tag" }));
+    await userEvent.click(screen.getByRole("menuitemradio", { name: /Home/ }));
     expect(screen.getByRole("button", { name: "water plants" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "post the parcel" })).toBeNull();
   });
