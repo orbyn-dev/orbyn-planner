@@ -207,7 +207,7 @@
     "scenario": "tasks",
     "steps": [
       {
-        "role": "button",
+        "role": "radio",
         "name": "Board"
       },
       {
