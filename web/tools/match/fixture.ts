@@ -57,7 +57,13 @@ function lists(store: PlannerStore) {
 
 /** Calendars, lists and the Spring launch project (70% done, goal today), which every frame shares. */
 function world(store: PlannerStore, withProject = true): World {
-  const cal = (name: string, colour: ListColour) => store.getState().calendars.find((c) => c.name === name) ?? store.addCalendar(name, colour);
+  const cal = (name: string, colour: ListColour) => {
+    // A new planner already has a "Personal" calendar; it takes the colour the frames draw it in.
+    const found = store.getState().calendars.find((c) => c.name === name);
+    if (!found) return store.addCalendar(name, colour);
+    if (found.colour !== colour) store.updateCalendar(found.id, { colour });
+    return found;
+  };
   // The frames draw Lunch with Maya and Maya’s birthday green, Book club and the Home tiling purple.
   const work = cal("Work", "c1");
   const family = cal("Family", "c2");
@@ -175,6 +181,7 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
       store.addEvent({ title: "Launch stand-up", calendarId: w.work, start: `${day(3)}T09:00`, end: `${day(3)}T09:30` });
       return;
     case "phone-day-wed":
+      store.addEvent({ title: "Launch stand-up", calendarId: w.work, start: `${day(3)}T09:00`, end: `${day(3)}T09:30` });
       store.addEvent({ title: "Dentist", calendarId: w.work, start: `${day(4)}T10:00`, end: `${day(4)}T11:00`, place: "Dr Lee" });
       store.addEvent({ title: "Call with Priya", calendarId: w.family, start: `${day(4)}T14:00`, end: `${day(4)}T14:45` });
       return;
