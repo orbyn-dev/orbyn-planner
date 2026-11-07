@@ -3,7 +3,7 @@ import type { Occurrence } from "../../store/occurrences";
 
 export const MINUTES_IN_DAY = 1440;
 /** The shortest a block is drawn, so a 5-minute event can still be seen and clicked. */
-export const MIN_BLOCK_MINUTES = 20;
+export const MIN_BLOCK_MINUTES = 40; // a short event keeps room for its title and its time
 
 export interface Placed {
   occ: Occurrence;

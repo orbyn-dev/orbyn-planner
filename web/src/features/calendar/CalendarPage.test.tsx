@@ -6,7 +6,7 @@ import { ClockProvider } from "../../app/clock";
 import { LocalStore } from "../../store/LocalStore";
 import { MemoryPersistence } from "../../store/persistence";
 import { repeatEvery } from "../../store/repeat";
-import { viewDays } from "./CalendarPage";
+import { viewDays, weekRange } from "./CalendarPage";
 
 // Friday 6 November 2026, 10:00. The week is Monday 2 to Friday 6, ISO week 45.
 const NOW = new Date(2026, 10, 6, 10, 0);
@@ -417,46 +417,87 @@ describe("after Undo of a deleted event", () => {
   });
 });
 
-describe("Monday to Friday and the weekend", () => {
-  it("viewDays shows 7 days when today is a weekend day of the week being shown, and 5 otherwise", () => {
-    const week = (anchor: string, today: string, weekDays: 5 | 7 = 5, weekStart: "mon" | "sun" = "mon") => viewDays("week", anchor, weekStart, weekDays, today);
-    // Saturday 7 and Sunday 8 November 2026: the current week keeps its weekend.
-    expect(week("2026-11-07", "2026-11-07")).toHaveLength(7);
-    expect(week("2026-11-07", "2026-11-07")[0]).toBe("2026-11-02");
-    expect(week("2026-11-08", "2026-11-08")).toHaveLength(7);
-    expect(week("2026-11-04", "2026-11-07")).toHaveLength(7); // another day of the same week
-    // A weekday today, or another week, stays Monday to Friday.
-    expect(week("2026-11-06", "2026-11-06")).toHaveLength(5);
-    expect(week("2026-11-14", "2026-11-07")).toHaveLength(5);
-    expect(week("2026-10-31", "2026-11-07")).toHaveLength(5);
-    // The 7-day setting always shows 7, and a Sunday start keeps its own first day.
-    expect(week("2026-11-06", "2026-11-06", 7)).toHaveLength(7);
-    expect(week("2026-11-07", "2026-11-07", 5, "sun")[0]).toBe("2026-11-01");
+describe("the week: the full week from the week-start setting, never ending on today", () => {
+  const week = (anchor: string, weekDays: 5 | 7 = 7, weekStart: "mon" | "sun" = "mon") => viewDays("week", anchor, weekStart, weekDays);
+  it("seven days Monday to Sunday by default, whichever day of the week is the anchor", () => {
+    for (const anchor of ["2026-11-02", "2026-11-04", "2026-11-07", "2026-11-08"]) {
+      expect(week(anchor)).toEqual(["2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06", "2026-11-07", "2026-11-08"]);
+    }
   });
+  it("Monday to Friday when only weekdays are shown, even when today is the Saturday", () => {
+    expect(week("2026-11-07", 5)).toEqual(["2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06"]);
+    expect(week("2026-11-09", 5)[0]).toBe("2026-11-09");
+  });
+  it("a Sunday start shows Sunday to Saturday, and five days from a Sunday start are its first five", () => {
+    expect(week("2026-11-07", 7, "sun")).toEqual(["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06", "2026-11-07"]);
+    expect(week("2026-11-07", 5, "sun")).toHaveLength(5);
+    expect(week("2026-11-07", 5, "sun")[0]).toBe("2026-11-01");
+  });
+  it("the date range names the whole week, across a month too", () => {
+    expect(weekRange("2026-11-04", "mon")).toBe("2 – 8 Nov");
+    expect(weekRange("2026-11-30", "mon")).toBe("30 Nov – 6 Dec");
+    expect(weekRange("2026-11-04", "sun")).toBe("1 – 7 Nov");
+  });
+});
 
-  it("the Week view includes today on a Saturday even with the 5-day setting", async () => {
-    localStorage.setItem("orbyn-planner.prefs", JSON.stringify({ weekStart: "mon", weekDays: 5 }));
-    // Saturday 7 November 2026.
-    const saturday = new Date(2026, 10, 7, 10, 0);
+describe("the week header, today's column and the arrow keys", () => {
+  const openAt = async (now: Date, prefs?: object) => {
+    if (prefs) localStorage.setItem("orbyn-planner.prefs", JSON.stringify(prefs));
     window.history.replaceState(null, "", "/calendar");
     vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new TypeError("offline"))));
-    const store = new LocalStore({ persistence: new MemoryPersistence(), now: () => saturday, broadcast: false });
+    const store = new LocalStore({ persistence: new MemoryPersistence(), now: () => now, broadcast: false });
     await store.ready;
-    const root = document.createElement("div");
-    root.id = "root";
-    document.body.appendChild(root);
     render(
-      <ClockProvider value={() => saturday}>
+      <ClockProvider value={() => now}>
         <App store={store} />
       </ClockProvider>,
-      { container: root },
     );
-    expect(Array.from(document.querySelectorAll(".dh")).map((d) => d.textContent)).toEqual(["Mon 2", "Tue 3", "Wed 4", "Thu 5", "Fri 6", "Sat 7", "Sun 8"]);
+  };
+  const saturday = new Date(2026, 10, 7, 10, 0);
+  const dh = () => Array.from(document.querySelectorAll(".dh")).map((d) => d.textContent);
+
+  it("seven columns Mon 2 to Sun 8, today has the pill and a soft fill, the range is beside the arrows, and no Today button on the current week", async () => {
+    await openAt(saturday);
+    expect(dh()).toEqual(["Mon 2", "Tue 3", "Wed 4", "Thu 5", "Fri 6", "Sat 7", "Sun 8"]);
     expect(document.querySelector(".dh.today")).toHaveTextContent("Sat 7");
-    expect(screen.getByTestId("now").parentElement).toHaveAttribute("data-day", "2026-11-07");
-    // The next week is an ordinary Monday to Friday week.
+    expect(document.querySelector('.dcol.today')).toHaveAttribute("data-day", "2026-11-07");
+    expect(document.querySelectorAll(".dcol.today")).toHaveLength(1);
+    expect(screen.getByText("2 – 8 Nov")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Today" })).toBeNull();
+  });
+
+  it("weekdays only: Mon to Fri, no column marked, no current-time line, no Today button (this is the current week)", async () => {
+    await openAt(saturday, { weekStart: "mon", weekDays: 5 });
+    expect(dh()).toEqual(["Mon 2", "Tue 3", "Wed 4", "Thu 5", "Fri 6"]);
+    expect(document.querySelector(".dh.today")).toBeNull();
+    expect(document.querySelector(".dcol.today")).toBeNull();
+    expect(screen.queryByTestId("now")).toBeNull();
+    expect(screen.getByText("2 – 8 Nov")).toBeInTheDocument(); // the range is the whole week
+    expect(screen.queryByRole("button", { name: "Today" })).toBeNull();
+  });
+
+  it("another week: the arrows step a week, Today appears and jumps back, and nothing is marked as today", async () => {
+    await openAt(saturday);
     await userEvent.click(screen.getByRole("button", { name: "Next" }));
-    expect(document.querySelectorAll(".dh")).toHaveLength(5);
+    expect(dh()).toEqual(["Mon 9", "Tue 10", "Wed 11", "Thu 12", "Fri 13", "Sat 14", "Sun 15"]);
+    expect(screen.getByText("9 – 15 Nov")).toBeInTheDocument();
+    expect(screen.getByText("Week 46")).toBeInTheDocument();
+    expect(document.querySelector(".dh.today")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Today" }));
+    expect(screen.getByText("2 – 8 Nov")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Today" })).toBeNull();
+  });
+
+  it("the left and right arrow keys step a week when nothing has focus, and do nothing while something does", async () => {
+    await openAt(saturday);
+    (document.activeElement as HTMLElement | null)?.blur();
+    await userEvent.keyboard("{ArrowRight}");
+    expect(screen.getByText("9 – 15 Nov")).toBeInTheDocument();
+    await userEvent.keyboard("{ArrowLeft}{ArrowLeft}");
+    expect(screen.getByText("26 Oct – 1 Nov")).toBeInTheDocument();
+    screen.getByRole("button", { name: "Next" }).focus(); // something has focus
+    await userEvent.keyboard("{ArrowRight}");
+    expect(screen.getByText("26 Oct – 1 Nov")).toBeInTheDocument();
   });
 });
 

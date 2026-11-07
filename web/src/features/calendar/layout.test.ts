@@ -61,7 +61,9 @@ describe("layoutDay", () => {
   });
 
   it("gives very short events a minimum height", () => {
-    expect(layoutDay([occ(t("09:00"), t("09:05"))], DAY)[0]!.height).toBe(20);
+    expect(layoutDay([occ(t("09:00"), t("09:05"))], DAY)[0]!.height).toBe(40); // room for its title and its time
+    expect(layoutDay([occ(t("09:00"), t("09:30"))], DAY)[0]!.height).toBe(40);
+    expect(layoutDay([occ(t("09:00"), t("10:00"))], DAY)[0]!.height).toBe(60); // a longer event keeps its own length
   });
 
   it("clips an event that runs past midnight to each day", () => {

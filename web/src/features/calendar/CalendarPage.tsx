@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNow } from "../../app/clock";
 import { usePrefs } from "../../app/prefs";
 import { useUi } from "../../app/ui";
@@ -22,21 +22,26 @@ const VIEWS: readonly { id: View; label: string }[] = [
 ];
 
 /** The days a view shows around `anchor`. */
-export function viewDays(view: View, anchor: string, weekStart: "mon" | "sun", weekDays: 5 | 7, today: string): string[] {
+export function viewDays(view: View, anchor: string, weekStart: "mon" | "sun", weekDays: 5 | 7): string[] {
   const a = dateOf(anchor);
   if (view === "day") return [anchor];
   if (view === "agenda") return Array.from({ length: 7 }, (_, i) => dateKey(addDays(a, i)));
   if (view === "week") {
-    // Monday to Friday would hide today when today is a weekend day of the week being shown.
-    const monday = weekStartOf(a, "mon");
-    const t = dateOf(today);
-    const todayHidden = (t.getDay() === 0 || t.getDay() === 6) && dateKey(weekStartOf(t, "mon")) === dateKey(monday);
-    const count = weekDays === 5 && !todayHidden ? 5 : 7;
-    const first = count === 5 ? monday : weekStartOf(a, weekStart);
-    return Array.from({ length: count }, (_, i) => dateKey(addDays(first, i)));
+    // The full week from the week-start setting, with as many columns as "days shown" says (all seven, or the first five).
+    // It never ends on today and is never centred on a day; today is marked only if it falls inside.
+    const first = weekStartOf(a, weekStart);
+    return Array.from({ length: weekDays }, (_, i) => dateKey(addDays(first, i)));
   }
   const gridStart = weekStartOf(new Date(a.getFullYear(), a.getMonth(), 1), weekStart);
   return Array.from({ length: 42 }, (_, i) => dateKey(addDays(gridStart, i)));
+}
+
+/** "2 – 8 Nov", or "30 Nov – 6 Dec" across a month: the seven days of the week that holds `anchor`, whatever "days shown" says. */
+export function weekRange(anchor: string, weekStart: "mon" | "sun"): string {
+  const first = weekStartOf(dateOf(anchor), weekStart);
+  const last = addDays(first, 6);
+  const m = (d: Date) => MONTHS[d.getMonth()]!.slice(0, 3);
+  return first.getMonth() === last.getMonth() ? `${first.getDate()} – ${last.getDate()} ${m(last)}` : `${first.getDate()} ${m(first)} – ${last.getDate()} ${m(last)}`;
 }
 
 function shift(view: View, anchor: string, direction: 1 | -1): string {
@@ -62,8 +67,7 @@ function CalendarGrid() {
   const [view, setView] = useState<View>("week");
   const [anchor, setAnchor] = useState(() => dateKey(now));
 
-  const todayKey = dateKey(now);
-  const days = useMemo(() => viewDays(view, anchor, prefs.weekStart, prefs.weekDays, todayKey), [view, anchor, prefs.weekStart, prefs.weekDays, todayKey]);
+  const days = useMemo(() => viewDays(view, anchor, prefs.weekStart, prefs.weekDays), [view, anchor, prefs.weekStart, prefs.weekDays]);
   const shown = useMemo(() => {
     const visible = new Set(calendars.filter((c) => c.visible).map((c) => c.id));
     return events.filter((e) => visible.has(e.calendarId));
@@ -75,6 +79,25 @@ function CalendarGrid() {
     view === "day" ? `${WEEKDAYS[a.getDay()]} ${a.getDate()} ${MONTHS[a.getMonth()]}` : view === "agenda" ? "Agenda" : `${MONTHS[a.getMonth()]} ${a.getFullYear()}`;
   const sub = view === "week" ? `Week ${isoWeek(dateOf(days[0]!))}` : view === "day" ? "Day" : view === "agenda" ? "Next 7 days" : "";
   const today = dateKey(now);
+  // Today comes back only when another period than the current one is showing.
+  const elsewhere =
+    view === "week" ? dateKey(weekStartOf(a, prefs.weekStart)) !== dateKey(weekStartOf(dateOf(today), prefs.weekStart))
+    : view === "month" ? anchor.slice(0, 7) !== today.slice(0, 7)
+    : anchor !== today;
+
+  // The left and right arrow keys step a week when nothing else has focus (and no dialog is open).
+  useEffect(() => {
+    if (view !== "week") return;
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if ((e.key !== "ArrowLeft" && e.key !== "ArrowRight") || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      const active = document.activeElement;
+      if (active && active !== document.body) return;
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
+      setAnchor((cur) => shift("week", cur, e.key === "ArrowLeft" ? -1 : 1));
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [view]);
 
   return (
     <>
@@ -82,10 +105,11 @@ function CalendarGrid() {
         <button type="button" className="ghost icon" aria-label="Previous" onClick={() => setAnchor(shift(view, anchor, -1))}>
           <Icon name="left" small />
         </button>
-        <button type="button" className="ghost" onClick={() => setAnchor(today)}>Today</button>
+        {view === "week" && <span className="range">{weekRange(anchor, prefs.weekStart)}</span>}
         <button type="button" className="ghost icon" aria-label="Next" onClick={() => setAnchor(shift(view, anchor, 1))}>
           <Icon name="right" small />
         </button>
+        {elsewhere && <button type="button" className="ghost" onClick={() => setAnchor(today)}>Today</button>}
         <div role="radiogroup" aria-label="View" className="pills">
           {VIEWS.map((v) => (
             <button key={v.id} type="button" role="radio" aria-checked={view === v.id} className="pill" onClick={() => setView(v.id)}>
