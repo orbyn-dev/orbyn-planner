@@ -6,7 +6,7 @@ import { ClockProvider } from "../../app/clock";
 import { LocalStore } from "../../store/LocalStore";
 import { MemoryPersistence } from "../../store/persistence";
 import { repeatEvery } from "../../store/repeat";
-import { readTime, repeatSummary } from "./RowPopovers";
+import { repeatSummary } from "./RowPopovers";
 
 // Saturday 7 November 2026, 10:00.
 const NOW = new Date(2026, 10, 7, 10, 0);
@@ -37,15 +37,7 @@ beforeEach(() => {
 
 const row = (panel: HTMLElement, label: string) => within(panel).getByRole("button", { name: new RegExp(`^${label},`) });
 
-describe("readTime and repeatSummary", () => {
-  it("reads 24-hour times only", () => {
-    expect(readTime("17:00")).toBe("17:00");
-    expect(readTime("9:05")).toBe("09:05");
-    expect(readTime("24:00")).toBeNull();
-    expect(readTime("12:60")).toBeNull();
-    expect(readTime("5pm")).toBeNull();
-  });
-
+describe("repeatSummary", () => {
   it("says a rule in the words of the menu", () => {
     expect(repeatSummary(null, "2026-11-09")).toBe("Never");
     expect(repeatSummary(repeatEvery("daily"), "2026-11-09")).toBe("Every day");
@@ -174,5 +166,23 @@ describe("event panel row popovers", () => {
     expect(row(panel, "Repeat")).toHaveTextContent("Every month");
     await userEvent.click(row(panel, "Reminder"));
     expect(within(screen.getByRole("dialog", { name: "Reminder" })).getByRole("menuitemradio", { name: "At time" })).toBeInTheDocument();
+  });
+
+  it("When shows the line as text and opens the combined control with the same focus rule", async () => {
+    const { store, panel } = await open(
+      (s) => s.addEvent({ title: "Review", start: "2026-11-07T15:00", end: "2026-11-07T17:00" }),
+      "/calendar",
+      /Review/,
+    );
+    expect(row(panel, "When")).toHaveTextContent("Sat 7 Nov, 15:00 – 17:00");
+    await userEvent.click(row(panel, "When"));
+    const pop = within(screen.getByRole("dialog", { name: "When" }));
+    expect(pop.getByRole("button", { name: "Saturday 7 November" })).toHaveFocus();
+    await userEvent.click(pop.getByRole("button", { name: "Monday 9 November" }));
+    expect(row(panel, "When")).toHaveTextContent("Mon 9 Nov, 15:00 – 17:00");
+    await userEvent.click(pop.getByRole("button", { name: "Done" }));
+    expect(row(panel, "When")).toHaveFocus();
+    await userEvent.click(within(panel).getByRole("button", { name: "Save" }));
+    expect(store.getState().events[0]).toMatchObject({ start: "2026-11-09T15:00", end: "2026-11-09T17:00" });
   });
 });

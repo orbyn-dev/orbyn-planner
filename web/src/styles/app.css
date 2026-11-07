@@ -652,3 +652,11 @@ button.pillx { border: 0; }
 .rp-quick { display: flex; flex-wrap: wrap; gap: var(--sp-6); }
 .rp-time { display: flex; align-items: center; gap: var(--sp-8); }
 .month-grid .ms-grid button { height: var(--sp-28); font-size: var(--fs-12); }
+
+/* The combined When / Due line. */
+.when { display: flex; flex-direction: column; gap: var(--sp-4); }
+.when-line { display: flex; align-items: center; gap: var(--sp-6); }
+.when-line .field { flex: 1; }
+.when-hint { margin: 0; font-size: var(--fs-11-5); display: flex; flex-direction: column; }
+.when-hint2 { display: block; }
+.when-pop { right: auto; left: 0; }
