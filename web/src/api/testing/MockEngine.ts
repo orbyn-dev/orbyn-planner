@@ -108,6 +108,8 @@ export function createMockEngine(now: () => number = () => Date.now()) {
   const invitesState = { mode: "open" as "open" | "invite", codes: new Map<string, { used: boolean }>(), failures: 0 };
   const normalInvite = (code: unknown) => (typeof code === "string" ? code.toUpperCase().replace(/[\s-]/g, "").replace(/O/g, "0").replace(/[IL]/g, "1") : "");
   const inviteUsable = (code: unknown) => invitesState.codes.get(normalInvite(code))?.used === false;
+  /** The addresses a Start over link was asked for, oldest first. */
+  const deleteUnusedAsked: string[] = [];
   let codeCounter = 100000;
   const nextCode = () => String(codeCounter++);
   const subscribers = new Set<(accountId: string, zone: string, token: string, author: string) => void>();
@@ -168,6 +170,12 @@ export function createMockEngine(now: () => number = () => Date.now()) {
     if (refusal) {
       refusal.times -= 1;
       return fail(refusal.status, refusal.code, refusal.message);
+    }
+
+    // Always 202, whatever the address: the answer tells nothing about the account. The mock keeps the addresses asked for.
+    if (method === "POST" && path === "/v1/accounts/delete-unused") {
+      deleteUnusedAsked.push(String((body as { email?: string }).email ?? ""));
+      return json(202, {});
     }
 
     if (method === "POST" && path === "/v1/invites/check") {
@@ -574,6 +582,7 @@ export function createMockEngine(now: () => number = () => Date.now()) {
       const invite = invitesState.codes.get(normalInvite(code));
       if (invite) invite.used = true;
     },
+    deleteUnusedAsked,
     /** Whether the code is still unused. */
     inviteUnused: (code: string) => invitesState.codes.get(normalInvite(code))?.used === false,
     refuseNext(path: string, status: number, code: string, message = "Refused.", times = 1) {
