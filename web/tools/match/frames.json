@@ -100,5 +100,18 @@
         "name": "Calendars"
       }
     ]
+  },
+  "p-phone-menu": {
+    "design": "p-phone-menu",
+    "app": 0,
+    "kind": "phone",
+    "route": "/today",
+    "scenario": "phone-today",
+    "steps": [
+      {
+        "role": "button",
+        "name": "Menu"
+      }
+    ]
   }
 }

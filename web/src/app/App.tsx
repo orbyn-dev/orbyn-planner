@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { Icon } from "../components/Icon";
 import { Portal } from "../components/Portal";
 import { useDialog } from "../components/useDialog";
@@ -35,7 +35,10 @@ import { NewEventDialog } from "../features/calendar/NewEventDialog";
 import { useReminders } from "../features/reminders/useReminders";
 import { useSubscriptionRefresh } from "../features/calendar/subscriptions";
 import { TodayPage } from "../features/today/TodayPage";
-import { MORE, NAV, SETTINGS, TABS, type NavItem } from "./nav";
+import { initialsOf } from "./initials";
+import { NAV, PHONE_MENU, SETTINGS, TABS, type NavItem } from "./nav";
+import { SyncLine, useSyncStatus, withPersistence } from "../features/sync/SyncLine";
+import { useSyncController, useSyncState } from "../sync/SyncProvider";
 import { Link, RouterProvider, useRouter } from "./router";
 
 const PAGES: Record<string, () => ReactNode> = {
@@ -83,17 +86,35 @@ function QuickFind() {
   );
 }
 
-/** The phone's way to Projects, Notifications and Settings, which have no room in the bar. */
-function MoreSheet({ onClose }: { onClose: () => void }) {
+/** The phone menu (p-phone-menu): Notifications with its unread count, Projects and Settings, then who is signed in and the sync state. */
+function PhoneMenu({ onClose, unread }: { onClose: () => void; unread: number }) {
   const ref = useRef<HTMLDivElement>(null);
   useDialog(ref, onClose);
+  const auth = useAuth();
+  const session = auth?.session ?? null;
+  const { outbox, persistence } = usePlanner();
+  const sync = useSyncState();
+  const controller = useSyncController();
+  const syncNow = useCallback(() => controller?.syncNow(), [controller]);
+  const { status, retry } = useSyncStatus(outbox.length, sync, syncNow);
   return (
     <Portal>
       <button type="button" className="more-backdrop" aria-label="Close" tabIndex={-1} onClick={onClose} />
-      <div ref={ref} className="more-sheet" role="dialog" aria-modal="true" aria-label="More" tabIndex={-1}>
-        {MORE.map((item) => (
-          <NavLink key={item.path} item={item} onNavigate={onClose} />
+      <div ref={ref} className="more-sheet" role="dialog" aria-modal="true" aria-label="Menu" tabIndex={-1}>
+        <span className="grab" aria-hidden="true" />
+        {PHONE_MENU.map((item) => (
+          <NavLink key={item.path} item={item} onNavigate={onClose} badge={item.path === "/notifications" && unread > 0 ? String(unread) : undefined} />
         ))}
+        {session && (
+          <>
+            <hr className="msep" />
+            <div className="menu-account">
+              <span className="avatar" aria-hidden="true">{initialsOf(session.name, session.email)}</span>
+              <span className="what">{session.name || session.email}</span>
+              <SyncLine status={withPersistence(status, persistence)} onRetry={retry} />
+            </div>
+          </>
+        )}
       </div>
     </Portal>
   );
@@ -101,7 +122,6 @@ function MoreSheet({ onClose }: { onClose: () => void }) {
 
 function Shell() {
   const { path } = useRouter();
-  const [more, setMore] = useState(false);
   const main = useRef<HTMLElement>(null);
   const ui = useUi();
   const { tasks } = usePlanner();
@@ -112,7 +132,6 @@ function Shell() {
   useReminders((message) => ui.showToast(message));
   const project = /^\/projects\/([^/]+)$/.exec(path);
   const page = project ? () => <ProjectPage id={decodeURIComponent(project[1]!)} /> : (PAGES[path === "/" ? "/today" : path] ?? PAGES["/today"]!);
-  const inMore = MORE.some((item) => item.path === path);
 
   return (
     <div className="app">
@@ -154,12 +173,8 @@ function Shell() {
             <NavLink key={item.path} item={item} className="tab" />
           ),
         )}
-        <button type="button" className={more || inMore ? "tab on" : "tab"} aria-haspopup="dialog" aria-expanded={more} onClick={() => setMore(true)}>
-          <Icon name="more" />
-          <span>More</span>
-        </button>
       </nav>
-      {more && <MoreSheet onClose={() => setMore(false)} />}
+      {ui.menuOpen && <PhoneMenu onClose={ui.closeMenu} unread={unread} />}
       {ui.newTaskOpen && <NewTaskDialog />}
       {ui.newEventDate !== null && <NewEventDialog />}
       {ui.searchOpen && <SearchDialog />}
