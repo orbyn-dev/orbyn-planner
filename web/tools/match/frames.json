@@ -121,6 +121,30 @@
     "design": "p-lists-no-results",
     "kind": "desktop",
     "route": "/tasks",
-    "scenario": "tasks"
+    "scenario": "tasks",
+    "steps": [
+      {
+        "select": "select:has(option[value=\"high\"])",
+        "value": "high"
+      }
+    ]
+  },
+  "p-phone-month-picker": {
+    "design": "p-phone-month-picker",
+    "app": 0,
+    "kind": "phone",
+    "route": "/calendar",
+    "scenario": "phone-day-wed",
+    "steps": [
+      {
+        "click": "button:has-text(\"Thu\")"
+      },
+      {
+        "click": "button:has-text(\"Wed\")"
+      },
+      {
+        "click": "button:has-text(\"November\")"
+      }
+    ]
   }
 }

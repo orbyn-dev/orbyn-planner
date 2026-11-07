@@ -56,7 +56,7 @@ function lists(store: PlannerStore) {
 }
 
 /** Calendars, lists and the Spring launch project (70% done, goal today), which every frame shares. */
-function world(store: PlannerStore): World {
+function world(store: PlannerStore, withProject = true): World {
   const cal = (name: string, colour: ListColour) => store.getState().calendars.find((c) => c.name === name) ?? store.addCalendar(name, colour);
   // The frames draw Lunch with Maya and Maya’s birthday green, Book club and the Home tiling purple.
   const work = cal("Work", "c1");
@@ -64,7 +64,7 @@ function world(store: PlannerStore): World {
   const personal = cal("Personal", "c3");
   const { work: workList, errands, inbox } = lists(store);
   const spring = store.addProject({ name: "Spring launch", colour: "c1", goal: day(7) });
-  for (let i = 0; i < 10; i += 1) {
+  for (let i = 0; i < (withProject ? 10 : 0); i += 1) {
     const task = store.addTask({ title: `Launch step ${i + 1}`, listId: workList.id, projectId: spring.id });
     if (i < 7) {
       store.setDone(task.id, true);
@@ -112,7 +112,7 @@ function clearToday(store: PlannerStore): void {
 
 /** Seeds one scenario into an empty store: the data one design frame is drawn with. */
 export function seed(store: PlannerStore, scenario: Scenario): void {
-  const w = world(store);
+  const w = world(store, scenario !== "tasks");
   switch (scenario) {
     case "today":
       todayData(store, w);
@@ -134,7 +134,7 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
     case "today-all-day": {
       todayData(store, w);
       const home = store.addCalendar("Home", "c3");
-      store.addEvent({ title: "Home renovation: tiling", calendarId: home.id, allDay: true, start: day(6), end: day(8) });
+      store.addEvent({ title: "Home renovation: tiling", calendarId: home.id, allDay: true, start: day(5), end: day(8) });
       store.addEvent({ title: "Maya’s birthday", calendarId: w.family, allDay: true, start: day(7), end: day(7) });
       return;
     }

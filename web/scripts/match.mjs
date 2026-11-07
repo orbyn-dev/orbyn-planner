@@ -176,6 +176,7 @@ async function ours(theme) {
   for (const step of frame.steps ?? []) {
     if (step.role) await page.getByRole(step.role, { name: step.name }).first().click();
     else if (step.click) await page.locator(step.click).first().click();
+    else if (step.select) await page.locator(step.select).first().selectOption(step.value);
   }
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(400);
