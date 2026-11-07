@@ -305,13 +305,50 @@ describe("New event", () => {
   });
 });
 
-describe("Calendars", () => {
+/** Manage calendars in the toolbar popover opens Settings › Calendars. */
+async function openManage() {
+  await userEvent.click(screen.getByRole("button", { name: "Calendars" }));
+  await userEvent.click(screen.getByRole("menuitem", { name: /Manage calendars/ }));
+  await screen.findByRole("list", { name: "Calendars" });
+}
+
+describe("Calendars popover", () => {
+  it("lists the calendars with a checkbox each; unchecking one hides its events from every view", async () => {
+    const store = await open({ seed: seedWeek });
+    const button = screen.getByRole("button", { name: "Calendars" });
+    await userEvent.click(button);
+    const menu = screen.getByRole("menu", { name: "Calendars" });
+    expect(within(menu).getByRole("menuitemcheckbox", { name: "Personal" })).toBeChecked();
+    expect(within(menu).getByRole("menuitem", { name: /Manage calendars/ })).toBeInTheDocument();
+    await userEvent.click(within(menu).getByRole("menuitemcheckbox", { name: "Personal" }));
+    expect(store.getState().calendars[0]!.visible).toBe(false);
+    expect(within(menu).getByRole("menuitemcheckbox", { name: "Personal" })).not.toBeChecked();
+    expect(screen.queryByRole("button", { name: /Team planning/ })).not.toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("menu", { name: "Calendars" })).not.toBeInTheDocument();
+    expect(button).toHaveFocus();
+  });
+
+  it("marks a subscribed calendar, and a click outside closes it", async () => {
+    const store = await open();
+    store.addCalendar("Library events", "c4");
+    const feed = store.getState().calendars.find((c) => c.name === "Library events")!;
+    store.updateCalendar(feed.id, {});
+    await userEvent.click(screen.getByRole("button", { name: "Calendars" }));
+    const menu = screen.getByRole("menu", { name: "Calendars" });
+    expect(within(menu).getAllByRole("menuitemcheckbox").map((i) => i.textContent)).toContain("Library events");
+    await userEvent.click(document.body);
+    expect(screen.queryByRole("menu", { name: "Calendars" })).not.toBeInTheDocument();
+  });
+});
+
+describe("Calendars (in Settings)", () => {
   const feedBody = ["BEGIN:VCALENDAR", "BEGIN:VEVENT", "DTSTART;VALUE=DATE:20261106", "SUMMARY:Bonfire night", "END:VEVENT", "END:VCALENDAR"].join("\r\n");
 
   it("hides a calendar's events, renames it and adds another", async () => {
     const store = await open({ seed: seedWeek });
-    await userEvent.click(screen.getByRole("button", { name: "Calendars" }));
-    const dialog = screen.getByRole("dialog", { name: "Calendars" });
+    await openManage();
+    const dialog = screen.getByRole("main");
     await userEvent.click(within(dialog).getByRole("button", { name: "Hide Personal" }));
     expect(store.getState().calendars[0]!.visible).toBe(false);
     await userEvent.click(within(dialog).getByRole("button", { name: "Rename" }));
@@ -323,16 +360,14 @@ describe("Calendars", () => {
     await userEvent.type(within(dialog).getByLabelText("Name"), "Work");
     await userEvent.click(within(dialog).getByRole("button", { name: "Add calendar" }));
     expect(store.getState().calendars.map((c) => c.name)).toEqual(["Home", "Work"]);
-    await userEvent.click(within(dialog).getByRole("button", { name: "Done" }));
-    expect(screen.queryByRole("button", { name: /Team planning/ })).not.toBeInTheDocument();
   });
 
   it("subscribes by link and shows the feed's events read-only", async () => {
     const store = await open({
       fetchImpl: async (url) => (String(url).endsWith(".ics") ? new Response(feedBody) : Promise.reject(new TypeError("offline"))),
     });
-    await userEvent.click(screen.getByRole("button", { name: "Calendars" }));
-    const dialog = screen.getByRole("dialog", { name: "Calendars" });
+    await openManage();
+    const dialog = screen.getByRole("main");
     await userEvent.click(within(dialog).getByRole("button", { name: "Subscribe to a calendar" }));
     await userEvent.type(within(dialog).getByLabelText("Name"), "Holidays");
     await userEvent.type(within(dialog).getByLabelText("Subscribe by link"), "webcal://example.com/holidays.ics");
@@ -340,7 +375,7 @@ describe("Calendars", () => {
     await waitFor(() => expect(store.getState().events.map((e) => e.title)).toEqual(["Bonfire night"]));
     expect(store.getState().events[0]!.readOnly).toBe(true);
     expect(vi.mocked(fetch).mock.calls.some(([u]) => u === "https://example.com/holidays.ics")).toBe(true);
-    await userEvent.keyboard("{Escape}");
+    await userEvent.click(within(screen.getByRole("navigation", { name: "Primary" })).getByRole("link", { name: "Calendar" }));
     await userEvent.click(await screen.findByRole("button", { name: "Bonfire night" }));
     const panel = screen.getByRole("complementary", { name: "Event" });
     expect(within(panel).getByText(/can’t be changed here/)).toBeInTheDocument();
@@ -350,8 +385,8 @@ describe("Calendars", () => {
 
   it("the subscribe form refuses an http:// link", async () => {
     const store = await open();
-    await userEvent.click(screen.getByRole("button", { name: "Calendars" }));
-    const dialog = screen.getByRole("dialog", { name: "Calendars" });
+    await openManage();
+    const dialog = screen.getByRole("main");
     await userEvent.click(within(dialog).getByRole("button", { name: "Subscribe to a calendar" }));
     await userEvent.type(within(dialog).getByLabelText("Name"), "Holidays");
     await userEvent.type(within(dialog).getByLabelText("Subscribe by link"), "http://example.com/h.ics");
@@ -369,8 +404,8 @@ describe("Calendars", () => {
         return new Response(feedBody);
       },
     });
-    await userEvent.click(screen.getByRole("button", { name: "Calendars" }));
-    const dialog = screen.getByRole("dialog", { name: "Calendars" });
+    await openManage();
+    const dialog = screen.getByRole("main");
     await userEvent.click(within(dialog).getByRole("button", { name: "Subscribe to a calendar" }));
     await userEvent.type(within(dialog).getByLabelText("Name"), "Holidays");
     await userEvent.type(within(dialog).getByLabelText("Subscribe by link"), "https://example.com/h.ics");

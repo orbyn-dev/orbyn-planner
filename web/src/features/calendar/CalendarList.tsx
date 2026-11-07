@@ -4,6 +4,7 @@ import { usePlanner, useStore } from "../../store/context";
 import { LIST_COLOURS, type ListColour, type PlannerCalendar } from "../../store/types";
 import { Swatch } from "../tasks/TaskRow";
 import { NEEDS_ENGINE } from "../../api/feeds";
+import { NOT_SUPPORTED } from "../../lib/ics";
 import { FeedError, feedAddress, refreshCalendar, subscriptionsAvailable } from "./subscriptions";
 
 const COLOUR_NAMES: Record<ListColour, string> = { c1: "Blue", c2: "Green", c3: "Purple", c4: "Orange" };
@@ -157,5 +158,23 @@ export function CalendarForms({ onDone }: { onDone?: () => void }) {
         </form>
       )}
     </>
+  );
+}
+
+/** Subscribed events with a repeat this app cannot say: only their first date shows. */
+export function UnsupportedRepeats() {
+  const { events, calendars } = usePlanner();
+  const unsupported = events.filter((e) => e.readOnly && e.deletedAt === null && e.notes.includes(NOT_SUPPORTED));
+  if (unsupported.length === 0) return null;
+  return (
+    <section aria-label="Can’t show these repeats">
+      <b>Can’t show these repeats</b>
+      <p className="t3">Only the first date of each is shown.</p>
+      <ul>
+        {unsupported.map((e) => (
+          <li key={e.id}>{e.title} <span className="t3">· {calendars.find((c) => c.id === e.calendarId)?.name ?? ""}</span></li>
+        ))}
+      </ul>
+    </section>
   );
 }
