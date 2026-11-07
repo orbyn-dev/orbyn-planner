@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
 import { useNow } from "../../app/clock";
-import { Link } from "../../app/router";
 import { useUi } from "../../app/ui";
 import { EmptyState, PageHeader } from "../../components/EmptyState";
 import { Icon } from "../../components/Icon";
 import { formatDue } from "../../lib/dates";
 import { usePlanner, useStore } from "../../store/context";
 import { describeParse, parseQuickAdd } from "./quickAdd";
-import { DUE_FILTERS, activeTasks, groupTasks, isOpen, matchesDue, sortByDue, type DueFilter } from "./selectors";
+import { DUE_FILTERS, activeTasks, isOpen, matchesDue, type DueFilter } from "./selectors";
+import { ViewOptionsButton } from "./ViewOptionsButton";
+import { groupFor, lanesFor, loadViewOptions, saveViewOptions, type ViewOptions } from "./viewOptions";
 import { tagLabels } from "./TagChips";
 import { Swatch, TaskRow, useTaskActions } from "./TaskRow";
 import type { Priority, Task } from "../../store/types";
@@ -82,6 +83,11 @@ export function TasksPage() {
   const ui = useUi();
   const now = useNow();
   const [view, setView] = useState<View>("list");
+  const [options, setOptions] = useState<ViewOptions>(loadViewOptions);
+  const change = (next: ViewOptions) => {
+    setOptions(next);
+    saveViewOptions(next);
+  };
   const [due, setDue] = useState<DueFilter>("any");
   const [priority, setPriority] = useState<Priority | "any">("any");
   const [listId, setListId] = useState("");
@@ -90,17 +96,17 @@ export function TasksPage() {
   const labels = tagLabels(tags);
 
   const shown = useMemo(
-    () => activeTasks(tasks, now).filter((t) => matchesDue(t, due, now) && (priority === "any" || t.priority === priority) && (listId === "" || t.listId === listId) && (tagId === "" || t.tags.includes(tagId))),
-    [tasks, now, due, priority, listId, tagId],
+    () => activeTasks(tasks, now).filter((t) => (options.showCompleted || !t.done) && matchesDue(t, due, now) && (priority === "any" || t.priority === priority) && (listId === "" || t.listId === listId) && (tagId === "" || t.tags.includes(tagId))),
+    [tasks, now, due, priority, listId, tagId, options.showCompleted],
   );
-  const groups = useMemo(() => groupTasks(shown, now), [shown, now]);
+  const groups = useMemo(() => groupFor(shown, lists, now, options), [shown, lists, now, options]);
   const openCount = tasks.filter(isOpen).length;
   const anyTask = tasks.some((t) => t.deletedAt === null);
 
   return (
     <>
       <PageHeader title="Tasks" sub={view === "board" ? "Board" : `${openCount} open`}>
-        <Link to="/completed" className="ghost">Completed and deleted</Link>
+        <ViewOptionsButton view={view} options={options} onChange={change} />
         <button type="button" className="btn" onClick={() => ui.openNewTask()}>
           <Icon name="plus" small />
           Add a task
@@ -174,10 +180,12 @@ export function TasksPage() {
           </ul>
           {groups.map((g) => (
             <section key={g.key} aria-label={g.label}>
-              <div className="bh" style={{ padding: "var(--sp-8) var(--sp-4) var(--sp-4)" }}>
-                <b className={g.amber ? "amber" : undefined}>{g.label}</b>
-                <span>{g.tasks.length}</span>
-              </div>
+              {g.label && (
+                <div className="bh" style={{ padding: "var(--sp-8) var(--sp-4) var(--sp-4)" }}>
+                  <b className={g.amber ? "amber" : undefined}>{g.label}</b>
+                  <span>{g.tasks.length}</span>
+                </div>
+              )}
               <ul className="tbl">
                 {g.tasks.map((t) => (
                   <TaskRow key={t.id} task={t} />
@@ -188,8 +196,7 @@ export function TasksPage() {
         </div>
       ) : (
         <div className="board">
-          {([["To do", false], ["Done", true]] as const).map(([label, done]) => {
-            const lane = sortByDue(shown.filter((t) => t.done === done));
+          {lanesFor(shown, options).map(({ label, tasks: lane }) => {
             return (
               <section key={label} className="lane" aria-label={label}>
                 <h2 className="lane-h">{label}<span>{lane.length}</span></h2>

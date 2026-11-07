@@ -140,4 +140,25 @@ describe("quick add preview", () => {
     await userEvent.type(field, "{Enter}");
     expect(await screen.findByRole("button", { name: "wear sun hat" })).toBeInTheDocument();
   });
+
+  it("View options groups, hides completed tasks, remembers and holds Completed and deleted", async () => {
+    window.localStorage.clear();
+    const { field } = await openTasks();
+    await add(field, "alpha tomorrow");
+    await add(field, "beta !high");
+    await userEvent.click(await screen.findByRole("checkbox", { name: "Complete beta" }));
+    expect(screen.queryByRole("link", { name: "Completed and deleted" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "View options" }));
+    const pop = screen.getByRole("dialog", { name: "View options" });
+    expect(within(within(pop).getByRole("radiogroup", { name: "Group by" })).getByRole("radio", { name: "Due date" })).toBeChecked();
+    await userEvent.click(within(within(pop).getByRole("radiogroup", { name: "Group by" })).getByRole("radio", { name: "Priority" }));
+    expect(screen.getByRole("region", { name: "High" })).toBeInTheDocument();
+    await userEvent.click(within(pop).getByRole("switch", { name: "Show completed tasks" }));
+    expect(screen.queryByRole("button", { name: "beta" })).toBeNull();
+    expect(within(pop).getByRole("link", { name: /Completed and deleted/ })).toHaveAttribute("href", "/completed");
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog", { name: "View options" })).toBeNull();
+    expect(screen.getByRole("button", { name: "View options" })).toHaveFocus();
+    expect(window.localStorage.getItem("orbyn-planner.tasks-view")).toContain('"groupBy":"priority"');
+  });
 });
