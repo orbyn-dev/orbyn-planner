@@ -6,9 +6,12 @@ import { PHONE_QUERY, useMediaQuery } from "../../components/useMediaQuery";
 import { useDialog } from "../../components/useDialog";
 import { usePlanner, useStore } from "../../store/context";
 import { CannotMoveSeries, undoableEvents, deleteOccurrence, duplicateOccurrence, editOccurrence, type Scope } from "../../store/eventScope";
-import { expandEvents, repeatLabel, type Occurrence } from "../../store/occurrences";
+import { expandEvents, type Occurrence } from "../../store/occurrences";
+import type { Repeat } from "../../store/repeat";
 import type { Person, Response } from "../../store/types";
-import { REMINDERS, REPEAT_CHOICES, RESPONSE_LABELS, choiceOf, parsePeople, ruleOf, type RepeatChoice } from "./eventForm";
+import { RESPONSE_LABELS, parsePeople } from "./eventForm";
+import { CalendarRow } from "./CalendarRow";
+import { ReminderRow, RepeatRow } from "../tasks/RowPopovers";
 import { ScopeDialog } from "./ScopeDialog";
 
 const timePart = (value: string) => (value.length > 10 ? value.slice(11, 16) : "");
@@ -33,8 +36,8 @@ function Panel({ occ }: { occ: Occurrence }) {
   const [endTime, setEndTime] = useState(timePart(occ.end) || "10:00");
   const [calendarId, setCalendarId] = useState(event.calendarId);
   const [place, setPlace] = useState(event.place);
-  const initialRepeat = choiceOf(event.repeat);
-  const [repeat, setRepeat] = useState<RepeatChoice>(initialRepeat);
+  const [repeatRule, setRepeatRule] = useState<Repeat | null>(event.repeat?.repeat ?? null);
+  const [repeatChanged, setRepeatChanged] = useState(false);
   const [reminder, setReminder] = useState<number | null>(event.reminder);
   const [people, setPeople] = useState<Person[]>(event.people);
   const [email, setEmail] = useState("");
@@ -62,7 +65,7 @@ function Panel({ occ }: { occ: Occurrence }) {
         people,
         reminder,
         // Only a changed repeat is sent; the same one must not reset the dates skipped from it.
-        repeat: repeat === initialRepeat ? undefined : ruleOf(repeat),
+        repeat: repeatChanged ? repeatRule : undefined,
       }));
       created = done.result;
       // A change that reached a series (this one, this and following, all) can be taken back.
@@ -119,41 +122,13 @@ function Panel({ occ }: { occ: Occurrence }) {
         </b>
       </div>
       {end < start && <p className="err">It ends before it starts.</p>}
-      <div className="kv">
-        <span>Calendar</span>
-        <b className="ctl">
-          <select className="inp" aria-label="Calendar" value={calendarId} disabled={locked} onChange={(e) => setCalendarId(e.target.value)}>
-            {editable.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </b>
-      </div>
+      <CalendarRow calendars={editable} value={calendarId} disabled={locked} onChange={setCalendarId} />
       <div className="kv">
         <span>Where</span>
         <b className="ctl"><input className="inp" aria-label="Where" value={place} disabled={locked} onChange={(e) => setPlace(e.target.value)} /></b>
       </div>
-      <div className="kv">
-        <span>Repeat</span>
-        <b className="ctl">
-          <select className="inp" aria-label="Repeat" value={repeat} disabled={locked} onChange={(e) => setRepeat(e.target.value as RepeatChoice)}>
-            {repeat === "keep" && <option value="keep">{repeatLabel(event.repeat)}</option>}
-            {REPEAT_CHOICES.map((c) => (
-              <option key={c.value} value={c.value}>{c.label}</option>
-            ))}
-          </select>
-        </b>
-      </div>
-      <div className="kv">
-        <span>Reminder</span>
-        <b className="ctl">
-          <select className="inp" aria-label="Reminder" value={reminder ?? ""} disabled={locked} onChange={(e) => setReminder(e.target.value === "" ? null : Number(e.target.value))}>
-            {REMINDERS.map((r) => (
-              <option key={r.label} value={r.value ?? ""}>{r.label}</option>
-            ))}
-          </select>
-        </b>
-      </div>
+      <RepeatRow rule={repeatRule} start={startDay} disabled={locked} onChange={(rule) => { setRepeatRule(rule); setRepeatChanged(true); }} />
+      <ReminderRow value={reminder} disabled={locked} onChange={setReminder} />
 
       {!locked || people.length > 0 ? (
         <>

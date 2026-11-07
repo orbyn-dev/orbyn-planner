@@ -1,6 +1,7 @@
 import { linksIn } from "../../app/links";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNow } from "../../app/clock";
+import { usePrefs } from "../../app/prefs";
 import { useUi } from "../../app/ui";
 import { Icon } from "../../components/Icon";
 import { Portal } from "../../components/Portal";
@@ -10,14 +11,12 @@ import { dateKey, makeDue, parseDue } from "../../lib/dates";
 import { usePlanner, useStore } from "../../store/context";
 import { inOrder, keyBetween } from "../../store/order";
 import { CannotMoveSeries, type Scope } from "../../store/eventScope";
-import type { Repeat } from "../../store/repeat";
 import { allowedScopes, editTaskRepeat, undoableTasks, type RepeatEdit } from "../../store/taskRepeat";
 import { MAX_TAGS_PER_TASK } from "../../store/records";
-import { LIST_COLOURS, PRIORITIES, type Task } from "../../store/types";
+import { LIST_COLOURS, type ListColour, type Task } from "../../store/types";
 import { ScopeDialog } from "../calendar/ScopeDialog";
-import { RepeatPicker } from "./RepeatPicker";
+import { DueRow, ListRow, PriorityRow, ReminderRow, RepeatRow } from "./RowPopovers";
 import { shownTags, TagChip, tagLabels } from "./TagChips";
-import { TASK_REMINDERS } from "./reminder";
 import { needsAction } from "./selectors";
 import { useComplete } from "./useComplete";
 
@@ -30,6 +29,7 @@ function Panel({ task }: { task: Task }) {
   const labels = tagLabels(tags);
   const ui = useUi();
   const now = useNow();
+  const { prefs } = usePrefs();
   const complete = useComplete();
   const ref = useRef<HTMLElement>(null);
   const phone = useMediaQuery(PHONE_QUERY);
@@ -39,7 +39,6 @@ function Panel({ task }: { task: Task }) {
   const [step, setStep] = useState("");
   // A change to a repeating task waits here while the person says how far it reaches.
   const [asking, setAsking] = useState<RepeatEdit | null>(null);
-  const [pickerKey, setPickerKey] = useState(0);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   // Title and notes are saved a moment after typing stops, and always when the panel is left.
@@ -70,7 +69,6 @@ function Panel({ task }: { task: Task }) {
   useDialog(ref, close, phone);
 
   const dayValue = task.due ? task.due.slice(0, 10) : "";
-  const timeValue = task.due && parseDue(task.due).hasTime ? task.due.slice(11, 16) : "";
   const steps = inOrder(task.checklist);
   const doneSteps = task.checklist.filter((c) => c.done).length;
 
@@ -102,11 +100,9 @@ function Panel({ task }: { task: Task }) {
       }
     }
     setAsking(null);
-    setPickerKey((k) => k + 1); // show what is really stored, whatever happened
   };
   const cancelAsk = () => {
     setAsking(null);
-    setPickerKey((k) => k + 1); // show what is really stored again
   };
   const project = projects.find((p) => p.id === task.projectId);
 
@@ -167,33 +163,9 @@ function Panel({ task }: { task: Task }) {
         </button>
       </div>
 
-      <div className="kv">
-        <span>Due</span>
-        <b className="ctl" style={needsAction(task, now) ? { color: "var(--amber-text)" } : undefined}>
-          <input className="inp" type="date" aria-label="Due date" value={dayValue} onChange={(e) => setDue(e.target.value, timeValue)} />
-          <input className="inp" type="time" aria-label="Due time" value={timeValue} onChange={(e) => setDue(dayValue, e.target.value)} />
-        </b>
-      </div>
-      <div className="kv">
-        <span>List</span>
-        <b className="ctl">
-          <select className="inp" aria-label="List" value={task.listId} onChange={(e) => store.updateTask(task.id, { listId: e.target.value })}>
-            {lists.map((l) => (
-              <option key={l.id} value={l.id}>{l.name}</option>
-            ))}
-          </select>
-        </b>
-      </div>
-      <div className="kv">
-        <span>Priority</span>
-        <b className="ctl">
-          <select className="inp" aria-label="Priority" value={task.priority} onChange={(e) => store.updateTask(task.id, { priority: e.target.value as Task["priority"] })}>
-            {PRIORITIES.map((p) => (
-              <option key={p} value={p}>{p === "none" ? "None" : p[0]!.toUpperCase() + p.slice(1)}</option>
-            ))}
-          </select>
-        </b>
-      </div>
+      <DueRow due={task.due} now={now} weekStart={prefs.weekStart} style={needsAction(task, now) ? { color: "var(--amber-text)" } : undefined} onChange={setDue} />
+      <ListRow lists={lists} value={task.listId} onChange={(listId) => store.updateTask(task.id, { listId })} onCreate={(name, colour) => store.addList(name, colour as ListColour).id} />
+      <PriorityRow value={task.priority} onChange={(priority) => store.updateTask(task.id, { priority })} />
       <div className="kv">
         <span id="task-tags-label">Tags</span>
         <b className="ctl tagrow" role="group" aria-labelledby="task-tags-label">
@@ -234,32 +206,8 @@ function Panel({ task }: { task: Task }) {
           )}
         </b>
       </div>
-      <div className="kv">
-        <span>Repeat</span>
-        <b className="ctl">
-          <RepeatPicker
-            key={`${pickerKey}-${task.repeat ? JSON.stringify(task.repeat.repeat) : ""}`}
-            value={task.repeat?.repeat ?? null}
-            start={dayValue || today}
-            onChange={(rule: Repeat | null) => edit({ repeat: rule })}
-          />
-        </b>
-      </div>
-      <div className="kv">
-        <span>Reminder</span>
-        <b className="ctl">
-          <select
-            className="inp"
-            aria-label="Reminder"
-            value={task.reminder ?? ""}
-            onChange={(e) => store.updateTask(task.id, { reminder: e.target.value === "" ? null : Number(e.target.value) })}
-          >
-            {TASK_REMINDERS.map((r) => (
-              <option key={r.label} value={r.value ?? ""}>{r.label}</option>
-            ))}
-          </select>
-        </b>
-      </div>
+      <RepeatRow rule={task.repeat?.repeat ?? null} start={dayValue || today} onChange={(rule) => edit({ repeat: rule })} />
+      <ReminderRow value={task.reminder} onChange={(reminder) => store.updateTask(task.id, { reminder })} />
       {task.reminder !== null && !task.due && <p className="t3 hint">Set a due date to get this reminder.</p>}
       {projects.length > 0 && (
         <>

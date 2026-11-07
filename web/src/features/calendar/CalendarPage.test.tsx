@@ -169,7 +169,8 @@ describe("Event panel", () => {
     await userEvent.paste("Lunch with Maya and Jo");
     await userEvent.click(within(panel).getByRole("textbox", { name: "Where" }));
     await userEvent.paste("Cafe");
-    await userEvent.selectOptions(within(panel).getByRole("combobox", { name: "Reminder" }), "30");
+    await userEvent.click(within(panel).getByRole("button", { name: /^Reminder,/ }));
+    await userEvent.click(screen.getByRole("menuitemradio", { name: "30 minutes before" }));
     const person = within(panel).getByRole("textbox", { name: "Add a person" });
     await userEvent.click(person);
     await userEvent.paste("jo@example.com");

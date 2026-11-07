@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../app/App";
@@ -117,12 +117,19 @@ beforeEach(() => {
   document.getElementById("root")?.remove();
 });
 
+/** Open a row's popover in a panel and choose one of its options. */
+async function pick(panel: HTMLElement, row: string, option: string) {
+  await userEvent.click(within(panel).getByRole("button", { name: new RegExp(`^${row},`) }));
+  await userEvent.click(within(screen.getByRole("dialog", { name: row })).getByRole("menuitemradio", { name: option }));
+}
+
 describe("repeat in the task panel and the new task dialog", () => {
   it("asks This task / This and following / All before moving a repeating task's due date", async () => {
     const store = await openApp((s) => s.addTask({ title: "Review", due: "2026-11-09", repeat: repeatEvery("weekly") }));
     await userEvent.click(await screen.findByRole("button", { name: "Review" }));
     const panel = screen.getByRole("complementary", { name: "Task" });
-    fireEvent.change(within(panel).getByLabelText("Due date"), { target: { value: "2026-11-11" } });
+    await userEvent.click(within(panel).getByRole("button", { name: /^Due,/ }));
+    await userEvent.click(within(screen.getByRole("dialog", { name: "Due" })).getByRole("button", { name: "Wednesday 11 November" }));
     const dialog = screen.getByRole("dialog", { name: "Change" });
     expect(within(dialog).getAllByRole("button").map((b) => b.textContent?.split(/Only|This time|The whole/)[0])).toEqual(["This task", "This and following", "All", "Cancel"]);
     await userEvent.click(within(dialog).getByRole("button", { name: /^This task/ }));
@@ -135,16 +142,16 @@ describe("repeat in the task panel and the new task dialog", () => {
     const store = await openApp((s) => s.addTask({ title: "Review", due: "2026-11-09", repeat: repeatEvery("weekly") }));
     await userEvent.click(await screen.findByRole("button", { name: "Review" }));
     const panel = screen.getByRole("complementary", { name: "Task" });
-    await userEvent.selectOptions(within(panel).getByRole("combobox", { name: "Repeat" }), "daily");
+    await pick(panel, "Repeat", "Every day");
     await userEvent.click(within(screen.getByRole("dialog", { name: "Change" })).getByRole("button", { name: "Cancel" }));
     expect(store.getState().tasks[0]!.repeat!.repeat.frequency).toBe("weekly");
-    expect(within(screen.getByRole("complementary", { name: "Task" })).getByRole("combobox", { name: "Repeat" })).toHaveValue("weekly-on");
+    expect(within(screen.getByRole("complementary", { name: "Task" })).getByRole("button", { name: /^Repeat,/ })).toHaveTextContent("Every week");
   });
 
   it("changing the repeat with This and following restarts the rule from this date", async () => {
     const store = await openApp((s) => s.addTask({ title: "Review", due: "2026-11-09", repeat: repeatEvery("weekly") }));
     await userEvent.click(await screen.findByRole("button", { name: "Review" }));
-    await userEvent.selectOptions(within(screen.getByRole("complementary", { name: "Task" })).getByRole("combobox", { name: "Repeat" }), "monthly");
+    await pick(screen.getByRole("complementary", { name: "Task" }), "Repeat", "Every month");
     const dialog = screen.getByRole("dialog", { name: "Change" });
     expect(within(dialog).queryByRole("button", { name: /^This task/ })).toBeNull();
     await userEvent.click(within(dialog).getByRole("button", { name: /^This and following/ }));
@@ -154,7 +161,7 @@ describe("repeat in the task panel and the new task dialog", () => {
   it("adding a repeat to a plain task does not ask", async () => {
     const store = await openApp((s) => s.addTask({ title: "Bins", due: "2026-11-09" }));
     await userEvent.click(await screen.findByRole("button", { name: "Bins" }));
-    await userEvent.selectOptions(within(screen.getByRole("complementary", { name: "Task" })).getByRole("combobox", { name: "Repeat" }), "daily");
+    await pick(screen.getByRole("complementary", { name: "Task" }), "Repeat", "Every day");
     expect(screen.queryByRole("dialog", { name: "Change" })).not.toBeInTheDocument();
     expect(store.getState().tasks[0]!.repeat).toMatchObject({ start: "2026-11-09", repeat: { frequency: "daily" } });
   });
@@ -162,7 +169,7 @@ describe("repeat in the task panel and the new task dialog", () => {
   it("stores the reminder chosen in the panel", async () => {
     const store = await openApp((s) => s.addTask({ title: "Call", due: "2026-11-09T09:00" }));
     await userEvent.click(await screen.findByRole("button", { name: "Call" }));
-    await userEvent.selectOptions(within(screen.getByRole("complementary", { name: "Task" })).getByRole("combobox", { name: "Reminder" }), "15");
+    await pick(screen.getByRole("complementary", { name: "Task" }), "Reminder", "15 minutes before");
     expect(store.getState().tasks[0]!.reminder).toBe(15);
   });
 

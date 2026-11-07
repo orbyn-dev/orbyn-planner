@@ -1,6 +1,6 @@
 import { addWall, daysBetween, lastDayOf, wallMinutes } from "../lib/wall";
 import { wallToLocal } from "../lib/zones";
-import { occurrences as seriesOccurrences } from "./repeat";
+import { occurrences as seriesOccurrences, type Repeat } from "./repeat";
 import type { CalendarEvent } from "./types";
 
 /** One appearance of an event on the calendar: a single event, or one date of a series. */
@@ -110,14 +110,18 @@ export function expandEvents(events: readonly CalendarEvent[], from: string, to:
 
 const WEEKDAY_NAMES = { mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday", sun: "Sunday" } as const;
 
-/** "Never", "Every day", "Every 2 weeks", "Every Tuesday", "Every Monday and Saturday". */
-export function repeatLabel(series: CalendarEvent["repeat"]): string {
-  if (!series) return "Never";
-  const { frequency, interval, weekdays } = series.repeat;
+/** "Every day", "Every 2 weeks", "Every Tuesday", "Every Monday and Saturday". */
+export function ruleLabel(repeat: Repeat): string {
+  const { frequency, interval, weekdays } = repeat;
   const unit = { daily: "day", weekly: "week", monthly: "month", yearly: "year" }[frequency];
   if (frequency === "weekly" && weekdays.length > 0 && interval === 1) {
     const names = weekdays.map((d) => WEEKDAY_NAMES[d]);
     return `Every ${names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0]}`;
   }
   return interval === 1 ? `Every ${unit}` : `Every ${interval} ${unit}s`;
+}
+
+/** "Never", or the rule in words. */
+export function repeatLabel(series: CalendarEvent["repeat"]): string {
+  return series ? ruleLabel(series.repeat) : "Never";
 }
