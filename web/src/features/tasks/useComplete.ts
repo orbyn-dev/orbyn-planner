@@ -5,6 +5,9 @@ import { nextUpcoming } from "../../store/taskRepeat";
 import { useStore } from "../../store/context";
 import type { Task } from "../../store/types";
 
+/** How long the "Marked done" toast, with its Undo, stays. */
+export const MARKED_DONE_TOAST_MS = 5_000;
+
 /**
  * Completes or reopens a task. Completing a repeating task moves it to its next date, so it says so
  * with an Undo; the last one of a series just finishes it.
@@ -16,9 +19,9 @@ export function useComplete() {
   return (task: Task, done: boolean) => {
     if (!done) return store.setDone(task.id, false);
     if (!task.repeat) {
-      // Motion Designs `checkoff`: "Task completed" with Undo, which brings it back.
+      // Check-off stays in place (the designer's answer): a toast "Marked done" with Undo, for five seconds.
       store.setDone(task.id, true);
-      ui.showToast("Task completed", () => store.setDone(task.id, false), { focusRowOnUndo: task.id });
+      ui.showToast("Marked done.", () => store.setDone(task.id, false), { focusRowOnUndo: task.id, ms: MARKED_DONE_TOAST_MS });
       return;
     }
     const before = { due: task.due, completions: task.completions ?? [], checklist: task.checklist };
