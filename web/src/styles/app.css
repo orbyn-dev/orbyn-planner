@@ -629,3 +629,7 @@ button.pillx { border: 0; }
 .ms-grid button.quiet { color: var(--t3); }
 .ms-grid button.on { background: var(--btn); color: var(--btnt); }
 .pm-empty { margin: var(--sp-14) 0 0; }
+
+/* In the task and event panels and the new task and event cards a row is a label and its value; the control looks like the value until it is hovered or focused. */
+.task-panel .kv .ctl .inp, .authcard .kv .ctl .inp { border-color: transparent; background: transparent; text-align: right; }
+.task-panel .kv .ctl .inp:hover, .authcard .kv .ctl .inp:hover, .task-panel .kv .ctl .inp:focus-visible, .authcard .kv .ctl .inp:focus-visible { border-color: var(--line2); background: var(--raise); }

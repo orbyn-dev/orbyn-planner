@@ -83,12 +83,6 @@ export function NewTaskDialog() {
               <option key={l.id} value={l.id}>{l.name}</option>
             ))}
           </select>
-          <label htmlFor="nt-priority">Priority</label>
-          <select id="nt-priority" className="field" value={priority} onChange={(e) => setPriority(e.target.value as Priority)}>
-            {PRIORITIES.map((p) => (
-              <option key={p} value={p}>{p === "none" ? "None" : p[0]!.toUpperCase() + p.slice(1)}</option>
-            ))}
-          </select>
           <div className="kv">
             <label htmlFor="nt-repeat-slot">Repeat</label>
             <b className="ctl" id="nt-repeat-slot">
@@ -101,6 +95,16 @@ export function NewTaskDialog() {
               <select id="nt-reminder" className="inp" value={reminder ?? ""} onChange={(e) => setReminder(e.target.value === "" ? null : Number(e.target.value))}>
                 {TASK_REMINDERS.map((r) => (
                   <option key={r.label} value={r.value ?? ""}>{r.label}</option>
+                ))}
+              </select>
+            </b>
+          </div>
+          <div className="kv">
+            <label htmlFor="nt-priority">Priority</label>
+            <b className="ctl">
+              <select id="nt-priority" className="inp" value={priority} onChange={(e) => setPriority(e.target.value as Priority)}>
+                {PRIORITIES.map((p) => (
+                  <option key={p} value={p}>{p === "none" ? "None" : p[0]!.toUpperCase() + p.slice(1)}</option>
                 ))}
               </select>
             </b>

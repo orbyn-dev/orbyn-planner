@@ -84,13 +84,31 @@ describe("Tasks page", () => {
     await add(field, "one today");
     await add(field, "two tomorrow");
     await add(field, "three #errands");
-    await userEvent.click(screen.getByRole("radio", { name: "Today" }));
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Due date" }), "today");
     expect(screen.getByRole("button", { name: "one" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "two" })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole("radio", { name: "Any due date" }));
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Due date" }), "any");
     await userEvent.selectOptions(screen.getByRole("combobox", { name: "List" }), errands.id);
     expect(screen.getByRole("button", { name: "three" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "one" })).not.toBeInTheDocument();
+  });
+
+  it("the filters are chips: Any due date, Any priority, Any list; the Owner filter stays out until sharing exists", async () => {
+    const { field } = await openTasks();
+    await add(field, "plain");
+    await add(field, "urgent !high");
+    const names = within(document.querySelector(".filters")!).getAllByRole("combobox").map((c) => c.getAttribute("aria-label") ?? c.closest("label")!.textContent);
+    expect(names.join(",")).toContain("Due date");
+    const due = screen.getByRole("combobox", { name: "Due date" });
+    expect(within(due).getAllByRole("option").map((o) => o.textContent)).toEqual(["Any due date", "Today", "This week", "Overdue"]);
+    const priority = screen.getByRole("combobox", { name: "Filter by priority" });
+    expect(within(priority).getAllByRole("option").map((o) => o.textContent)).toEqual(["Any priority", "High", "Medium", "Low", "None"]);
+    expect(screen.queryByRole("combobox", { name: /Anyone|Owner/ })).toBeNull();
+    await userEvent.selectOptions(priority, "high");
+    expect(screen.getByRole("button", { name: "urgent" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "plain" })).toBeNull();
+    await userEvent.selectOptions(priority, "any");
+    expect(screen.getByRole("button", { name: "plain" })).toBeInTheDocument();
   });
 
   it("shows the board lanes", async () => {
