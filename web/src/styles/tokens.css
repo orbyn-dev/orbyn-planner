@@ -88,11 +88,11 @@
 
 /* ---- Font sizes (px) ---- */
 :root {
-  --fs-10-5: 10.5px; --fs-11: 11px; --fs-11-5: 11.5px; --fs-12: 12px; --fs-12-5: 12.5px; --fs-13: 13px; --fs-13-5: 13.5px; --fs-14: 14px; --fs-16: 16px; --fs-18: 18px; --fs-20: 20px; --fs-22: 22px; --fs-24: 24px; --fs-30: 30px;
+  --fs-10-5: 10.5px; --fs-11: 11px; --fs-11-5: 11.5px; --fs-12: 12px; --fs-12-5: 12.5px; --fs-13: 13px; --fs-13-5: 13.5px; --fs-14: 14px; --fs-15: 15px; --fs-16: 16px; --fs-18: 18px; --fs-20: 20px; --fs-22: 22px; --fs-24: 24px; --fs-30: 30px;
 }
 /* ---- Radii ---- */
 :root {
-  --r-3: 3px; --r-5: 5px; --r-6: 6px; --r-7: 7px; --r-8: 8px; --r-9: 9px; --r-10: 10px; --r-12: 12px; --r-14: 14px; --r-16: 16px;
+  --r-2: 2px; --r-3: 3px; --r-5: 5px; --r-6: 6px; --r-7: 7px; --r-8: 8px; --r-9: 9px; --r-10: 10px; --r-12: 12px; --r-14: 14px; --r-16: 16px;
   --r-pill: 999px; --r-round: 50%;
 }
 /* ---- Border and outline widths ---- */
@@ -110,7 +110,7 @@
   --sp-78: 78px; --sp-84: 84px; --sp-90: 90px; --sp-110: 110px; --sp-120: 120px; --sp-140: 140px;
   --sp-160: 160px; --sp-200: 200px; --sp-216: 216px; --sp-176: 176px; --sp-220: 220px; --sp-224: 224px; --sp-260: 260px; --sp-320: 320px;
   --sp-340: 340px; --sp-360: 360px; --sp-420: 420px; --sp-440: 440px; --sp-480: 480px; --sp-520: 520px;
-  --sp-280: 280px; --sp-620: 620px; --sp-640: 640px;
+  --sp-280: 280px; --sp-540: 540px; --sp-620: 620px; --sp-640: 640px; --sp-3-5: 3.5px;
   --sp-n14: -14px; --sp-n4-5: -4.5px; --sp-n4: -4px; --sp-n2: -2px; --sp-n1: -1px;
   /* The height of one hour in the time grid (also HOUR_PX in tokens.ts). */
   --hour: 52px;

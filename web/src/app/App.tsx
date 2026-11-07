@@ -144,6 +144,8 @@ function Shell() {
   useReminders((message) => ui.showToast(message));
   const project = /^\/projects\/([^/]+)$/.exec(path);
   const firstRun = useFirstRun();
+  /** First run is the whole screen on a phone: no tab bar under it (Planner Designs fr-phone). */
+  const showFirstRun = firstRun.active && (path === "/" || path === "/today");
   const page = project ? () => <ProjectPage id={decodeURIComponent(project[1]!)} /> : (PAGES[path === "/" ? "/today" : path] ?? PAGES["/today"]!);
 
   return (
@@ -170,12 +172,12 @@ function Shell() {
       <main id="content" ref={main} tabIndex={-1} className="sheet">
         <DeletionBanner />
         <div className={ui.taskId || ui.eventKey ? "sheet-grid has-panel" : "sheet-grid"}>
-          <div className="sheet-main">{firstRun.active && (path === "/" || path === "/today") ? <FirstRun onDone={firstRun.finish} /> : page()}</div>
+          <div className="sheet-main">{showFirstRun ? <FirstRun onDone={firstRun.finish} /> : page()}</div>
           <TaskPanel />
           <EventPanel />
         </div>
       </main>
-      <nav aria-label="Tabs" className="tabbar">
+      {!showFirstRun && <nav aria-label="Tabs" className="tabbar">
         {TABS.map((item) =>
           item.path === "/search" ? (
             <button key={item.path} type="button" className="tab" onClick={ui.openSearch}>
@@ -186,7 +188,7 @@ function Shell() {
             <NavLink key={item.path} item={item} className="tab" />
           ),
         )}
-      </nav>
+      </nav>}
       {ui.menuOpen && <PhoneMenu onClose={ui.closeMenu} unread={unread} />}
       {ui.newTaskOpen && <NewTaskDialog />}
       {ui.newEventDate !== null && <NewEventDialog />}
