@@ -1,26 +1,26 @@
 # Design inventory: Planner against the designs
 
-- **Designs commit:** `718fa7bea400b0d70594d9e61259d89f8d4ef55a` (orbyn-designs `origin/main`, committed 2026-11-07), files `artifacts/planner-designs.html`, `account-designs.html`, `motion-designs.html`.
-- **Page versions:** the brief says Planner Designs v36 and Account Designs v53. The HTML files carry no version marker (the version lives on the artifact server), so these are taken from the brief and not verified here.
-- **Planner main checked:** first run on `50b5bc2a3eceba9dbe429ad9ec90cc8d41a8a1b3` (2026-11-08); refreshed on `387a2d4` (2026-11-08) for everything merged since (#46 to #57: settings, sign-in, export, Today, calendar, tasks).
+- **Designs commit:** `a3d398e` (orbyn-designs `origin/main`, 2026-11-08), files `artifacts/planner-designs.html` (Planner Designs v47) and `account-designs.html` (Account Designs v60). The match pass below was read from that commit with the match kit (docs/match-kit.md); earlier rows were read from `718fa7b`.
+- **Page versions:** Planner Designs v47 and Account Designs v60, as given by the coordinator. The HTML files carry no version marker (the version lives on the artifact server), so these are taken from the brief and not verified here.
+- **Planner main checked:** first run on `50b5bc2a3eceba9dbe429ad9ec90cc8d41a8a1b3` (2026-11-08); refreshed on `387a2d4`; match pass on main with #70 (Today), #72 (Calendars popover), #67 (Lists), #71 (phone menu) and #66 (search) merged. Not merged at the time: #73.
 - **Refresh method:** rows for work merged since the first run were updated from the code, the tests and each PR’s notes; they were not re-screenshotted, so none moves to *matched*. Frames built to v39 to v41 name the PR. Rows for work not yet merged (row popovers, the When line) are left as they were.
-- **Method:** `npx vite --port 5340` on `web/`, headless Chromium (Playwright), device-only mode on sample data from the designs, clock fixed to Sat 7 Nov 2026 08:30 UTC, reduced motion on. Each checked frame was rendered at the design frame size in Light, Dark and Dim next to the design frame (window title bar hidden) and read in all three themes. Copy was also diffed as text.
-- **Screenshots** are not committed. Files live in the author’s scratch folder as `design-<id>-<theme>.png`, `build-<id>-<theme>.png` and a three-theme side-by-side `cmp-<id>.png`.
+- **Method (first pass, rows marked with their frame id and images):** `node scripts/match.mjs <frame> --theme all` from the match kit: planner on an in-memory seeded store, clock pinned to Sat 7 Nov 2026 08:30 UTC (the week frames at 11:40, where the design draws its red line), `en-GB`, reduced motion; ours at 1160x700 (desktop) or 390x730 (phone) against the design frame cropped the same (title bar hidden, phone status bar left out). Each image was looked at; copy was also diffed as text. No frame is matched yet: every one has a difference left, listed with `file:line`.
+- **Screenshots** are not committed. The images of the match pass are `<frame>-<theme>-side.png` (ours left, design right) with the two halves and a text diff, in the author’s scratch folder; the older rows keep their `cmp-<id>.png` names.
 - **Status words.** *matched*: layout, copy, sizes and colours agree in all three themes and I looked at it. *partial*: built, with the listed differences. *not built*: no code for it (the cell says how that was established). *gated*: the frame’s own note says it is not shown today or is Planned. *in progress*: built on a branch that has not merged (none at the last refresh). *not checked yet*: not compared; the component is only a pointer from reading the code.
-- **Left out of every “differs” cell** because they hold for all frames and need things this device-only run cannot provide: (G1) the design sidebar has a Booking item and a Notifications count, the build has neither (nav.ts:11; booking and sharing are not built); (G2) the sync pill reads “Synced · 3 devices” in the design and “Connected” in the build, since real sync needs an account and engine; (G3) “Good morning, Sam” needs an account name, the build says “Good morning”; (G4) the design draws a window title bar, the web build has none.
+- **Left out of every “differs” cell** because they hold for all frames and need things this device-only run cannot provide: (G1) the design sidebar has a Booking item and a Notifications count, the build has neither (nav.ts:11; booking and sharing are not built); (G2) the sync pill reads “Synced · 3 devices” in the design and “On this device” in the local build, since real sync needs an account and engine; (G3) “Good morning, Sam” needs an account name, the build says “Good morning”; (G4) the design draws a window title bar, the web build has none.
 
 ## Counts
 
 | Page / area | Frames | matched | partial | not built | gated | in progress | not checked yet |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Planner Designs (all)** | **126** | **0** | **58** | **29** | **8** | **0** | **31** |
+| **Planner Designs (all)** | **145** | **0** | **79** | **29** | **8** | **0** | **29** |
 | Planner · Getting started | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
 | Planner · Search | 2 | 0 | 0 | 0 | 0 | 0 | 2 |
 | Planner · Empty, loading and error states | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
-| Planner · Today | 13 | 0 | 12 | 0 | 1 | 0 | 0 |
-| Planner · Calendar | 18 | 0 | 9 | 3 | 0 | 0 | 6 |
-| Planner · Tasks | 20 | 0 | 11 | 9 | 0 | 0 | 0 |
-| Planner · Lists | 5 | 0 | 1 | 3 | 0 | 0 | 1 |
+| Planner · Today | 14 | 0 | 13 | 0 | 1 | 0 | 0 |
+| Planner · Calendar | 26 | 0 | 17 | 3 | 0 | 0 | 6 |
+| Planner · Tasks | 27 | 0 | 18 | 9 | 0 | 0 | 0 |
+| Planner · Lists | 5 | 0 | 2 | 3 | 0 | 0 | 0 |
 | Planner · Sharing | 5 | 0 | 0 | 5 | 0 | 0 | 0 |
 | Planner · Completed and deleted | 1 | 0 | 1 | 0 | 0 | 0 | 0 |
 | Planner · Projects | 4 | 0 | 3 | 0 | 0 | 0 | 1 |
@@ -28,7 +28,7 @@
 | Planner · Notifications | 4 | 0 | 0 | 0 | 2 | 0 | 2 |
 | Planner · Settings | 31 | 0 | 13 | 0 | 5 | 0 | 13 |
 | Planner · Account and auth | 8 | 0 | 6 | 0 | 0 | 0 | 2 |
-| Planner · Phone | 5 | 0 | 2 | 0 | 0 | 0 | 3 |
+| Planner · Phone | 8 | 0 | 6 | 0 | 0 | 0 | 2 |
 | **Account Designs (all)** | **128** | **0** | **14** | **0** | **13** | **0** | **101** |
 | Account · Account site | 14 | 0 | 0 | 0 | 5 | 0 | 9 |
 | Account · Delete account | 40 | 0 | 0 | 0 | 0 | 0 | 40 |
@@ -46,7 +46,7 @@
 
 Deep pass (Today, calendar, tasks) was complete at the first run; the refresh above adds what merged after it. Everything else is marked *not checked yet* unless the code shows the feature is absent or the frame note says it is gated. Frames outside this repository (account site, email, witness, key service, launcher) are listed with the owner and not compared.
 
-## Planner Designs (v36 per the brief)
+## Planner Designs (v47)
 
 ### Getting started
 
@@ -58,25 +58,26 @@ Deep pass (Today, calendar, tasks) was complete at the first run; the refresh ab
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `today` Today | `features/today/TodayPage.tsx:150` | partial | `cmp-today.png` | no difference left after #50 (to re-check) |
+| `today` Today | `features/today/TodayPage.tsx:150` | partial | `today-{light,dark,dim}-side.png` | rows are 40px high as drawn but only 40px apart; the design adds the 2px gap between rows (42 apart) and between week lines (30 apart, ours 28): `.blk` gap (app.css:106) does not reach them because they are `<li>` in a `<ul>` (TodayPage.tsx:251, 341, 352). Everything else agrees in all three themes (stat tiles, copy, dots, amber, progress, "4 due") |
 | `sync-waiting` Offline, waiting to sync | `features/today/TodayPage.tsx:291, features/sync/SyncLine.tsx:29` | partial | `cmp-sync-waiting.png` | popover is narrower |
-| `p-today-empty` Today · Nothing planned | `features/today/TodayPage.tsx:316` | partial | `cmp-p-today-empty.png` | empty block sits higher and has a hairline above it (app.css:131); design starts the heading about 45px lower with no rule |
+| `p-today-empty` Today · Nothing planned | `features/today/TodayPage.tsx:316` | partial | `p-today-empty-{light,dark,dim}-side.png` | empty block sits about 9px higher than the design (app.css:131: padding 68px top, the design starts the heading 77px below the header); week list gap as in `today` (TodayPage.tsx:251) |
 | `p-today-loading` Today · Loading | `features/today/TodayPage.tsx:266` | partial | `cmp-p-today-loading.png` | "New task" is disabled and dimmed (TodayPage.tsx:271), design keeps it active; skeleton rows are one full-width bar with no row dot, design uses varied widths and a dot; the 400 ms wait is built (TodayPage.tsx:66) |
 | `p-today-error` Today · Error | `features/today/TodayPage.tsx:40 (TodayError, exported, never rendered)` | gated | – | frame note: shown only when the local store reports a read failure, which it does not yet; not screenshotted |
 | `p-today-syncing` Today · Syncing | `features/sync/SyncLine.tsx:72` | partial | `cmp-p-today-syncing.png` | no difference left after #52 (to re-check by eye) |
 | `p-today-sync-failed` Today · Couldn’t sync | `features/sync/SyncLine.tsx:90` | partial | `cmp-p-today-sync-failed.png` | no difference left after #52 (to re-check by eye) |
-| `p-today-all-day` Today · All-day events | `features/today/TodayPage.tsx:87-109, :330` | partial | `cmp-p-today-all-day.png` | week column counts the tiling event on Sun 8 (Coming up 12, design 11: the design data says "day 2 of 3" yet leaves Sun 8 alone) |
+| `p-today-all-day` Today · All-day events | `features/today/TodayPage.tsx:87-109, :340` | partial | `p-today-all-day-{light,dark,dim}-side.png` | Sun 8 in the week list reads "1 task · 1 event", the design "Candles · tiling day 4" (TodayPage.tsx:251 area); the "All day" header sits 11px lower and "Timed" 6px (TodayPage.tsx:340-342, `.bh` padding); rows are 40px high as drawn but only 40px apart; Coming up 12 and "day 3 of 4" match v45 |
 | `p-today-long` Today · A long day | `features/today/TodayPage.tsx:150` | partial | `cmp-p-today-long.png` | Today shows 13 vs 14: the 07:30 event has ended at 08:30 and the build counts only what is still to come (TodayPage.tsx:223) |
 | `p-today-goal-labels` Today · Progress goal labels | `features/today/TodayPage.tsx:29 (goalLabel), :212` | partial | – | "goal yesterday" can never show: Progress keeps only goals from today on (TodayPage.tsx:212). Today, tomorrow and weekday labels read as designed in the DOM; "goal 14 Nov" is by code only. No screenshots |
 | `p-today-week-empty` Today · Empty days in the week | `features/today/TodayPage.tsx:139` | partial | `cmp-p-today-week-empty.png` | no difference left after #50; "Nothing planned" in the quiet colour matches. |
 | `p-today-overnight` Today · Events across midnight | `features/today/TodayPage.tsx:87-109, :124` | partial | `cmp-p-today-overnight.png` | "Until 06:00" and "Started yesterday 22:00" match |
 | `p-today-overnight-long` Today · Events across several days | `features/today/TodayPage.tsx:87-109` | partial | `cmp-p-today-overnight-long.png` | multi-day all-day event reads "Conference: Lisbon · day 3 of 5" with the calendar name; design shows the plain title and "Mon 9 Nov – Fri 13 Nov" (the design frames disagree: p-today-all-day wants "· day 2 of 3"); week column lists 6 days, design 4 |
+| `p-today-no-name` Today · No name | `features/today/TodayPage.tsx:150` | partial | `p-today-no-name-{light,dark,dim}-side.png` | only the row gap of `today` (TodayPage.tsx:251, 341, 352); header "Good morning" and the "On this device" pill agree |
 
 ### Tasks
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `work-list` Tasks · List | `features/tasks/TasksPage.tsx:80` | partial | `cmp-work-list.png` | View options popover built to v41 (p-view-options-list); filters are now the chips Any due date / Any priority / Any list (#56); "Anyone" and the Owner column stay out until sharing exists (data-gated); no Blocked status (needs the status field) |
+| `work-list` Tasks · List | `features/tasks/TasksPage.tsx:80` | partial | `work-list-{light,dark,dim}-side.png` | Owner column, "Anyone" filter and the Blocked status are not built (data-gated and needs the status field); the filters are select pills with chevrons (TasksPage.tsx:125-150), the frame draws plain chips; "5 open" vs "6 open" (the frame counts its done row); Due text "Mon" and "Thu" vs "Mon 9" and "Thu 12"; the done row sits in "Today" in ours (count 3 vs 2) and at the end of "This week" in the frame; Today group order is by title, the frame by time; column header row is 1px higher |
 | `work-board` Tasks · Board | `features/tasks/TasksPage.tsx:178` | partial | `cmp-work-board.png` | two lanes (To do, Done); design has four (To do, In progress, Blocked, Done) and a progress bar on cards; Task has no status field (types.ts:19) |
 | `new-task` New task | `features/tasks/NewTaskDialog.tsx:15` | partial | `cmp-new-task.png` | fields Title, Due, List then the rows Repeat, Reminder, Priority (#56); Due is the one combined line with typing, a live preview and the calendar popover (p-due-task); still: a Project select the frame does not show; "Add task" card width not compared |
 | `task-panel` Task panel | `features/tasks/TaskPanel.tsx:26` | partial | `cmp-task-panel.png` | rows are label and value; Due, List, Priority, Repeat and Reminder open row popovers built to v41 (p-row-due, -list, -priority, -repeat, -reminder); no Status row (needs the status field); "Linked" cross-app card not built |
@@ -91,18 +92,25 @@ Deep pass (Today, calendar, tasks) was complete at the first run; the refresh ab
 | `p-task-date` Task panel · Date picker | `features/tasks/RowPopovers.tsx` | partial | – | the Due row popover (p-row-due): month, 24-hour time with No time, four shortcuts; the old frame draws Nov 1 on a Friday, the build follows the real calendar; built to v41, not re-compared by screenshot |
 | `p-task-move` Task panel · Move to a list | `features/tasks/RowPopovers.tsx` | partial | – | the List row popover (p-row-list): searchable, colour dots, No list, New list…; built to v41, not re-compared by screenshot |
 | `p-task-delete` Task panel · Deleted, with undo | `features/tasks/TaskPanel.tsx:132, components/Toast.tsx:62` | partial | `cmp-p-task-delete.png` | toast is a centred dark pill "Task deleted · Undo"; design: bottom-right card with the task name and "Kept for 30 days"; panel closes to nothing, design shows "No task selected" |
-| `p-lists-no-results` Tasks · Filtered with no results | `features/tasks/TasksPage.tsx:153` | partial | `cmp-p-lists-no-results.png` | build says "No tasks match / Try another filter." with no way to clear; design names the filters, shows removable chips and "Remove Owner" / "Clear filters" buttons |
+| `p-lists-no-results` Tasks · Filtered with no results | `features/tasks/TasksPage.tsx:171` | partial | `p-lists-no-results-{light,dark,dim}-side.png` | Priority High alone still matches 2 tasks so ours shows the list; the frame needs Owner: Jordan, which is not built; the removable chips ("Priority: High ✕"), the "Remove Owner" and "Clear filters" buttons and the "6 tasks are hidden" line are not built |
 | `p-lists-bulk` Tasks · Bulk select | none found | not built | – | grep for "bulk" finds nothing |
 | `p-board-drag` Board · Drag in progress | none found | not built | – | no drag code in features (grep: no draggable or drag handlers) |
 | `task-notes` Task panel with linked notes | none found | not built | – | no link to Notes in TaskPanel |
 | `task-notes-none` Notes not on this device | none found | not built | – | no link to Notes in TaskPanel |
+| `p-view-options-list` Tasks · View options (list) | `features/tasks/ViewOptionsButton.tsx:54-63` | partial | `p-view-options-list-{light,dark,dim}-side.png` | ours is chips in a 340px popover (Group by, Sort by, Ascending/Descending) with Show completed tasks on; the frame is a 280px vertical list with a "Selected" tag on the choice, an Ascending/Descending segment and the toggle off |
+| `p-view-options-board` Tasks · View options (board) | `features/tasks/ViewOptionsButton.tsx:54-63` | partial | `p-view-options-board-{light,dark,dim}-side.png` | same popover differences; the board has two lanes (To do, Done) where the frame has To do, In progress, Blocked and Done (needs the status field); cards show the due day as "Thu" vs "Thu 12"; the "Show Done lane" toggle is on in both |
+| `p-row-due` Task panel · Edit Due | `features/tasks/RowPopovers.tsx` | partial | `p-row-due-{light,dark,dim}-side.png` | ours keeps the filter row and the list columns beside the panel and the panel has Tags, Project, Checklist and Notes rows the frame cuts off (TaskPanel.tsx:170, 215, 252); no Status row (not built); the frame highlights the open row; the popover itself (month, 17:00 / No time, four shortcuts, note) agrees; counts differ because the fixture has more tasks (15 open vs 6) |
+| `p-row-list` Task panel · Edit List | `features/tasks/RowPopovers.tsx` | partial | `p-row-list-{light,dark,dim}-side.png` | as `p-row-due` for the panel; list popover (search, Work Selected, Personal, ..., New list…) agrees in structure; list names are the fixture's |
+| `p-row-priority` Task panel · Edit Priority | `features/tasks/RowPopovers.tsx` | partial | `p-row-priority-{light,dark,dim}-side.png` | as `p-row-due`; the popover agrees; ours shows the Selected tag on High only after the fixture's priority (set to High from this run) |
+| `p-row-repeat` Task panel · Edit Repeat | `features/tasks/RowPopovers.tsx` | partial | `p-row-repeat-{light,dark,dim}-side.png` | as `p-row-due`; popover list (Never ... Custom…) agrees in structure |
+| `p-row-reminder` Task panel · Edit Reminder | `features/tasks/RowPopovers.tsx` | partial | `p-row-reminder-{light,dark,dim}-side.png` | as `p-row-due`; popover list agrees in structure |
 
 ### Lists
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
 | `lists` Lists | `features/lists/ListsPage.tsx:57` | partial | `cmp-lists.png` | header shows four colour swatches and "Completed and deleted"; design has "Share" and "Shared with Maya" (sharing not built) |
-| `p-lists-empty` Lists · Empty list | `features/lists/ListsPage.tsx:57` | not checked yet | – |  |
+| `p-lists-empty` Lists · Empty list | `features/lists/ListsPage.tsx:57` | partial | `p-lists-empty-{light,dark,dim}-side.png` | the list header is crowded at 1160px: Rename, "Nothing here", the sync pill, "Completed and deleted", four colour dots and a squeezed Add a task button wrap onto several lines (ListsPage.tsx:44-60, 190-195); the frame has only the title, "Nothing here", Share and Add a task; the frame's list order and colours (Groceries, Work, Home, Errands) and counts are its own data; the quick-add field under the empty state is in both |
 | `p-lists-loading` Lists · Loading | `features/lists/ListsPage.tsx:59` | not built | – | `ready` only disables "New list" (:122); no skeleton rows |
 | `p-lists-error` Lists · Error | none found | not built | – | no list error state in ListsPage |
 | `p-lists-offline` Lists · Offline | none found | not built | – | SyncLine is used on Today only (grep), so Lists shows no offline state |
@@ -136,9 +144,9 @@ Deep pass (Today, calendar, tasks) was complete at the first run; the refresh ab
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `p-cal-day-empty-phone` Calendar · Phone day view, empty day | `features/calendar/CalendarPage.tsx:47` | partial | – | built to v39 in #49: month title with chevron, centred five-day strip, swipes, month sheet, Today button, sub line "Week N · day[ · offline]", place or duration, Last synced row; not re-compared by screenshot |
-| `calendar-week` Calendar · Week | `features/calendar/CalendarPage.tsx:47, features/calendar/TimeGrid.tsx:36` | partial | `cmp-calendar-week.png` | seven columns Mon–Sun with the setting, today pill and soft column fill, range with arrows and a Today button on other weeks, arrow keys, minimum event height (#55); not changed: the header row stretches too tall above the hours (was there before), the toolbar still has a Calendars button, hours are labelled every hour, "Due this week" lists today's tasks too, event time "09:00" vs "9:00" |
-| `calendar-day` Calendar · Day | `features/calendar/CalendarPage.tsx:47, features/calendar/TimeGrid.tsx:36` | partial | `cmp-calendar-day.png` | toolbar has Month and Calendars, design Week / Day / Agenda only; hours every hour from 07:00 vs every two hours; "Tasks today" lists all open tasks |
+| `p-cal-day-empty-phone` Calendar · Phone day view, empty day | `features/calendar/PhoneCalendar.tsx:98` | partial | `p-cal-day-empty-phone-{light,dark,dim}-side.png` | the sync pill reads "On this device" (SyncLine.tsx:83) where the frame has no pill on a phone; the Tue 3 dot (a day with events) is not drawn in the strip, ours only marks today (PhoneCalendar.tsx:164); the second frame (Fri 6) differs the same way |
+| `calendar-week` Calendar · Week | `features/calendar/CalendarPage.tsx:47, features/calendar/TimeGrid.tsx:36` | partial | `calendar-week-{light,dark,dim}-side.png` | Events 6 as v47 (the rule is the app's); Overlaps 0 where the frame says 1 (frame data: it draws no second overlapping event); the grid scrolls to near now and starts at 10:00 at 11:40, the design shows from 7:00 (TimeGrid.tsx:67); the day-name header is 8px shorter and the grid starts 8px higher; event times read "09:00", the design "9:00"; "Due this week" in the frame lists Thu 12 and Fri 13 (outside 2 to 8 Nov: frame data) and says "1 day late" where ours says "Overdue 1d"; the overlap tag "overlaps" needs a second event the frame does not draw |
+| `calendar-day` Calendar · Day | `features/calendar/CalendarPage.tsx:47, features/calendar/TimeGrid.tsx:36` | partial | `calendar-day-{light,dark,dim}-side.png` | toolbar has Month and Calendars where the frame has Today, Week, Day, Agenda (CalendarPage.tsx:17, 112, 120); "Tasks today" order is by title, the frame orders by time with the amber 12:00 first (TimeGrid.tsx:216); All day shows in the grid and in the panel (the frame only in the panel); times "09:00" vs "9:00"; hours every hour from 7:00 vs the frame's grid |
 | `calendar-agenda` Calendar · Agenda | `features/calendar/AgendaView.tsx:17` | partial | `cmp-calendar-agenda.png` | matches in structure; toolbar pills differ (Month, Day, Calendars extra); row meta joins place and length ("Room 3 · 1h"), design shows one; no "Every Tuesday" note |
 | `calendar-month` Calendar · Month | `features/calendar/MonthView.tsx:11` | partial | `cmp-calendar-month.png` | toolbar as above; cells show three items then "+1 more", design lists items as dot and title |
 | `event-panel` Event panel | `features/calendar/EventPanel.tsx:16` | partial | `cmp-event-panel.png` | Calendar, Repeat and Reminder open row popovers (p-row-calendar); When opens the combined date-and-time popover (p-row-event-when); with the panel open the toolbar pills wrap onto several lines |
@@ -154,6 +162,14 @@ Deep pass (Today, calendar, tasks) was complete at the first run; the refresh ab
 | `p-cal-all-day` Calendar · All-day and multi-day | `features/calendar/TimeGrid.tsx:36` | partial | `cmp-p-cal-all-day.png` | the multi-day bar is one bar across the days labelled "… · Tue 3 to Thu 5" (#53); the design frame also has no side summary |
 | `p-cal-time-zone` Calendar · Time zones | `store/occurrences.ts:52` | not checked yet | – |  |
 | `p-cal-busy-only` Calendar · Busy-only shared calendar | none found | not built | – | needs shared calendars (not built) |
+| `p-cal-week-weekdays` Calendar · Week, weekdays only | `features/calendar/TimeGrid.tsx:36` | partial | `p-cal-week-weekdays-{light,dark,dim}-side.png` | five columns, Events 5 as v47; Overlaps 0 (frame says 1, frame data); same grid, header and time-format differences as `calendar-week` |
+| `p-cal-week-nav` Calendar · Another week | `features/calendar/CalendarPage.tsx:104-125` | partial | `p-cal-week-nav-{light,dark,dim}-side.png` | with the Today button the toolbar no longer fits at 1160px: the title wraps, Agenda drops to a second row and New event is squeezed (CalendarPage.tsx:104-125 and the `.pills`/`.ph` rules); the frame keeps it on one row; the frame's events are copied from the current week (frame data), ours shows the empty week 9 to 15 Nov |
+| `p-cal-calendars-popover` Calendar · Calendars popover | `features/calendar/CalendarPage.tsx:120` | partial | `p-cal-calendars-popover-{light,dark,dim}-side.png` | popover built in #72; calendar names, colours and the Subscribed tag come from the frame's data (Birthdays, Holidays, Library events), the fixture has Personal, Work, Family; row spacing and the footer "Manage calendars" agree in structure; not compared further |
+| `p-row-event-when` Event panel · Edit When | `features/calendar/EventPanel.tsx:120` | partial | `p-row-event-when-{light,dark,dim}-side.png` | frame is the Agenda view with the panel; ours lists the week's Standup and Design review the frame leaves out (fixture), the agenda row also shows the duration ("Library, level 2 · 2h"); the popover (month, time fields, All day, Done) matches in structure; ours keeps the note text inside the popover under Done |
+| `p-row-calendar` Event panel · Edit Calendar | `features/calendar/EventPanel.tsx` | partial | `p-row-calendar-{light,dark,dim}-side.png` | as `p-row-event-when`; calendar list (Work, Personal, Book club, Family in the frame) is the fixture's calendars; searched list and Selected tag as built in #59 |
+| `p-when-event` New event · When, open | `features/calendar/NewEventDialog.tsx:58` | partial | `p-when-event-{light,dark,dim}-side.png` | the dialog opens over the calendar, the frame draws it alone; field order, labels and buttons agree; the month popover buttons are boxed chevrons where the frame has plain ones; the selected day is today (7) where the frame has 12 (frame types a date) |
+| `p-when-event-typing` New event · When, typing | `components/WhenField.tsx:120` | partial | `p-when-event-typing-{light,dark,dim}-side.png` | the read-back line "Fri 13 Nov, 14:00 – 15:00" has no icon in ours (the frame draws a small calendar icon); the Calendar field is a select, the frame shows a coloured dot before "Personal"; Reminder reads "None", the frame "1 hour before" (fixture default) |
+| `p-when-unreadable` New event · When, not understood | `components/WhenField.tsx:120` | partial | `p-when-unreadable-{light,dark,dim}-side.png` | as `p-when-event-typing`; the "Couldn’t read that" message and its hint are checked by copy only |
 
 ### Booking
 
@@ -243,13 +259,16 @@ Deep pass (Today, calendar, tasks) was complete at the first run; the refresh ab
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `phone` Today, a list and offline on a phone | `app/App.tsx:103 (tab bar), features/today/TodayPage.tsx:150` | not checked yet | – | phone Today uses the "Today" title and a week fold (TodayPage.tsx:353) |
+| `phone` Today, a list and offline on a phone | `app/App.tsx:103, features/today/TodayPage.tsx:150` | partial | `phone-{light,dark,dim}-side.png` | the sync pill reads "On this device" (SyncLine.tsx:83) where the frame has no pill on a phone; the list starts 30px lower because of the pill and the title sits 2px lower; the tab bar icons sit 4px lower (App.tsx:103); the round SA menu button agrees (#71). Only the Today phone (first of three) was compared |
 | `p-phone-task` Phone · Task as a sheet | `features/tasks/TaskPanel.tsx:26` | not checked yet | – |  |
-| `p-phone-week` Phone · Calendar week | `features/calendar/CalendarPage.tsx:47` | partial | – | built to v39 in #49 with p-cal-day-empty-phone; not re-compared by screenshot |
+| `p-phone-week` Phone · Calendar week | `features/calendar/PhoneCalendar.tsx:98` | partial | `p-phone-week-{light,dark,dim}-side.png` | the sync pill reads "On this device" (SyncLine.tsx:83) where the frame has no pill on a phone; "3 events · 1 task" vs the frame's "2 tasks" (frame lists one task); the tab bar sits 4px lower; the second frame (Tue 3) is also compared (`p-phone-week@1`) with the same pill difference |
 | `p-phone-empty` Phone · Empty states | `features/today/TodayPage.tsx:316` | not checked yet | – |  |
-| `p-phone-offline` Phone · Offline | `features/sync/SyncLine.tsx:29` | partial | – | the offline sub line and banner use the sync pill (#49, #52); not re-compared by screenshot |
+| `p-phone-offline` Phone · Offline | `features/sync/SyncLine.tsx:29, features/calendar/PhoneCalendar.tsx` | partial | `p-phone-offline-{light,dark,dim}-side.png` | the offline Calendar frame has a banner "Offline · 2 changes waiting to sync" at the top, the title "Calendar", no day strip and a "Last synced 09:38" row; ours shows the month title, the strip and an "Offline" pill; only the Calendar frame (second of two) was compared |
+| `p-phone-menu` Phone · Menu | `features/today/TodayPage.tsx` | partial | `p-phone-menu-{light,dark,dim}-side.png` | the sheet lists Notifications, Projects and Settings; the frame also has Booking (not built), the Notifications count 4, and the profile row "Sam Arden · Synced" (needs an account); the sheet is shorter and sits 70px lower |
+| `p-phone-day-nav` Phone · Day navigation | `features/calendar/PhoneCalendar.tsx:149-164` | partial | `p-phone-day-nav-{light,dark,dim}-side.png` | the sync pill reads "On this device" (SyncLine.tsx:83) where the frame has no pill on a phone; the Tue 3 dot (a day with events) is not drawn in ours (PhoneCalendar.tsx:164); the strip, the Today button, the rows and the colours agree |
+| `p-phone-month-picker` Phone · Month picker | `features/calendar/PhoneCalendar.tsx:63-85` | partial | `p-phone-month-picker-{light,dark,dim}-side.png` | the sheet starts 23px higher; the month title is bold and small where the frame's is regular and larger; chevrons are boxed where the frame's are plain; Today and Done sit about 4px lower; the sheet's top corners are rounder in the frame |
 
-## Account Designs (v53 per the brief)
+## Account Designs (v60)
 
 ### Account site
 
