@@ -85,9 +85,12 @@ export function dueText(task: Task, now: Date): string {
   return formatDue(task.due, now);
 }
 
-/** Whether the date is the amber kind: the person must act. */
+/** Whether the date is the amber kind: the person must act. A task is amber only when it is overdue or due within the hour. */
 export function needsAction(task: Task, now: Date): boolean {
-  return !task.done && task.due !== null && (isOverdue(task.due, now) || isDueToday(task.due, now));
+  if (task.done || task.due === null) return false;
+  if (isOverdue(task.due, now)) return true;
+  const { date, hasTime } = parseDue(task.due);
+  return hasTime && date.getTime() - now.getTime() <= 3_600_000;
 }
 
 export interface TaskGroup {

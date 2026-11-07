@@ -7,8 +7,8 @@ import type { SyncState } from "../../sync/controller";
 
 export type SyncStatus =
   | { kind: "synced"; devices: number }
-  /** The engine answers. Real sync, and so "Synced", arrives with the sync phase. */
-  | { kind: "connected" }
+  /** No account is syncing: everything is on this device. ("Connected" is not a Planner state.) */
+  | { kind: "local" }
   | { kind: "syncing" }
   /** `lastSynced`: when this device last reached the server, if it ever did. */
   | { kind: "offline"; waiting: number; lastSynced?: string | null }
@@ -78,9 +78,9 @@ function OfflinePill({ status, waiting }: { status: Extract<SyncStatus, { kind: 
 export function SyncLine({ status, onRetry, waiting = [] }: { status: SyncStatus; onRetry?: () => void; waiting?: WaitingChange[] }) {
   switch (status.kind) {
     case "synced":
-      return <p className="pillx" role="status">Synced · {plural(status.devices, "device", "devices")}</p>;
-    case "connected":
-      return <p className="pillx" role="status">Connected</p>;
+      return <p className="pillx" role="status">Synced · {status.devices === 1 ? "this device" : `${status.devices} devices`}</p>;
+    case "local":
+      return <p className="pillx" role="status">On this device</p>;
     case "syncing":
       return (
         <span className="st info" role="status">
@@ -202,7 +202,7 @@ export function useSyncStatus(pending = 0, sync: SyncState | null = null, syncNo
     else status = { kind: "synced", devices: sync.devices };
   } else if (!online) status = { kind: "offline", waiting: pending };
   else if (healthy === null) status = { kind: "syncing" };
-  else if (healthy) status = { kind: "connected" };
+  else if (healthy) status = { kind: "local" };
   else status = { kind: "error" };
   return { status, retry };
 }

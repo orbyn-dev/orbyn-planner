@@ -109,7 +109,7 @@ button { cursor: pointer; }
 .bh b.amber { color: var(--amber-text); }
 .row {
   display: grid; grid-template-columns: var(--sp-56) var(--sp-16) minmax(0, 1fr) auto; align-items: center; gap: var(--sp-10);
-  min-height: var(--sp-38); border-top: var(--bw) solid var(--line); padding: var(--sp-6) 0;
+  min-height: var(--sp-40); border-top: var(--bw) solid var(--line); padding: var(--sp-6) 0;
 }
 .row:last-child { border-bottom: var(--bw) solid var(--line); }
 .row .time { font-family: var(--mono); font-size: var(--fs-11-5); color: var(--t3); }
@@ -128,7 +128,9 @@ button { cursor: pointer; }
 .empty { flex: 1; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: var(--sp-10); padding: 0 var(--sp-28) var(--sp-40); }
 .empty h2 { font-size: var(--fs-18); font-weight: var(--fw-medium); color: var(--t1); }
 .empty p { color: var(--t3); }
-.blk .empty { flex: none; padding: var(--sp-20) 0; border-top: var(--bw) solid var(--line); }
+.blk .empty { flex: none; padding: calc(var(--sp-20) + var(--sp-48)) 0 var(--sp-20); }
+/* The week at a glance: 28 px between the days. */
+.kv.wk { height: var(--sp-28); }
 .pad { padding: var(--sp-6) var(--sp-28) var(--sp-24); display: flex; flex-direction: column; gap: var(--sp-12); min-height: 0; }
 .quiet { color: var(--t3); }
 
