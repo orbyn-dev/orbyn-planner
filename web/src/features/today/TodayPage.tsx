@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { MotionList } from "../../components/MotionList";
 import { useNow } from "../../app/clock";
 import { useRouter } from "../../app/router";
 import { useUi } from "../../app/ui";
@@ -341,7 +342,7 @@ export function TodayPage() {
                   {entries.length > 0 && <div className="bh"><b>Timed</b><span></span></div>}
                 </>
               )}
-              {entries.length > 0 && <ul>{rows(entries.slice(0, entryRows), entries.length)}</ul>}
+              {entries.length > 0 && <MotionList>{rows(entries.slice(0, entryRows), entries.length)}</MotionList>}
               {g.overdue.length > 0 && (
                 <>
                   <div className="bh" style={{ paddingTop: "var(--sp-16)" }}>
