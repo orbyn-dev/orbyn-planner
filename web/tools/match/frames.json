@@ -1,0 +1,15 @@
+{
+  "today": { "design": "today", "kind": "desktop", "route": "/today", "scenario": "today" },
+  "p-today-empty": { "design": "p-today-empty", "kind": "desktop", "route": "/today", "scenario": "today-empty" },
+  "p-today-all-day": { "design": "p-today-all-day", "kind": "desktop", "route": "/today", "scenario": "today-all-day" },
+  "phone": { "design": "phone", "app": 0, "kind": "phone", "route": "/today", "scenario": "phone-today" },
+  "calendar-week": { "design": "calendar-week", "kind": "desktop", "route": "/calendar", "scenario": "week" },
+  "calendar-day": { "design": "calendar-day", "kind": "desktop", "route": "/calendar", "scenario": "day", "steps": [{ "role": "radio", "name": "Day" }] },
+  "p-phone-week": { "design": "p-phone-week", "app": 0, "kind": "phone", "route": "/calendar", "scenario": "phone-week" },
+  "p-phone-week@1": { "design": "p-phone-week", "app": 1, "kind": "phone", "route": "/calendar", "scenario": "phone-week-tue" },
+  "p-phone-day-nav": { "design": "p-phone-day-nav", "app": 0, "kind": "phone", "route": "/calendar", "scenario": "phone-day-wed" },
+  "p-cal-day-empty-phone": { "design": "p-cal-day-empty-phone", "app": 0, "kind": "phone", "route": "/calendar", "scenario": "phone-day-empty-wed" },
+  "p-cal-day-empty-phone@1": { "design": "p-cal-day-empty-phone", "app": 1, "kind": "phone", "route": "/calendar", "scenario": "phone-day-empty-fri" },
+  "work-list": { "design": "work-list", "kind": "desktop", "route": "/tasks", "scenario": "tasks" },
+  "p-lists-no-results": { "design": "p-lists-no-results", "kind": "desktop", "route": "/tasks", "scenario": "tasks" }
+}
