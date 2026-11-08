@@ -1844,5 +1844,85 @@
         "name": "Board"
       }
     ]
+  },
+  "p-set-tags": {
+    "kind": "desktop",
+    "design": "p-set-tags",
+    "route": "/settings",
+    "scenario": "task-panel-tags",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Tags\")"
+      },
+      {
+        "eval": "(() => { const s = window.__match; const t = s.getState().tags.find((x) => x.name === 'errands'); s.deleteTag(t.id); })()"
+      },
+      {
+        "wait": 200
+      }
+    ]
+  },
+  "p-set-tags-empty": {
+    "kind": "desktop",
+    "design": "p-set-tags-empty",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Tags\")"
+      }
+    ]
+  },
+  "p-set-tags-add-error": {
+    "kind": "desktop",
+    "design": "p-set-tags-add-error",
+    "route": "/settings",
+    "scenario": "task-panel-tags",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Tags\")"
+      },
+      {
+        "eval": "(() => { const s = window.__match; const t = s.getState().tags.find((x) => x.name === 'errands'); s.deleteTag(t.id); })()"
+      },
+      {
+        "fill": "input[aria-label=\"New tag name\"]",
+        "value": "bug"
+      },
+      {
+        "wait": 200
+      }
+    ]
+  },
+  "p-set-tags-deleted-empty": {
+    "kind": "desktop",
+    "design": "p-set-tags-deleted-empty",
+    "route": "/settings",
+    "scenario": "task-panel-tags",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Tags\")"
+      }
+    ]
+  },
+  "p-set-tags-restored": {
+    "kind": "desktop",
+    "design": "p-set-tags-restored",
+    "route": "/settings",
+    "scenario": "task-panel-tags",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Tags\")"
+      },
+      {
+        "eval": "(() => { const s = window.__match; const t = s.getState().tags.find((x) => x.name === 'errands'); s.deleteTag(t.id); })()"
+      },
+      {
+        "click": "button[aria-label=\"Restore tag errands\"]"
+      },
+      {
+        "wait": 300
+      }
+    ]
   }
 }

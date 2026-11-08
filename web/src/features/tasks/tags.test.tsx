@@ -126,26 +126,57 @@ describe("tags in the planner", () => {
     expect(screen.queryByRole("button", { name: "post the parcel" })).toBeNull();
   });
 
-  it("Settings · Tags makes, renames and deletes tags; a deleted tag disappears from the tasks, and Restore brings it back", async () => {
+  it("Settings · Tags makes, renames and deletes tags; a deleted tag disappears from the tasks, and Restore brings it back (Planner Designs v64 p-set-tags)", async () => {
     const { store, mail } = await open("/settings");
     const tag = store.addTag("Errands", "c4");
     store.setTaskTag(mail.id, tag.id, true);
     await userEvent.click(await screen.findByRole("button", { name: "Tags" }));
-    await userEvent.type(screen.getByRole("textbox", { name: "New tag name" }), "Later{Enter}");
-    expect(screen.getByRole("textbox", { name: "Name of tag Later" })).toBeInTheDocument();
-    await userEvent.type(screen.getByRole("textbox", { name: "New tag name" }), "later{Enter}");
-    expect(await screen.findByRole("alert")).toHaveTextContent("A tag with that name already exists.");
+    expect(screen.getByText("1 task")).toBeInTheDocument();
+    expect(screen.getByText("Deleting a tag hides it. You can restore it for 30 days.")).toBeInTheDocument();
+    // Add: off until a name is typed; a name that exists (any case) shows the error and keeps Add off.
+    const add = screen.getByRole("button", { name: "Add" });
+    expect(add).toBeDisabled();
+    await userEvent.type(screen.getByRole("textbox", { name: "New tag name" }), "Later");
+    expect(add).toBeEnabled();
+    await userEvent.click(within(screen.getByRole("radiogroup", { name: "Tag colour" })).getByRole("radio", { name: "Purple" }));
+    await userEvent.click(add);
+    expect(store.getState().tags.find((t) => t.name === "Later")!.colour).toBe("c3");
+    await userEvent.type(screen.getByRole("textbox", { name: "New tag name" }), "later");
+    expect(await screen.findByRole("alert")).toHaveTextContent("You already have a tag called Later.");
+    expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
     expect(store.getState().tags.filter((t) => t.name.toLowerCase() === "later")).toHaveLength(1);
+    await userEvent.clear(screen.getByRole("textbox", { name: "New tag name" }));
+    // Rename edits in place.
+    expect(screen.queryByRole("textbox", { name: "Name of tag Errands" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Rename tag Errands" }));
     const name = screen.getByRole("textbox", { name: "Name of tag Errands" });
     await userEvent.clear(name);
     await userEvent.type(name, "Shopping{Enter}");
     expect(store.getState().tags.find((t) => t.id === tag.id)!.name).toBe("Shopping");
+    // Recolour from the swatch.
+    await userEvent.click(screen.getByRole("button", { name: "Colour of Shopping" }));
+    await userEvent.click(within(screen.getByRole("radiogroup", { name: "Colour of Shopping" })).getByRole("radio", { name: "Green" }));
+    expect(store.getState().tags.find((t) => t.id === tag.id)!.colour).toBe("c2");
 
+    expect(screen.queryByText("Deleted tags")).toBeNull(); // not drawn while none is deleted (p-set-tags-deleted-empty)
     await userEvent.click(screen.getByRole("button", { name: "Delete tag Shopping" }));
-    expect(screen.getByText(/on 1 task/)).toBeInTheDocument();
+    expect(screen.getByText("Deleted tags")).toBeInTheDocument();
+    expect(screen.getByText(/^Deleted \d+ \w{3}$/)).toBeInTheDocument();
+    expect(screen.getByText("Restoring a tag puts it back on its tasks. Deleted tags are kept for 30 days.")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Restore tag Shopping" }));
     expect(store.getState().tags.find((t) => t.id === tag.id)!.deletedAt).toBeNull();
     expect(store.getState().tasks.find((t) => t.id === mail.id)!.tags).toEqual([tag.id]);
+    expect(await screen.findByText("Tag restored")).toBeInTheDocument(); // the toast (p-set-tags-restored)
+    expect(screen.queryByText("Deleted tags")).toBeNull();
+  });
+
+  it("Settings · Tags with no tags says where tags come from, and still has the Add row and the footnote (p-set-tags-empty)", async () => {
+    await open("/settings");
+    await userEvent.click(await screen.findByRole("button", { name: "Tags" }));
+    expect(screen.getByText("No tags yet.")).toBeInTheDocument();
+    expect(screen.getByText("Add one above, or from a task. It appears here, where you can rename it, change its colour or delete it.")).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "New tag name" })).toBeInTheDocument();
+    expect(screen.getByText("Deleting a tag hides it. You can restore it for 30 days.")).toBeInTheDocument();
   });
 
   it("a task at the tag limit can't be given another: the unticked tags and Create tag are disabled or go, and come back when one is unticked", async () => {
