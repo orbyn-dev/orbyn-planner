@@ -78,6 +78,8 @@ function BoardCard({ task, index, of, onDragging }: { task: Task; index: number;
   const list = lists.find((l) => l.id === task.listId);
   const here = laneOf(task);
   const cardLanes = LANES.map((l) => ({ key: l, label: LANE_LABELS[l] }));
+  const stepsDone = task.checklist.filter((c) => c.done).length;
+  const steps = { done: stepsDone, percent: task.checklist.length === 0 ? 0 : Math.round((stepsDone / task.checklist.length) * 100) };
   return (
     <li
       className="tcard"
@@ -105,6 +107,12 @@ function BoardCard({ task, index, of, onDragging }: { task: Task; index: number;
         {list && <Swatch colour={list.colour} />}
         {[list?.name, task.due && formatDue(task.due, now)].filter(Boolean).join(" · ")}
       </span>
+      {task.checklist.length > 0 && (
+        // The card's bar: the steps done out of all steps (work-board, under "Launch brief").
+        <div className="meter" role="progressbar" aria-label={`${task.title}: ${steps.done} of ${task.checklist.length} steps`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={steps.percent}>
+          <i style={{ width: `${steps.percent}%` }} />
+        </div>
+      )}
       <CardMenu title={task.title} lanes={cardLanes} current={here} done={task.done} onOpen={open} onMarkDone={() => { move(task, "done"); focusCard(task.id); }} onMove={(l) => { move(task, l as Lane); focusCard(task.id); }} />
     </li>
   );
