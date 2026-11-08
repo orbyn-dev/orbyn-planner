@@ -42,7 +42,13 @@ export async function mountMatch(root: Root, { scenario, route, theme, now = PIN
   const store = await seededStore(scenario, now);
   // The match runner's steps can change the store (a task deleted on "another device") through this.
   (window as unknown as { __match: unknown }).__match = store;
-  const auth: AuthServices | undefined = account === "out" ? signedOutAccount() : account ? await pretendAccount() : undefined;
+  let auth: AuthServices | undefined;
+  if (account === "out") {
+    const out = signedOutAccount();
+    auth = out.services;
+    // A frame's steps set the pretend engine up through this (an invite code, a refused call, a held request).
+    (window as unknown as { __matchEngine: unknown }).__matchEngine = out.controls;
+  } else if (account) auth = await pretendAccount();
   applyChoice(theme);
   window.history.replaceState(null, "", route);
   root.render(
