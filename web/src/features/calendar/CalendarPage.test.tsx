@@ -308,9 +308,14 @@ describe("Event panel", () => {
     await userEvent.clear(title);
     await userEvent.type(title, "Stand-up (new room)");
     await userEvent.click(within(panel).getByRole("button", { name: "Save" }));
-    const scope = screen.getByRole("dialog", { name: "Save changes to" });
-    expect(within(scope).getAllByRole("button").map((b) => b.textContent?.replace(/Only.*|This date.*|Every.*/, ""))).toEqual(["This event", "This and following", "All events", "Cancel"]);
-    await userEvent.click(within(scope).getByRole("button", { name: /^This event/ }));
+    const scope = screen.getByRole("dialog", { name: "Change a repeating event" });
+    // Planner Designs v61 p-event-recurring: three rows, the first chosen, with Cancel and Save; no line about guests.
+    expect(within(scope).getAllByRole("radio").map((r) => r.querySelector(".scope-label")?.textContent)).toEqual(["Only this event", "This and following events", "All events in the series"]);
+    expect(within(scope).getAllByRole("radio").map((r) => r.getAttribute("aria-checked"))).toEqual(["true", "false", "false"]);
+    expect(within(scope).getByText("Mon 2 Nov and every later one")).toBeInTheDocument();
+    expect(within(scope).getByText("Every week, from Mon 2 Nov")).toBeInTheDocument();
+    expect(scope).not.toHaveTextContent(/guest/i);
+    await userEvent.click(within(scope).getByRole("button", { name: "Save" })); // the first row is chosen
     const events = store.getState().events;
     expect(events).toHaveLength(2);
     expect(events.find((e) => e.repeat)!.repeat!.skipped).toEqual(["2026-11-02"]);
@@ -328,7 +333,8 @@ describe("Event panel", () => {
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(store.getState().events[0]!.place).toBe("");
     await userEvent.click(within(panel).getByRole("button", { name: "Save" }));
-    await userEvent.click(screen.getByRole("button", { name: /^All events/ }));
+    await userEvent.click(screen.getByRole("radio", { name: /^All events in the series/ }));
+    await userEvent.click(within(screen.getByRole("dialog", { name: "Change a repeating event" })).getByRole("button", { name: "Save" }));
     expect(store.getState().events[0]!.place).toBe("Room 9");
     panel = await screen.findByRole("complementary", { name: "Event" });
     expect(within(panel).getByRole("textbox", { name: "Where" })).toHaveValue("Room 9");
@@ -350,7 +356,12 @@ describe("Event panel", () => {
     const tuesday = document.querySelector('[data-day="2026-11-03"]') as HTMLElement;
     await userEvent.click(within(tuesday).getByRole("button", { name: /Stand-up/ }));
     await userEvent.click(within(screen.getByRole("complementary", { name: "Event" })).getByRole("button", { name: "Delete" }));
-    await userEvent.click(within(screen.getByRole("dialog", { name: "Delete" })).getByRole("button", { name: /^This event/ }));
+    const ask = screen.getByRole("dialog", { name: "Delete “Stand-up”?" }); // Planner Designs v61 p-event-delete
+    expect(within(ask).getAllByRole("radio")).toHaveLength(3);
+    expect(ask).toHaveTextContent("Deleted events are kept for 30 days in Completed and deleted.");
+    expect(ask).not.toHaveTextContent(/guest/i);
+    expect(within(ask).getByRole("button", { name: "Delete event" })).toHaveClass("danger");
+    await userEvent.click(within(ask).getByRole("button", { name: "Delete event" })); // the first row, Only this event, is chosen
     expect(within(document.querySelector('[data-day="2026-11-03"]') as HTMLElement).queryByRole("button", { name: /Stand-up/ })).not.toBeInTheDocument();
     expect(within(document.querySelector('[data-day="2026-11-04"]') as HTMLElement).getByRole("button", { name: /Stand-up/ })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Undo" }));
@@ -735,7 +746,8 @@ describe("a move the repeat cannot say", () => {
     await userEvent.click(screen.getByRole("button", { name: "Sunday 8 November" }));
     await userEvent.click(screen.getByRole("button", { name: "Done" }));
     await userEvent.click(within(panel).getByRole("button", { name: "Save" }));
-    await userEvent.click(screen.getByRole("button", { name: /^All events/ }));
+    await userEvent.click(screen.getByRole("radio", { name: /^All events in the series/ }));
+    await userEvent.click(within(screen.getByRole("dialog", { name: "Change a repeating event" })).getByRole("button", { name: "Save" }));
     expect(await within(panel).findByRole("alert")).toHaveTextContent("some of its days would fall in a different week of the cycle");
     expect(store.getState().events[0]!.start).toBe("2026-11-07T09:00");
   });

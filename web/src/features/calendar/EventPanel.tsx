@@ -18,7 +18,7 @@ import type { Person, Response } from "../../store/types";
 import { RESPONSE_LABELS, parsePeople } from "./eventForm";
 import { CalendarRow } from "./CalendarRow";
 import { ReminderRow, RepeatRow } from "../tasks/RowPopovers";
-import { ScopeDialog } from "./ScopeDialog";
+import { EventScopeDialog } from "./EventScopeDialog";
 
 const timePart = (value: string) => (value.length > 10 ? value.slice(11, 16) : "");
 
@@ -178,7 +178,7 @@ function Panel({ occ }: { occ: Occurrence }) {
         )}
       </div>
 
-      {ask && <ScopeDialog title={ask === "save" ? "Save changes to" : "Delete"} onCancel={() => setAsk(null)} onChoose={(scope) => (ask === "save" ? save(scope) : remove(scope))} />}
+      {ask && <EventScopeDialog mode={ask} event={event} date={occ.date} onCancel={() => setAsk(null)} onChoose={(scope) => (ask === "save" ? save(scope) : remove(scope))} />}
     </aside>
   );
   return phone ? <Portal>{panel}</Portal> : panel;
