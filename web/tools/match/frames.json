@@ -1673,7 +1673,18 @@
         "click": "a[href=\"/settings\"], a:has-text(\"Settings\")"
       },
       {
+        "click": "button:text-is(\"Account\"), a:text-is(\"Account\"), [role=tab]:text-is(\"Account\")"
+      },
+      {
         "click": "button:text-is(\"Sign in\")"
+      },
+      {
+        "fill": "#si-email",
+        "value": "sam@example.com"
+      },
+      {
+        "fill": "#si-password",
+        "value": "correct horse"
       },
       {
         "wait": 300
