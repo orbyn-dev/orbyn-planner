@@ -63,7 +63,7 @@ export function TaskRow({ task, layout = "tasks", extra, unsynced = false }: { t
       <span className="ttwrap">
         <button type="button" className="tt link-btn" onClick={open}>{task.title}</button>
         {!task.done && statusOf(task) === "blocked" && <span className="t3 status-word"> · Blocked</span>}
-        {chips.map((t) => <TagChip key={t.id} tag={t} label={labels.get(t.id)} />)}
+        {chips.length > 0 && <span className="tagchips">{chips.map((t) => <TagChip key={t.id} tag={t} label={labels.get(t.id)} />)}</span>}
       </span>
       {layout === "tasks" && (
         <>
