@@ -25,6 +25,9 @@ export const SCENARIOS = [
   "today-event",
   "lists-empty",
   "first-run",
+  "board",
+  "board-moved",
+  "project-board",
   "today-long",
   "today-week-empty",
   "today-overnight",
@@ -318,6 +321,44 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
         ],
         status: scenario === "task-panel" ? null : scenario === "task-panel-progress" ? "in_progress" : "blocked",
       });
+      return;
+    }
+    case "board":
+    case "board-moved": {
+      // The Tasks board frames (p-board-card-*): four lanes, the card in focus In progress.
+      const work = store.getState().lists.find((l) => l.name === "Work")!;
+      const personal = store.addList("Personal", "c4");
+      const club = store.addList("Book club", "c3");
+      const reno = store.addList("Home renovation", "c3");
+      const add = (title: string, listId: string, due: string | null, status: "todo" | "in_progress" | "blocked") => {
+        const t = store.addTask({ title, listId, due });
+        if (status !== "todo") store.updateTask(t.id, { status });
+        return t;
+      };
+      add("Prepare the launch slides", work.id, day(12), "todo");
+      add("Renew library books", personal.id, day(13), "todo");
+      add("Launch brief", work.id, `${day(7)}T12:00`, "in_progress");
+      add("Choose kitchen tiles", reno.id, day(9), "in_progress");
+      if (scenario === "board") add("Book a table for the book club", club.id, null, "blocked");
+      else {
+        add("Book a table for the book club", club.id, null, "todo");
+        add("Fix the sign-up email bug", work.id, `${day(7)}T17:00`, "blocked");
+      }
+      const done = store.addTask({ title: "Reply to the school", listId: w.workList });
+      store.setDone(done.id, true);
+      return;
+    }
+    case "project-board": {
+      // p-board-card-project: Home renovation with Kitchen and Bathroom lanes and a Done lane.
+      const project = store.addProject({ name: "Home renovation", colour: "c3", goal: `2027-01-30` });
+      const kitchen = store.addSection(project.id, "Kitchen");
+      const bath = store.addSection(project.id, "Bathroom");
+      const add = (title: string, due: string, sectionId: string) => store.addTask({ title, due, projectId: project.id, sectionId, listId: w.workList });
+      add("Choose kitchen tiles", day(9), kitchen.id);
+      add("Send the deposit to the builder", day(11), kitchen.id);
+      add("Get three plumbing quotes", "2026-11-20", bath.id);
+      add("Pick a shower screen", "2026-12-01", bath.id);
+      store.setDone(add("Measure the cabinets", day(3), kitchen.id).id, true);
       return;
     }
     case "tasks": {
