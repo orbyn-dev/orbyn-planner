@@ -1,6 +1,7 @@
 # Design inventory: Planner against the designs
 
 - **Designs commit:** `59546b4` (orbyn-designs `origin/main`), Planner Designs and Account Designs of 2026-11-09; the fifth match pass (Search, Notifications, Settings, event panels, sign-in screens) read both pages from it. Earlier rows were read from older commits.
+- **Sixth match pass (sign-up, verify, sign-in, start over):** planner main at `c6f9dfa` plus the kit commit on `docs/match-pass-6`, Planner Designs v57 and Account Designs v62 to v64 as given by the coordinator (not verified here; the design HTML read from `origin/main` carries no version). Rows below for these screens cite that pass. The kit now crops the sign-in frames (they were slivers before) and draws the start-over page.
 - **Page versions:** Planner Designs v50 and Account Designs v60, as given by the coordinator. The HTML files carry no version marker (the version lives on the artifact server), so these are taken from the brief and not verified here.
 - **Planner main checked:** first run on `50b5bc2a`; match passes on main at `3caa45a`, `0d76a40`, `de0fdae` and (fourth: Today, calendar, Tasks list, View options and the task panel) `d3ab552`, with #91 to #96 merged. #94 had not merged.
 - **Refresh method:** rows for work merged since the first run were updated from the code, the tests and each PR’s notes; they were not re-screenshotted, so none moves to *matched*. Frames built to v39 to v41 name the PR. Rows for work not yet merged (row popovers, the When line) are left as they were.
@@ -13,7 +14,7 @@
 
 | Page / area | Frames | matched | partial | not built | gated | in progress | not checked yet |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Planner Designs (all)** | **160** | **6** | **99** | **26** | **12** | **0** | **17** |
+| **Planner Designs (all)** | **171** | **6** | **106** | **26** | **12** | **0** | **21** |
 | Planner · Getting started | 9 | 1 | 8 | 0 | 0 | 0 | 0 |
 | Planner · Search | 2 | 0 | 2 | 0 | 0 | 0 | 0 |
 | Planner · Empty, loading and error states | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
@@ -27,9 +28,9 @@
 | Planner · Booking | 8 | 0 | 0 | 8 | 0 | 0 | 0 |
 | Planner · Notifications | 4 | 0 | 2 | 0 | 2 | 0 | 0 |
 | Planner · Settings | 31 | 0 | 15 | 1 | 5 | 0 | 10 |
-| Planner · Account and auth | 10 | 0 | 9 | 0 | 0 | 0 | 1 |
+| Planner · Account and auth | 21 | 0 | 16 | 0 | 0 | 0 | 5 |
 | Planner · Phone | 8 | 0 | 6 | 0 | 0 | 0 | 2 |
-| **Account Designs (all)** | **128** | **0** | **14** | **0** | **13** | **0** | **101** |
+| **Account Designs (all)** | **131** | **0** | **18** | **0** | **13** | **0** | **100** |
 | Account · Account site | 14 | 0 | 0 | 0 | 5 | 0 | 9 |
 | Account · Delete account | 40 | 0 | 0 | 0 | 0 | 0 | 40 |
 | Account · Protection | 24 | 0 | 14 | 0 | 8 | 0 | 2 |
@@ -39,7 +40,7 @@
 | Account · Emails | 10 | 0 | 0 | 0 | 0 | 0 | 10 |
 | Account · Witness | 6 | 0 | 0 | 0 | 0 | 0 | 6 |
 | Account · Key service | 9 | 0 | 0 | 0 | 0 | 0 | 9 |
-| Account · Start over | 6 | 0 | 0 | 0 | 0 | 0 | 6 |
+| Account · Start over | 9 | 0 | 4 | 0 | 0 | 0 | 5 |
 | Account · Consent | 2 | 0 | 0 | 0 | 0 | 0 | 2 |
 | Account · Launcher | 3 | 0 | 0 | 0 | 0 | 0 | 3 |
 | Account · Phone | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
@@ -259,16 +260,27 @@ Deep pass (Today, calendar, tasks) was complete at the first run; the refresh ab
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `landing` Landing | `features/auth/AuthScreens.tsx:20` | partial | `landing-{light,dark,dim}-side.png` (+ -1440) | the copy differs: the frame has a "See how it works" link and ours has "Sign in", "Use without an account" and "Everything then stays on this device. You can sign in later." (AuthScreens.tsx:28-36); the design frame could not be cropped by the kit, so layout is not compared |
-| `sign-up` Sign up | `features/auth/AuthScreens.tsx:197` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh: dimmed Planned passkey button, "Continue with a password", sign-up note keeps the email code |
-| `verify` Verify your email | `features/auth/AuthScreens.tsx:46` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh: verify states |
-| `p-verify-ready` Verify your email · Send a new code | `features/auth/AuthScreens.tsx:46` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
-| `p-verify-throttled` Verify your email · Too many codes | `features/auth/AuthScreens.tsx:46` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
-| `sign-in` Sign in | `features/auth/AuthScreens.tsx:256` | partial | `sign-in-{light,dark,dim}-side.png` (+ -1440) | copy agrees; the frame shows sam@example.com and a masked password, ours empty fields (fixture); the design frame could not be cropped by the kit, so layout is not compared |
-| `p-sign-in-local` Sign in · from inside the planner | `features/auth/AuthScreens.tsx:256` | not checked yet | – |  |
-| `recovery` Recover your account | `features/auth/AuthScreens.tsx:398` | partial | `recovery-{light,dark,dim}-side.png` (+ -1440) | copy agrees; ours puts "Planned" and "Not available yet." on one line where the frame stacks them; the design frame could not be cropped by the kit, so layout is not compared |
-| `p-signup-invite-default` Sign up · Invite code (step 1 of 4) | `features/auth/AuthScreens.tsx` | partial | `p-signup-invite-default-{light,dark,dim}-side.png` (+ -1440) | copy agrees (Step 1 of 4, invite-only, XXXX-XXXX-XXXX-XXXX); the design frame could not be cropped by the kit, so layout is not compared |
-| `p-signup-invite-filled` Sign up · Invite code, filled | `features/auth/AuthScreens.tsx` | partial | `p-signup-invite-filled-{light,dark,dim}-side.png` (+ -1440) | as `p-signup-invite-default`; the filled code could not be compared |
+| `landing` Landing | `features/auth/AuthScreens.tsx:24-38` | partial | `landing-{light,dark,dim}-side.png` (+ -1440) | copy differs: the frame has “See how it works” and “Get started”; ours has “Get started”, “Sign in”, “Use without an account” and the line “Everything then stays on this device. You can sign in later.” (AuthScreens.tsx:32-38); the cropped frame now shows the same card position in all three themes |
+| `sign-up` Sign up | `features/auth/AuthScreens.tsx:265` | partial | `sign-up-{light,dark,dim}-side.png` (+ -1440) | step 2 (Invite accepted chip, Name, Email, Password, note, passkey, Continue) agrees in copy and order; ours adds “Already have an account? Sign in” and “Use without an account” under the button (AuthScreens.tsx:290-295), the frame ends at the button; the passkey row wraps “Not available yet.” onto a second line under the button text (`Planned.tsx:19`, `app.css:623` flex-wrap) where the frame keeps one line |
+| `p-signup-invite-default` Sign up · Invite code (step 1 of 4) | `features/auth/InviteStep.tsx:69` | partial | `p-signup-invite-default-{light,dark,dim}-side.png` (+ -1440) | copy and card structure agree (Step 1 of 4, invite-only, XXXX-XXXX-XXXX-XXXX); the focus ring is kit state |
+| `p-signup-invite-filled` Sign up · Invite code, filled | `features/auth/InviteStep.tsx:69` | partial | `p-signup-invite-filled-{light,dark,dim}-side.png` (+ -1440) | as `p-signup-invite-default`; the frame’s code is a sample, ours is fixture data |
+| `p-signup-invite-checking` Sign up · Invite code, checking | `features/auth/InviteStep.tsx:60` | partial | `p-signup-invite-checking-{light,dark,dim}-side.png` (+ -1440) | as `p-signup-invite-default`; “Checking…” agrees |
+| `p-signup-invite-error` Sign up · Invite code, refused | `features/auth/InviteStep.tsx:84` | partial | `p-signup-invite-error-{light,dark,dim}-side.png` (+ -1440) | copy agrees; the refused field’s border colour differs from the frame’s (InviteStep.tsx:69, `app.css:925`) |
+| `p-signup-invite-limited` Sign up · Invite code, too many tries | `features/auth/InviteStep.tsx:63` | partial | `p-signup-invite-limited-{light,dark,dim}-side.png` (+ -1440) | copy agrees; the banner is grey with no icon (InviteStep.tsx:63) where the frame draws amber with the alert icon (`app.css:510-511`) |
+| `p-signup-invite-network` Sign up · Invite code, network error | `features/auth/InviteStep.tsx:64` | partial | `p-signup-invite-network-{light,dark,dim}-side.png` (+ -1440) | as `p-signup-invite-limited` (InviteStep.tsx:64) |
+| `p-signup-invite-email` Sign up · Email and password (invite accepted) | `features/auth/AuthScreens.tsx:265` | partial | `p-signup-invite-email-{light,dark,dim}-side.png` (+ -1440) | as `sign-up` |
+| `p-signup-invite-phone` Sign up · Invite code on a phone | `features/auth/InviteStep.tsx` | not checked yet | – | no phone frame in the kit yet |
+| `p-signup-invite-rejected-later` Sign up · Invite refused at the email step | `features/auth/AuthScreens.tsx:139` | partial | `p-signup-invite-rejected-later-{light,dark,dim}-side.png` (+ -1440) | the banner is grey with no icon (`AuthScreens.tsx:139`, class `banner` without `warn`) where the frame draws it amber with the alert icon (`app.css:510-511`); the code text is left-aligned (`app.css:926` has no text-align) where the frame centres it; the code in ours is fixture data and Verify is enabled with it |
+| `p-signup-check-start` Sign up · Check your email, start | `features/auth/AuthScreens.tsx:135` | not checked yet | – | no kit frame yet; same screen as `verify` |
+| `p-signup-check-resend` Sign up · Check your email, resend | `features/auth/AuthScreens.tsx:175` | not checked yet | – | no kit frame yet |
+| `p-signup-check-failed` Sign up · Check your email, failed | `features/auth/AuthScreens.tsx:346` | not checked yet | – | no kit frame yet |
+| `p-signup-check-too-many` Sign up · Check your email, too many | `features/auth/AuthScreens.tsx:169` | not checked yet | – | no kit frame yet; `p-verify-throttled` is the same state |
+| `verify` Verify your email | `features/auth/AuthScreens.tsx:135` | partial | `verify-{light,dark,dim}-side.png` (+ -1440) | copy, step bar, “Send a new code in 1:00” and “Wrong address? Change email” agree; the code text is left-aligned (`app.css:926` has no text-align) where the frame centres it; the empty, typing, wrong and resend states are not separate frames (only `verify`, `p-verify-ready` and `p-verify-throttled` exist), typing and wrong are not rendered |
+| `p-verify-ready` Verify your email · Send a new code | `features/auth/AuthScreens.tsx:175` | partial | `p-verify-ready-{light,dark,dim}-side.png` (+ -1440) | “Send a new code” link agrees; the code text is left-aligned (`app.css:926` has no text-align) where the frame centres it |
+| `p-verify-throttled` Verify your email · Too many codes | `features/auth/AuthScreens.tsx:169` | partial | `p-verify-throttled-{light,dark,dim}-side.png` (+ -1440) | amber banner, copy and muted resend line agree; the code text is left-aligned (`app.css:926` has no text-align) where the frame centres it |
+| `sign-in` Sign in | `features/auth/AuthScreens.tsx:420` | partial | `sign-in-{light,dark,dim}-side.png` (+ -1440) | copy and order agree (Email, Password, Sign in, passkey, links, Use without an account); the passkey row wraps “Not available yet.” onto a second line under the button text (`Planned.tsx:19`, `app.css:623` flex-wrap) where the frame keeps one line; the password field has the focus ring (the kit focuses it) |
+| `p-sign-in-local` Sign in · from inside the planner | `features/auth/AuthScreens.tsx:420` | partial | `p-sign-in-local-{light,dark,dim}-side.png` (+ -1440) | as `sign-in` with “Back to the planner” in place of “Use without an account” (agrees); the passkey row wraps “Not available yet.” onto a second line under the button text (`Planned.tsx:19`, `app.css:623` flex-wrap) where the frame keeps one line |
+| `recovery` Recover your account | `features/auth/AuthScreens.tsx:453` | partial | `recovery-{light,dark,dim}-side.png` (+ -1440) | copy and the four options agree; the option label and its Planned pill and “Not available yet.” sit on one line in ours and wrap to the right column in the frame (AuthScreens.tsx:458-471, `app.css:623`) |
 
 ### Phone
 
@@ -454,7 +466,10 @@ Deep pass (Today, calendar, tasks) was complete at the first run; the refresh ab
 | `so-check` Check your email | `features/auth/AuthScreens.tsx:46` | not checked yet | – |  |
 | `so-email` The email | email / other repo | not checked yet | – |  |
 | `so-email-local` The email without an account site | email / other repo | not checked yet | – |  |
-| `so-landing` The link’s landing page and its states | `features/auth/CancelDeletionPage.tsx:50` | not checked yet | – |  |
+| `so-landing` The link’s landing page and its states | `features/auth/DeleteUnusedPage.tsx:150` | partial | `so-landing-{light,dark,dim}-side.png` (+ -1440) | the frame’s page draws every state on one board (ready, loading, deleted, expired, not empty); ours renders one at a time, so the ready state was compared: copy agrees; the card is 440px wide (`app.css:549`) where the frame’s is about 400px; Cancel and Delete this account are stacked full-width buttons in ours (DeleteUnusedPage.tsx:155-156, `app.css:551-552, 581`) and one compact row in the frame |
+| `so-landing-limited` The link’s landing page · Too many tries | `features/auth/DeleteUnusedPage.tsx:137` | partial | `so-landing-limited-{light,dark,dim}-side.png` (+ -1440) | icon, title and copy agree in all three themes; the card is 440px wide (`app.css:549`) where the frame’s is about 400px |
+| `so-done-released` Account deleted, invite code released | `features/auth/DeleteUnusedPage.tsx:90` | partial | `so-done-released-{light,dark,dim}-side.png` (+ -1440) | copy agrees; ours draws a plain green tick (`pv-ok`, DeleteUnusedPage.tsx:91, `app.css:564`) where the frame has a circled tick in the text colour; “Sign up again” is a full-width button in ours (`app.css:551-552, 581`) and compact in the frame; the card is 440px wide (`app.css:549`) where the frame’s is about 400px |
+| `so-done-not-released` Account deleted, no invite code released | `features/auth/DeleteUnusedPage.tsx:90` | partial | `so-done-not-released-{light,dark,dim}-side.png` (+ -1440) | as `so-done-released` |
 | `so-phone` Start over on a phone | email / other repo | not checked yet | – |  |
 
 ### Consent

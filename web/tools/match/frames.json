@@ -371,7 +371,7 @@
       },
       {
         "fill": ".when input.field",
-        "value": "Fri 14:00–15:00"
+        "value": "Fri 14:00\u201315:00"
       }
     ]
   },
@@ -1067,7 +1067,7 @@
       },
       {
         "role": "button",
-        "name": "Export…"
+        "name": "Export\u2026"
       }
     ]
   },
@@ -1228,6 +1228,14 @@
     "steps": [
       {
         "click": "button:text-is(\"Sign in\")"
+      },
+      {
+        "fill": "input[type=email], input:not([type=password])",
+        "value": "sam@example.com"
+      },
+      {
+        "fill": "input[type=password]",
+        "value": "correct horse"
       }
     ],
     "fit": "app"
@@ -1688,6 +1696,83 @@
       },
       {
         "wait": 300
+      }
+    ]
+  },
+  "so-landing": {
+    "design": "so-landing",
+    "kind": "desktop",
+    "route": "/today",
+    "scenario": "today",
+    "account": "out",
+    "fit": "app",
+    "designPage": "account",
+    "page": "delete-unused",
+    "hash": "kit-token"
+  },
+  "so-landing-limited": {
+    "design": "so-landing-limited",
+    "kind": "desktop",
+    "route": "/today",
+    "scenario": "today",
+    "account": "out",
+    "fit": "app",
+    "designPage": "account",
+    "page": "delete-unused",
+    "hash": "kit-token",
+    "confirm": {
+      "status": 429
+    },
+    "steps": [
+      {
+        "role": "button",
+        "name": "Delete this account"
+      }
+    ]
+  },
+  "so-done-released": {
+    "design": "so-done-released",
+    "kind": "desktop",
+    "route": "/today",
+    "scenario": "today",
+    "account": "out",
+    "fit": "app",
+    "designPage": "account",
+    "page": "delete-unused",
+    "hash": "kit-token",
+    "confirm": {
+      "status": 200,
+      "body": {
+        "invite_released": true
+      }
+    },
+    "steps": [
+      {
+        "role": "button",
+        "name": "Delete this account"
+      }
+    ]
+  },
+  "so-done-not-released": {
+    "design": "so-done-not-released",
+    "kind": "desktop",
+    "route": "/today",
+    "scenario": "today",
+    "account": "out",
+    "fit": "app",
+    "designPage": "account",
+    "page": "delete-unused",
+    "hash": "kit-token",
+    "confirm": {
+      "status": 200,
+      "body": {
+        "invite_released": false
+      }
+    },
+    "steps": [
+      {
+        "role": "button",
+        "name": "Delete this account"
       }
     ]
   }
