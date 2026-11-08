@@ -30,7 +30,8 @@ describe.skipIf(!engineUrl)("record sync against a real engine", () => {
       // A task on A reaches B over the socket.
       const task = a.store.addTask({ title: "Buy milk", notes: "" });
       await until("the task to reach B", () => b.store.getState().tasks.some((t) => t.id === task.id));
-      expect(a.store.getState().outbox).toEqual([]);
+      // The Inbox and the Personal calendar went up with this first real action, so they clear a pass after the task does.
+      await until("A's outbox to clear", () => a.store.getState().outbox.length === 0);
 
       // A tag (a record in the account's settings zone) and a `tag:<id>` field on the task reach B.
       const tag = a.store.addTag("Errands", "c4");

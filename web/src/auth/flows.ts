@@ -171,7 +171,6 @@ export async function signUp(services: AuthServices, input: { name: string; emai
           }
           const session = toStored(created, email, name);
           await services.tokens.set(session);
-          await signStandardProtection(services, session);
           return session;
         };
         keepKeys = keep;
@@ -188,13 +187,13 @@ export async function signUp(services: AuthServices, input: { name: string; emai
 }
 
 /**
- * Right after a successful verification the first device signs the account's protection setting as Standard (sequence 1) and sends it,
- * then verifies its own link. The keys are already saved, so the engine restores them like any later action. It never blocks the
+ * Before the account's first real upload (not at sign-up: an account nobody used stays unused on the server) the first device signs
+ * the account's protection setting as Standard (sequence 1) and sends it, then verifies its own link. The keys are already saved, so the engine restores them like any later action. It never blocks the
  * sign-up: if anything here fails (the network, a conflict), the account is made and Settings says the level "can't be confirmed on
  * this device", with a way to confirm it. On a conflict (another device got there first) it fetches the head and verifies it: it never
  * signs again on its own.
  */
-async function signStandardProtection(services: AuthServices, session: StoredSession): Promise<void> {
+export async function signStandardProtection(services: AuthServices, session: StoredSession): Promise<boolean> {
   try {
     await services.engine.run(session, async (engine) => {
       const devices = await services.api.devices();
@@ -207,8 +206,10 @@ async function signStandardProtection(services: AuthServices, session: StoredSes
         await walkProtection(services, engine, devices);
       }
     });
+    return true;
   } catch {
-    // Not fatal: see above.
+    // Not fatal: see above. False says it did not go through.
+    return false;
   }
 }
 

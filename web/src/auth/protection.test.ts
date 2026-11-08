@@ -3,7 +3,7 @@ import { ApiFailure } from "../api/auth";
 import { createMemoryKeyStore, emptySyncState, type KeyStore } from "../api/keyStore";
 import { FakeAuthCrypto } from "../api/testing/FakeAuthCrypto";
 import { createMockEngine, type MockEngine } from "../api/testing/MockEngine";
-import { confirmProtection, readProtection, signIn, signOut, signUp } from "./flows";
+import { confirmProtection, readProtection, signIn, signOut, signStandardProtection, signUp } from "./flows";
 import { signedUp } from "./testing/signedUp";
 import { createAuthServices, type AuthServices } from "./services";
 
@@ -14,10 +14,13 @@ const browser = (engine: MockEngine): AuthServices =>
   createAuthServices({ fetch: engine.fetch, baseUrl: "http://e.test", keys: createMemoryKeyStore(), crypto: () => crypto, wrapSecret: async () => new Uint8Array(32).fill(4) });
 
 describe("the signed protection setting", () => {
-  it("the first device signs Standard, sequence 1, right after the sign-up is verified, and reads it back as verified", async () => {
+  it("the sign-up signs nothing: the first device signs Standard, sequence 1, with the account's first real upload, and reads it back as verified", async () => {
     const engine = createMockEngine();
     const a = browser(engine);
     const session = await signedUp(engine, a, SAM);
+    expect(engine.accounts.get(SAM.email)!.protection ?? []).toHaveLength(0); // an account nobody used stays unused
+    expect(engine.calls.filter((c) => c.path === "/v1/keychain/protection" && c.method === "POST")).toHaveLength(0);
+    expect(await signStandardProtection(a, session)).toBe(true);
     const chain = engine.accounts.get(SAM.email)!.protection!;
     expect(chain).toHaveLength(1);
     expect(chain[0]).toMatchObject({ level: "standard", seq: 1, signer_device_id: session.deviceId });
@@ -32,6 +35,7 @@ describe("the signed protection setting", () => {
     const a = browser(engine);
     const session = await signedUp(engine, a, SAM);
     expect(session.deviceState).toBe("trusted");
+    expect(await signStandardProtection(a, session)).toBe(false); // the next pass tries again
     expect(engine.accounts.get(SAM.email)!.protection ?? []).toHaveLength(0);
     expect(await readProtection(a, session)).toMatchObject({ state: "unknown", level: null, seq: 0, head: null });
   });
@@ -41,6 +45,7 @@ describe("the signed protection setting", () => {
     engine.refuseNext("/v1/keychain/protection", 409, "protection_conflict");
     const a = browser(engine);
     const session = await signedUp(engine, a, SAM);
+    await signStandardProtection(a, session);
     const calls = engine.calls.filter((c) => c.path.startsWith("/v1/keychain/protection"));
     expect(calls.map((c) => c.method)).toEqual(["POST", "GET"]); // one try, then a read: no second POST
     expect(engine.accounts.get(SAM.email)!.protection ?? []).toHaveLength(0);
@@ -51,6 +56,7 @@ describe("the signed protection setting", () => {
     const engine = createMockEngine();
     const a = browser(engine);
     const session = await signedUp(engine, a, SAM);
+    await signStandardProtection(a, session);
     const report = await readProtection(a, session);
     const posts = () => engine.calls.filter((c) => c.path === "/v1/keychain/protection" && c.method === "POST").length;
     expect(posts()).toBe(1); // reading signs nothing
@@ -72,6 +78,7 @@ describe("the signed protection setting", () => {
     const engine = createMockEngine();
     const a = browser(engine);
     const session = await signedUp(engine, a, SAM);
+    await signStandardProtection(a, session);
     await confirmProtection(a, session, "standard", (await readProtection(a, session)).head);
     const account = engine.accounts.get(SAM.email)!;
     account.protection = account.protection!.slice(0, 1); // the server shows an older chain
@@ -191,6 +198,7 @@ describe("the signed protection setting", () => {
     const engine = createMockEngine();
     const a = browser(engine);
     const first = await signedUp(engine, a, SAM);
+    await signStandardProtection(a, first);
     const b = browser(engine);
     const second = await signIn(b, SAM);
     // Trust by an approval the first device made: the mock engine's own shortcut for a trusted device.

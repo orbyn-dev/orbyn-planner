@@ -1,6 +1,7 @@
 import { ApiFailure } from "../api/auth";
 import type { ApprovalEngine, SyncApi } from "../api/authCrypto";
 import { emptySyncState, type StoredSession, type SyncState } from "../api/keyStore";
+import { signStandardProtection } from "../auth/flows";
 import type { AuthServices } from "../auth/services";
 import type { DeviceList } from "../generated/DeviceList";
 import type { RecordChanged } from "../generated/RecordChanged";
@@ -9,6 +10,7 @@ import type { UploadResult } from "../generated/UploadResult";
 import type { Zone } from "../generated/Zone";
 import type { ZoneChanges } from "../generated/ZoneChanges";
 import type { ZoneList } from "../generated/ZoneList";
+import { INBOX_ID, PERSONAL_CALENDAR_ID } from "../store/LocalStore";
 import { refKey } from "../store/outbox";
 import { storedOf } from "../store/records";
 import type { OutboxEntry, PlannerStore, RecordType, RemoteChange } from "../store/types";
@@ -69,6 +71,11 @@ const MAX_BATCHES = 50;
 const MAX_RECORD_BYTES = 200_000;
 const BACKOFF_FIRST_MS = 60_000;
 const BACKOFF_MAX_MS = 15 * 60_000;
+
+/** The Inbox and the Personal calendar, as every device makes them on first start. */
+function isDefaultRecord(o: OutboxEntry): boolean {
+  return o.op === "create" && ((o.type === "list" && o.id === INBOX_ID) || (o.type === "calendar" && o.id === PERSONAL_CALENDAR_ID));
+}
 
 /**
  * One pass of sync for a signed-in, trusted device: stage the outbox, take the keys other devices sent,
@@ -227,7 +234,17 @@ export async function runCycle(
   // First, before anything is fetched: the engine's clock moves past every stamp it receives, so an edit
   // staged after a fetch would be stamped later than edits other devices made after it. Staged now, each field
   // carries the time it was edited, and merging with what arrives decides field by field.
-  const entries = store.getState().outbox.filter((o) => state.staged[refKey(o)] !== o.idempotencyKey && !state.failed[refKey(o)]?.startsWith(`${o.idempotencyKey}|`));
+  // An account nobody has used sends nothing: the Inbox and the Personal calendar every device makes stay local until the first real
+  // action (a task, an event, a list of its own), so the server sees no zone and no protection setting for it. The first real action
+  // signs the first protection setting and releases everything.
+  const outbox = store.getState().outbox;
+  if (!state.opened && (state.zones.length > 0 || outbox.some((o) => !isDefaultRecord(o)))) {
+    // Never fatal, as it was at sign-up: if signing fails, Settings says the level is not set and offers to set it.
+    if (state.zones.length === 0) await signStandardProtection(services, session);
+    state.opened = true;
+    await save();
+  }
+  const entries = state.opened ? outbox.filter((o) => state.staged[refKey(o)] !== o.idempotencyKey && !state.failed[refKey(o)]?.startsWith(`${o.idempotencyKey}|`)) : [];
   if (entries.length > 0) {
     await withEngine((e) => {
       for (const entry of entries) stage(e, entry);
