@@ -12,7 +12,7 @@ export interface ViewOptions {
   sort: "due" | "priority" | "created" | "name";
   /** The list: the sort direction, reversed. */
   descending: boolean;
-  /** The list: show completed tasks (those finished today stay where they were; with this off they are hidden). */
+  /** Show completed tasks. Off (the default) hides those finished before today: one finished today stays in place, struck through and faded. On lists every completed task under a Completed header by the day it was finished, and fills the board's Done lane. */
   showCompleted: boolean;
   /** The board: what orders the cards inside a lane. */
   boardSort: "due" | "priority" | "created";
@@ -20,7 +20,7 @@ export interface ViewOptions {
   showDone: boolean;
 }
 
-export const DEFAULT_VIEW_OPTIONS: ViewOptions = { groupBy: "due", sort: "due", descending: false, showCompleted: true, boardSort: "due", showDone: true };
+export const DEFAULT_VIEW_OPTIONS: ViewOptions = { groupBy: "due", sort: "due", descending: false, showCompleted: false, boardSort: "due", showDone: true };
 
 const KEY = "orbyn-planner.tasks-view";
 const pick = <T extends string>(v: unknown, all: readonly T[], fallback: T): T => (all.includes(v as T) ? (v as T) : fallback);
@@ -33,7 +33,7 @@ export function loadViewOptions(): ViewOptions {
       groupBy: pick(raw.groupBy, ["none", "due", "list", "priority"], d.groupBy),
       sort: pick(raw.sort, ["due", "priority", "created", "name"], d.sort),
       descending: raw.descending === true,
-      showCompleted: raw.showCompleted !== false,
+      showCompleted: raw.showCompleted === true,
       boardSort: pick(raw.boardSort, ["due", "priority", "created"], d.boardSort),
       showDone: raw.showDone !== false,
     };

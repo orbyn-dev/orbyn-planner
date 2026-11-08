@@ -137,3 +137,23 @@ export function groupTasks(tasks: readonly Task[], now: Date, weekStart: "mon" |
   ];
   return defs.map(([key, label, amber]) => ({ key, label, amber, tasks: buckets[key]! })).filter((g) => g.tasks.length > 0);
 }
+
+/** Every live completed task, newest first, grouped by the day it was finished: "Today", "Yesterday" or "Fri 6 Nov". */
+export function completedGroups(tasks: readonly Task[], now: Date): { key: string; label: string; tasks: Task[] }[] {
+  const done = tasks.filter((t) => isLive(t) && t.done).sort((a, b) => (b.completedAt ?? "").localeCompare(a.completedAt ?? ""));
+  const today = dateKey(now);
+  const yesterday = dateKey(addDays(now, -1));
+  const groups: { key: string; label: string; tasks: Task[] }[] = [];
+  for (const t of done) {
+    const key = t.completedAt ? dateKey(new Date(t.completedAt)) : "";
+    let group = groups.at(-1);
+    if (!group || group.key !== key) {
+      const day = key ? new Date(`${key}T12:00:00`) : null;
+      const label = key === today ? "Today" : key === yesterday ? "Yesterday" : day ? day.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }).replace(",", "") : "Earlier";
+      group = { key, label, tasks: [] };
+      groups.push(group);
+    }
+    group.tasks.push(t);
+  }
+  return groups;
+}

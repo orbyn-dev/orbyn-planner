@@ -11,7 +11,7 @@ import { MemoryPersistence } from "../../store/persistence";
 
 const NOW = new Date(2026, 10, 7, 10, 0);
 
-async function openTasks() {
+async function openTasks(seed?: (s: LocalStore) => void) {
   window.history.replaceState(null, "", "/tasks");
   vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new Error("offline"))));
   const store = new LocalStore({ persistence: new MemoryPersistence(), now: () => NOW });
@@ -21,6 +21,7 @@ async function openTasks() {
     </ClockProvider>,
   );
   await store.ready;
+  if (seed) await act(async () => seed(store));
   const field = screen.getByRole("textbox", { name: "Add a task" });
   await waitFor(() => expect(field).toBeEnabled());
   return { store, field };
@@ -153,7 +154,7 @@ describe("quick add preview", () => {
     expect(await screen.findByRole("button", { name: "wear sun hat" })).toBeInTheDocument();
   });
 
-  it("View options groups, hides completed tasks, remembers and holds Completed and deleted", async () => {
+  it("View options groups, lists completed tasks under Completed, remembers and holds Completed and deleted", async () => {
     window.localStorage.clear();
     firstRunDoneForTests();
     const { field } = await openTasks();
@@ -166,8 +167,10 @@ describe("quick add preview", () => {
     expect(within(within(pop).getByRole("radiogroup", { name: "Group by" })).getByRole("radio", { name: "Due date" })).toBeChecked();
     await userEvent.click(within(within(pop).getByRole("radiogroup", { name: "Group by" })).getByRole("radio", { name: "Priority" }));
     expect(screen.getByRole("region", { name: "High" })).toBeInTheDocument();
+    expect(within(pop).getByRole("switch", { name: "Show completed tasks" })).not.toBeChecked(); // off by default
+    expect(screen.getByRole("button", { name: "beta" })).toBeInTheDocument(); // finished today: stays in place
     await userEvent.click(within(pop).getByRole("switch", { name: "Show completed tasks" }));
-    expect(screen.queryByRole("button", { name: "beta" })).toBeNull();
+    expect(within(screen.getByRole("region", { name: "Completed" })).getByRole("button", { name: "beta" })).toBeInTheDocument();
     expect(within(pop).getByRole("link", { name: /Completed and deleted/ })).toHaveAttribute("href", "/completed");
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByRole("dialog", { name: "View options" })).toBeNull();
@@ -257,5 +260,60 @@ describe("quick add preview", () => {
     const titles = screen.getAllByRole("listitem").map((li) => li.textContent ?? "").filter((t) => /gamma|delta/.test(t));
     expect(titles[0]).toContain("delta");
     expect(titles[1]).toContain("gamma");
+  });
+
+  describe("Show completed tasks (Planner Designs v51)", () => {
+    const seedDone = (s: LocalStore) => {
+      const old = s.addTask({ title: "older one" });
+      s.setDone(old.id, true);
+      s.updateTask(old.id, { completedAt: "2026-11-05T09:00" });
+      const yesterday = s.addTask({ title: "yesterday one" });
+      s.setDone(yesterday.id, true);
+      s.updateTask(yesterday.id, { completedAt: "2026-11-06T09:00" });
+      const today = s.addTask({ title: "today one" });
+      s.setDone(today.id, true);
+      s.updateTask(today.id, { completedAt: "2026-11-07T09:00" });
+      s.addTask({ title: "open one" });
+    };
+
+    it("is off by default: a task finished before today is hidden, one finished today stays in place and faded", async () => {
+      window.localStorage.clear();
+      firstRunDoneForTests();
+      await openTasks(seedDone);
+      expect(screen.queryByRole("button", { name: "older one" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "yesterday one" })).toBeNull();
+      const row = screen.getByRole("button", { name: "today one" }).closest("li")!;
+      expect(row).toHaveClass("done");
+      expect(screen.queryByRole("region", { name: "Completed" })).toBeNull();
+    });
+
+    it("on, every completed task is under a Completed header, by the day it was finished, newest first", async () => {
+      window.localStorage.clear();
+      firstRunDoneForTests();
+      await openTasks(seedDone);
+      await userEvent.click(screen.getByRole("button", { name: "View options" }));
+      await userEvent.click(screen.getByRole("switch", { name: "Show completed tasks" }));
+      const completed = screen.getByRole("region", { name: "Completed" });
+      expect(within(completed).getAllByRole("group").map((g) => g.getAttribute("aria-label"))).toEqual(["Today", "Yesterday", "Thu 5 Nov"]);
+      expect(within(within(completed).getByRole("group", { name: "Yesterday" })).getByRole("button", { name: "yesterday one" })).toBeInTheDocument();
+      expect(within(completed).getByRole("button", { name: "older one" })).toBeInTheDocument();
+      // The open task is not under Completed.
+      expect(within(completed).queryByRole("button", { name: "open one" })).toBeNull();
+      expect(screen.getByRole("button", { name: "open one" })).toBeInTheDocument();
+    });
+
+    it("on the board the Done lane shows today's finished tasks, and all of them with the switch on, which the board's View options has too", async () => {
+      window.localStorage.clear();
+      firstRunDoneForTests();
+      await openTasks(seedDone);
+      await userEvent.click(screen.getByRole("radio", { name: "Board" }));
+      const done = () => within(screen.getByRole("region", { name: "Done" }));
+      expect(done().getByRole("button", { name: "today one" })).toBeInTheDocument();
+      expect(done().queryByRole("button", { name: "older one" })).toBeNull();
+      await userEvent.click(screen.getByRole("button", { name: "View options" }));
+      await userEvent.click(screen.getByRole("switch", { name: "Show completed tasks" }));
+      expect(done().getByRole("button", { name: "older one" })).toBeInTheDocument();
+      expect(done().getByRole("button", { name: "yesterday one" })).toBeInTheDocument();
+    });
   });
 });

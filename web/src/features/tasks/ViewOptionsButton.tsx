@@ -67,6 +67,7 @@ export function ViewOptionsButton({ view, options, onChange }: { view: "list" | 
             <>
               <Group label="Sort within lanes" value={options.boardSort} choices={BOARD_SORTS} onChange={(boardSort) => set({ boardSort })} />
               <div className="kv"><span>Show Done lane</span><Toggle label="Show Done lane" on={options.showDone} onChange={(showDone) => set({ showDone })} /></div>
+              <div className="kv"><span>Show completed tasks</span><Toggle label="Show completed tasks" on={options.showCompleted} onChange={(showCompleted) => set({ showCompleted })} /></div>
             </>
           )}
           <Link to="/completed" className="kv vo-link" onClick={() => setOpen(false)}><span>Completed and deleted</span><span aria-hidden="true">›</span></Link>
