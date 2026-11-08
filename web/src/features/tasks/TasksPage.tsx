@@ -208,7 +208,7 @@ export function TasksPage() {
               {g.label && (
                 <div className="bh" style={{ padding: "var(--sp-8) var(--sp-4) var(--sp-4)" }}>
                   <b className={g.amber ? "amber" : undefined}>{g.label}</b>
-                  <span>{g.tasks.length}</span>
+                  <span>{g.tasks.filter((t) => !t.done).length}</span>
                 </div>
               )}
               <MotionList className="tbl">

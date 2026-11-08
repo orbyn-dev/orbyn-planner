@@ -73,7 +73,7 @@ export function formatDue(due: string, now: Date): string {
   if (diff === 0) day = "Today";
   else if (diff === 1) day = "Tomorrow";
   else if (diff === -1) day = "Yesterday";
-  else if (diff > 1 && diff < 7) day = WEEKDAYS[date.getDay()]!.slice(0, 3);
+  else if (diff > 1 && diff < 7) day = `${WEEKDAYS[date.getDay()]!.slice(0, 3)} ${date.getDate()}`;
   else {
     day = `${date.getDate()} ${MONTHS[date.getMonth()]!.slice(0, 3)}`;
     if (date.getFullYear() !== now.getFullYear()) day += ` ${date.getFullYear()}`;

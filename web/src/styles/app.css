@@ -269,7 +269,8 @@ button.pill { border: 0; }
 .tag { display: inline-flex; align-items: center; gap: var(--sp-6); font-size: var(--fs-12); color: var(--t2); }
 .due { font-size: var(--fs-12); color: var(--t3); }
 .due.amber { color: var(--amber-text); font-weight: var(--fw-medium); }
-.addbar { margin-top: auto; padding: var(--sp-10) var(--sp-28); }
+/* The quick-add line sits right under the rows, not at the foot of the page (Planner Designs v49 work-list). */
+.addbar { padding: var(--sp-10) var(--sp-28); }
 .hint { min-height: var(--sp-18); margin-top: var(--sp-4); color: var(--t3); font-size: var(--fs-12); }
 
 .field {
