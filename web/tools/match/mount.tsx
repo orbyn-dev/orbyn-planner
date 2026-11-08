@@ -7,7 +7,7 @@ import { applyChoice, type Theme } from "../../src/app/theme";
 import { LocalStore } from "../../src/store/LocalStore";
 import { MemoryPersistence } from "../../src/store/persistence";
 import type { AuthServices } from "../../src/auth/services";
-import { pretendAccount } from "./account";
+import { pretendAccount, signedOutAccount } from "./account";
 import { PINNED_NOW, seed, type Scenario } from "./fixture";
 
 export interface MatchOptions {
@@ -17,7 +17,7 @@ export interface MatchOptions {
   /** An ISO time to pin instead of the fixture's, for a frame drawn at another time of day. */
   now?: string;
   /** Draw the planner signed in to the pretend account (the default); false is the planner of this device alone. */
-  account?: boolean;
+  account?: boolean | "out";
 }
 
 /** An in-memory planner with one scenario seeded and every change acknowledged, so the screen shows a settled planner. Nothing is stored or sent. */
@@ -39,7 +39,7 @@ export async function seededStore(scenario: Scenario, pinned: string = PINNED_NO
 /** Renders the planner (no accounts, no engine) on a seeded store at the pinned time. */
 export async function mountMatch(root: Root, { scenario, route, theme, now = PINNED_NOW, account = true }: MatchOptions): Promise<void> {
   const store = await seededStore(scenario, now);
-  const auth: AuthServices | undefined = account ? await pretendAccount() : undefined;
+  const auth: AuthServices | undefined = account === "out" ? signedOutAccount() : account ? await pretendAccount() : undefined;
   applyChoice(theme);
   window.history.replaceState(null, "", route);
   root.render(

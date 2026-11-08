@@ -40,6 +40,7 @@ export const SCENARIOS = [
   "task-panel",
   "task-panel-progress",
   "task-panel-blocked",
+  "search-data",
 ] as const;
 export type Scenario = (typeof SCENARIOS)[number];
 
@@ -366,6 +367,12 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
       add("Get three plumbing quotes", "2026-11-20", bath.id);
       add("Pick a shower screen", "2026-12-01", bath.id);
       store.setDone(add("Measure the cabinets", day(3), kitchen.id).id, true);
+      return;
+    }
+    case "search-data": {
+      todayData(store, w);
+      store.addTask({ title: "Book the dentist", due: day(13), listId: w.errands });
+      store.addEvent({ title: "Dentist check-up", calendarId: w.personal, start: "2026-08-14T10:00", end: "2026-08-14T11:00" });
       return;
     }
     case "tasks": {
