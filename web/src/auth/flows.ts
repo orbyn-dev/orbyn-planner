@@ -67,7 +67,7 @@ function emailOrFail(crypto: AuthCrypto, email: string): string {
 export interface PendingSignUp {
   readonly signupId: string;
   readonly email: string;
-  /** The six-digit code from the email. A wrong one throws `invalid_email_code` and leaves the sign-up open (the engine closes it after five). */
+  /** The 8-character code from the email (K7QM-R4TW; any case, hyphen and spaces are dropped). A wrong one throws `invalid_email_code` and leaves the sign-up open (the engine closes it after five). */
   verify(code: string): Promise<StoredSession>;
   /** Asks for a new code (the engine allows three an hour and answers the same whatever happens). */
   resend(): Promise<void>;
@@ -152,7 +152,7 @@ export async function signUp(services: AuthServices, input: { name: string; emai
       email,
       verify: async (code) => {
         if (released) throw new ApiFailure("invalid_email_code", 400, "That code didn’t work.");
-        const created = await services.api.emailVerify({ signup_id: waiting.signup_id, code: code.replace(/\D/g, "") });
+        const created = await services.api.emailVerify({ signup_id: waiting.signup_id, code: code.replace(/[\s\-\u2010-\u2015\u2212]/g, "").toUpperCase() });
         // Only now is there an account and a session, so only now are the keys kept.
         const keep = async (): Promise<StoredSession> => {
           try {
