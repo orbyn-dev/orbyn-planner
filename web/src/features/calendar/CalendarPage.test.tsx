@@ -505,6 +505,10 @@ describe("Calendars (in Settings)", () => {
     await waitFor(() => expect(store.getState().events.map((e) => e.title)).toEqual(["Bonfire night"]));
     expect(store.getState().events[0]!.readOnly).toBe(true);
     expect(vi.mocked(fetch).mock.calls.some(([u]) => u === "https://example.com/holidays.ics")).toBe(true);
+    // A subscribed calendar takes one of the four calendar colours, like any calendar, and its colour picker offers those four (Planner Designs v53).
+    const feed = store.getState().calendars.find((c) => c.kind.type === "subscribed")!;
+    expect(["c1", "c2", "c3", "c4"]).toContain(feed.colour);
+    expect(within(await screen.findByRole("radiogroup", { name: "Colour of Holidays" })).getAllByRole("radio").map((r) => r.getAttribute("aria-label"))).toEqual(["Blue", "Green", "Purple", "Orange"]);
     await userEvent.click(within(screen.getByRole("navigation", { name: "Primary" })).getByRole("link", { name: "Calendar" }));
     await userEvent.click(await screen.findByRole("button", { name: "Bonfire night" }));
     const panel = screen.getByRole("complementary", { name: "Event" });
