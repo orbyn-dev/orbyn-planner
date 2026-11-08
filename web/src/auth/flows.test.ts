@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createMemoryKeyStore, emptySyncState } from "../api/keyStore";
 import { FakeAuthCrypto } from "../api/testing/FakeAuthCrypto";
 import { createMockEngine } from "../api/testing/MockEngine";
-import { KeysForAnotherAccount, signIn } from "./flows";
+import { KeysForAnotherAccount, signIn, signOut } from "./flows";
 import { createAuthServices } from "./services";
 import { signedUp } from "./testing/signedUp";
 
@@ -171,5 +171,36 @@ describe("signing in binds the stored state to the account and device", () => {
     expect(await keys.loadKeys()).not.toEqual(old);
     // The action's save came first and was then wiped; had the wipe run first, it would have been written back.
     expect(await keys.loadSnapshot()).toBeNull();
+  });
+});
+
+describe("signing out and in again on one browser", () => {
+  async function signedUpHere() {
+    const engine = createMockEngine();
+    const keys = createMemoryKeyStore();
+    const services = createAuthServices({ fetch: engine.fetch, baseUrl: "http://e.test", keys, crypto: () => crypto, wrapSecret: async () => new Uint8Array(32).fill(4) });
+    const first = await signedUp(engine, services, SAM);
+    return { engine, keys, services, first };
+  }
+
+  it("Keep on this browser keeps the device's keys, so signing in again is the same trusted device with no approval", async () => {
+    const { engine, keys, services, first } = await signedUpHere();
+    await signOut(services, { keepDevice: true });
+    expect(services.tokens.getSession()).toBeNull();
+    expect(await keys.loadKeys()).not.toBeNull();
+    const devicesBefore = engine.accounts.get(SAM.email)!.devices?.length;
+    const again = await signIn(services, SAM);
+    expect(again.deviceId).toBe(first.deviceId);
+    expect(again.deviceState).toBe("trusted");
+    expect(engine.accounts.get(SAM.email)!.devices?.length).toBe(devicesBefore);
+  });
+
+  it("Remove from this browser drops the keys, so signing in again is a new device that needs approving", async () => {
+    const { keys, services, first } = await signedUpHere();
+    await signOut(services);
+    expect(await keys.loadKeys()).toBeNull();
+    const again = await signIn(services, SAM);
+    expect(again.deviceId).not.toBe(first.deviceId);
+    expect(again.deviceState).not.toBe("trusted");
   });
 });

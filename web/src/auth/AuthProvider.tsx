@@ -32,7 +32,7 @@ interface AuthApiValue {
   /** "Use without an account": everything stays on this device. */
   useWithoutAccount: () => void;
   /** `removePlanner`: also delete this account's planner from this browser (otherwise it stays, and opens only when this account signs in again). */
-  signOut: (options?: { removePlanner?: boolean }) => Promise<void>;
+  signOut: (options?: { removePlanner?: boolean; keepDevice?: boolean }) => Promise<void>;
   /** Something that went wrong while signing out, to show. */
   problem: string | null;
   /** The account's keys and session are held in this tab's memory only, because this browser would not store them. */
@@ -144,7 +144,7 @@ export function AuthProvider({ services, children }: { services: AuthServices | 
         setProblem(null);
         const accountId = session?.accountId;
         try {
-          await signOutFlow(services);
+          await signOutFlow(services, { keepDevice: options?.keepDevice });
         } catch (e) {
           setProblem(e instanceof Error ? e.message : "Signing out didn’t finish.");
         }

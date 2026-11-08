@@ -109,7 +109,7 @@ function SignOutDialog({ onClose }: { onClose: () => void }) {
   const auth = useAuth()!;
   const go = (removePlanner: boolean) => {
     onClose();
-    void auth.signOut({ removePlanner });
+    void auth.signOut({ removePlanner, keepDevice: !removePlanner });
   };
   return (
     <Modal label="Sign out" onClose={onClose}>

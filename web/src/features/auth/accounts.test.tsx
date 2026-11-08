@@ -1229,7 +1229,19 @@ describe("signing out", () => {
     expect(out.authorization).toMatch(/^Bearer token-/);
     expect(auth.tokens.token()).toBeNull();
     expect(await auth.keys.loadSession()).toBeNull();
-    expect(await auth.keys.loadKeys()).toBeNull(); // signing out forgets the device: keys, snapshot and wrapping key
+    // Keep on this browser keeps the device with the kept data: the next sign-in of this account is the same trusted device.
+    expect(await auth.keys.loadKeys()).not.toBeNull();
+    expect(await auth.keys.loadSnapshot()).not.toBeNull();
+  });
+
+  it("Remove from this browser forgets the device too: keys, snapshot and wrapping key", async () => {
+    const auth = await signedIn();
+    await openAccount();
+    await waitFor(async () => expect(await auth.keys.loadSnapshot()).not.toBeNull());
+    await userEvent.click(await screen.findByRole("button", { name: "Sign out" }));
+    await userEvent.click(within(screen.getByRole("dialog", { name: "Sign out" })).getByRole("button", { name: "Remove" }));
+    expect(await screen.findByRole("heading", { name: /Your tasks and calendar/ })).toBeInTheDocument();
+    expect(await auth.keys.loadKeys()).toBeNull();
     expect(await auth.keys.loadSnapshot()).toBeNull();
     expect(await auth.keys.loadWrapKey()).toBeNull();
   });
