@@ -1,7 +1,7 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { SyncLine, healthDelay, useSyncStatus, withPersistence, type SyncStatus } from "./SyncLine";
+import { SYNC_STATE_MIN_MS, SyncLine, healthDelay, useSyncStatus, withPersistence, type SyncStatus } from "./SyncLine";
 
 const cases: [SyncStatus, string][] = [
   [{ kind: "synced", devices: 2 }, "Synced · 2 devices"],
@@ -110,26 +110,38 @@ describe("useSyncStatus", () => {
   });
 
   it("checks again when the tab becomes visible and when the network returns", async () => {
-    const fetchMock = vi.fn(async () => ok());
-    vi.stubGlobal("fetch", fetchMock);
-    render(<Probe />);
-    await screen.findByText("On this device", {}, { timeout: 3000 });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    // Fake time, because a change of state waits SYNC_STATE_MIN_MS before it shows: in real time that wait raced the test's own timeouts.
+    vi.useFakeTimers();
+    try {
+      const fetchMock = vi.fn(async () => ok());
+      vi.stubGlobal("fetch", fetchMock);
+      const tick = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
+      render(<Probe />);
+      await tick(SYNC_STATE_MIN_MS);
+      expect(screen.getByText("On this device")).toBeInTheDocument();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
 
-    act(() => {
-      document.dispatchEvent(new Event("visibilitychange"));
-    });
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+      act(() => {
+        document.dispatchEvent(new Event("visibilitychange"));
+      });
+      await tick(0);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
 
-    act(() => {
-      window.dispatchEvent(new Event("offline"));
-    });
-    expect(await screen.findByText("Offline")).toBeInTheDocument();
-    act(() => {
-      window.dispatchEvent(new Event("online"));
-    });
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
-    expect(await screen.findByText("On this device", {}, { timeout: 3000 })).toBeInTheDocument();
+      act(() => {
+        window.dispatchEvent(new Event("offline"));
+      });
+      await tick(SYNC_STATE_MIN_MS);
+      expect(screen.getByText("Offline")).toBeInTheDocument();
+      act(() => {
+        window.dispatchEvent(new Event("online"));
+      });
+      await tick(0);
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      await tick(SYNC_STATE_MIN_MS);
+      expect(screen.getByText("On this device")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("never runs two checks at once, so focus changes cannot stack timer loops", async () => {
