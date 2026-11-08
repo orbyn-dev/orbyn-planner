@@ -173,3 +173,88 @@ describe("First run", () => {
     expect(await screen.findByRole("radio", { name: "Saturday" })).toBeInTheDocument();
   });
 });
+
+describe("First run, as the frames draw it (Planner Designs fr-week, fr-calendar, fr-list, fr-phone)", () => {
+  const bars = (step: HTMLElement) => [...step.querySelectorAll(".fr-bars i")].map((i) => i.getAttribute("data-on"));
+
+  it("a progress bar of three segments fills one more on each step", async () => {
+    await open();
+    await start();
+    const step1 = screen.getByRole("region", { name: "First run, step 1 of 3" });
+    expect(bars(step1)).toEqual(["true", "false", "false"]);
+    await userEvent.click(within(step1).getByRole("button", { name: "Continue" }));
+    expect(bars(screen.getByRole("region", { name: "First run, step 2 of 3" }))).toEqual(["true", "true", "false"]);
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(bars(screen.getByRole("region", { name: "First run, step 3 of 3" }))).toEqual(["true", "true", "true"]);
+  });
+
+  it("Days shown is the segmented control, not pills, and week starts are radio cards with a drawn radio", async () => {
+    await open();
+    await start();
+    const step = screen.getByRole("region", { name: "First run, step 1 of 3" });
+    const days = within(step).getByRole("radiogroup", { name: "Days shown" });
+    expect(days).toHaveClass("seg");
+    expect(within(days).getAllByRole("radio")).toHaveLength(2);
+    expect(step.querySelector(".pill")).toBeNull();
+    for (const card of within(within(step).getByRole("radiogroup", { name: "Week starts on" })).getAllByRole("radio")) {
+      expect(card.querySelector(".fr-radio")).not.toBeNull();
+    }
+  });
+
+  it("step 1: the phone form drops the sentence under the title, the Sunday and Saturday notes and the footnote", async () => {
+    await open();
+    await start();
+    const step = screen.getByRole("region", { name: "First run, step 1 of 3" });
+    const gone = [...step.querySelectorAll(".fr-more")].map((e) => e.textContent);
+    expect(gone).toEqual([
+      "This sets the first column of your calendar and the week in Today.",
+      "Week 1 begins on a Sunday",
+      "Week 1 begins on a Saturday",
+      "You can change both later in Settings › Planning.",
+    ]);
+  });
+
+  it("step 2: the empty-name line sits inside the chosen row, between the field and the colours", async () => {
+    await open();
+    await start();
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await userEvent.clear(screen.getByRole("textbox", { name: "Calendar name" }));
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Give the calendar a name.");
+    const row = alert.closest(".fr-choice")!;
+    expect(row.contains(screen.getByRole("textbox", { name: "Calendar name" }))).toBe(true);
+    const order = [...row.children];
+    expect(order.indexOf(screen.getByRole("textbox", { name: "Calendar name" }))).toBeLessThan(order.indexOf(alert));
+    expect(order.indexOf(alert)).toBeLessThan(order.indexOf(row.querySelector(".fr-colours")!));
+  });
+
+  it("step 2: the options keep their short names; the connect row is dimmed, Planned and not selectable", async () => {
+    await open();
+    await start();
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    const planned = screen.getByText("Connect Google or Outlook").closest(".fr-choice")!;
+    expect(planned).toHaveAttribute("aria-disabled", "true");
+    expect(within(planned as HTMLElement).getByText("Planned")).toBeInTheDocument();
+    expect(within(planned as HTMLElement).queryByRole("radio")).toBeNull();
+  });
+
+  it("the tab bar is not shown under first run, and comes back once it is done", async () => {
+    await open();
+    await welcome();
+    expect(screen.queryByRole("navigation", { name: "Tabs" })).toBeNull();
+    await userEvent.click(within(await welcome()).getByRole("button", { name: "Skip for now" }));
+    await screen.findByRole("heading", { name: "Nothing planned today" });
+    expect(screen.getByRole("navigation", { name: "Tabs", hidden: true })).toBeInTheDocument();
+  });
+
+  it("step 3: Start planning and the quiet skip are the last row; the colour picker is the five-dot row", async () => {
+    await open();
+    await start();
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    const step = screen.getByRole("region", { name: "First run, step 3 of 3" });
+    expect(within(step).getByRole("radiogroup", { name: "Colour" })).toHaveClass("fr-colours");
+    expect(step.querySelector(".fr-actions")!.textContent).toBe("BackI’ll make lists laterStart planning");
+  });
+});

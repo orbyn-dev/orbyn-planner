@@ -17,7 +17,7 @@ const WEEK_STARTS: readonly { id: WeekStart; label: string; note: string }[] = [
 
 function Colours({ value, onChange, label }: { value: ListColour; onChange: (c: ListColour) => void; label: string }) {
   return (
-    <div role="radiogroup" aria-label={label} className="colours">
+    <div role="radiogroup" aria-label={label} className="colours fr-colours">
       {LIST_COLOURS.map((c) => (
         <button key={c} type="button" role="radio" aria-checked={value === c} aria-label={COLOUR_NAMES[c]} className="colour-btn" onClick={() => onChange(c)}>
           <span className="sw" style={{ background: `var(--${c})` }} aria-hidden="true" />
@@ -113,7 +113,7 @@ export function FirstRun({ onDone }: { onDone: () => void }) {
             <li key={label} className="stat"><small>Step {i + 1}</small><b>{label}</b></li>
           ))}
         </ol>
-        <div className="fr-actions">
+        <div className="fr-actions fr-welcome-actions">
           <button type="button" className="ghost" onClick={skip}>Skip for now</button>
           <button type="button" className="btn" onClick={() => setStep(1)}>Start</button>
         </div>
@@ -122,88 +122,111 @@ export function FirstRun({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <div className="first-run" role="region" aria-label={`First run, step ${step} of 3`}>
-      <span className="t3 small">Step {step} of 3</span>
-      {step === 1 && (
-        <>
-          <h1 className="fr-title">When does your week start?</h1>
-          <p className="t3">This sets the first column of your calendar and the week in Today.</p>
-          <div role="radiogroup" aria-label="Week starts on" className="fr-cards">
-            {WEEK_STARTS.map((w) => (
-              <button key={w.id} type="button" role="radio" aria-checked={weekStart === w.id} className="fr-card" onClick={() => setWeekStart(w.id)}>
-                <b>{w.label}</b>
-                <span className="t3 small">{w.id === suggested ? "Suggested for your region" : w.note}</span>
-              </button>
-            ))}
-          </div>
-          <span id="fr-days-label" className="t3 small">Days shown</span>
-          <div role="radiogroup" aria-labelledby="fr-days-label" className="pills">
-            {([7, 5] as const).map((n) => (
-              <button key={n} type="button" role="radio" aria-checked={weekDays === n} className="pill" onClick={() => setWeekDays(n)}>
-                {n === 7 ? "All 7 days" : "Weekdays only"}
-              </button>
-            ))}
-          </div>
-          <p className="t3 small">You can change both later in Settings › Planning.</p>
-        </>
-      )}
-      {step === 2 && (
-        <>
-          <h1 className="fr-title">Add a calendar</h1>
-          <p className="t3">Start with one calendar. You can add more later.</p>
-          <div role="radiogroup" aria-label="How to add it" className="fr-rows">
-            <div className="fr-row" data-selected={source === "create"}>
-              <button type="button" role="radio" aria-checked={source === "create"} className="fr-pick" onClick={() => setSource("create")}>Create a calendar</button>
-              <span className="t3 small">A calendar of your own. You can add more later.</span>
-              {source === "create" && (
-                <>
-                  <label htmlFor="fr-cal-name" className="sr-only">Calendar name</label>
-                  <input id="fr-cal-name" className={calendarError ? "field err" : "field"} value={calendarName} aria-invalid={calendarError !== null || undefined} onChange={(e) => setCalendarName(e.target.value)} />
-                  <Colours value={calendarColour} onChange={setCalendarColour} label="Calendar colour" />
-                </>
-              )}
+    <div className="first-run fr-steps" role="region" aria-label={`First run, step ${step} of 3`}>
+      <div className="fr-step">
+        <div className="fr-progress">
+          <span className="fr-bars" aria-hidden="true">
+            {[1, 2, 3].map((n) => <i key={n} data-on={n <= step} />)}
+          </span>
+          <span className="t3 small">Step {step} of 3</span>
+        </div>
+        {step === 1 && (
+          <>
+            <h1 className="fr-title fr-step-title">When does your week start?</h1>
+            <p className="t3 fr-lede fr-more">This sets the first column of your calendar and the week in Today.</p>
+            <div role="radiogroup" aria-label="Week starts on" className="fr-choices">
+              {WEEK_STARTS.map((w) => (
+                <button key={w.id} type="button" role="radio" aria-checked={weekStart === w.id} className="fr-choice fr-pick-card" onClick={() => setWeekStart(w.id)}>
+                  <span className="fr-radio" aria-hidden="true" />
+                  <span className="fr-text">
+                    <b>{w.label}</b>
+                    <small className={w.id === suggested ? undefined : "fr-more"}>{w.id === suggested ? "Suggested for your region" : w.note}</small>
+                  </span>
+                </button>
+              ))}
             </div>
-            <div className="fr-row" data-selected={source === "subscribe"}>
-              <button type="button" role="radio" aria-checked={source === "subscribe"} className="fr-pick" disabled={!subscribeOk} onClick={() => setSource("subscribe")}>Subscribe to a calendar feed</button>
-              <span className="t3 small">Show events from an address, such as a holiday or team calendar.</span>
-              {!subscribeOk && <p className="t3" role="note">{NEEDS_ENGINE}.</p>}
-              {source === "subscribe" && (
-                <>
-                  <label htmlFor="fr-cal-url" className="sr-only">Feed address</label>
-                  <input id="fr-cal-url" className={calendarError ? "field err" : "field"} type="url" placeholder="https://…" value={address} aria-invalid={calendarError !== null || undefined} onChange={(e) => setAddress(e.target.value)} />
-                  {checking && <span className="t3 small" role="status"><span className="spin" aria-hidden="true" /> Checking…</span>}
-                </>
-              )}
+            <span id="fr-days-label" className="fr-label">Days shown</span>
+            <div role="radiogroup" aria-labelledby="fr-days-label" className="seg">
+              {([7, 5] as const).map((n) => (
+                <button key={n} type="button" role="radio" aria-checked={weekDays === n} className="seg-btn" onClick={() => setWeekDays(n)}>
+                  {n === 7 ? "All 7 days" : "Weekdays only"}
+                </button>
+              ))}
             </div>
-            <div className="fr-row fr-planned" aria-disabled="true">
-              <span className="fr-pick">Connect Google or Outlook</span>
-              <span className="t3 small">Two-way sync with a calendar you already use.</span>
-              <span><Planned /> <NotAvailable /></span>
-            </div>
-          </div>
-          {calendarError && <p className="err" role="alert">{calendarError}</p>}
-        </>
-      )}
-      {step === 3 && (
-        <>
-          <h1 className="fr-title">Make your first list</h1>
-          <p className="t3">Lists keep tasks together, like Work or Errands. Your Inbox already exists.</p>
-          <label htmlFor="fr-list-name" className="fr-label">List name</label>
-          <input id="fr-list-name" className="field" placeholder="Work, Home, Errands" value={listName} onChange={(e) => setListName(e.target.value)} />
-          <span className="fr-label" id="fr-list-colour">Colour</span>
-          <Colours value={listColour} onChange={setListColour} label="Colour" />
-        </>
-      )}
-      <div className="fr-actions">
-        <button type="button" className="ghost" onClick={back}>Back</button>
-        {step === 3 && listName.trim() === "" ? (
-          <button type="button" className="link-btn quiet-link" onClick={() => finish(false)}>I’ll make lists later</button>
-        ) : (
-          <button type="button" className="link-btn quiet-link" onClick={skipOn}>Skip for now</button>
+            <p className="t3 small fr-more">You can change both later in Settings › Planning.</p>
+          </>
         )}
-        {step === 1 && <button type="button" className="btn" onClick={() => { applyWeek(); setStep(2); }}>Continue</button>}
-        {step === 2 && <button type="button" className="btn" disabled={checking} onClick={() => void continueCalendar()}>Continue</button>}
-        {step === 3 && <button type="button" className="btn" onClick={() => finish(true)}>Start planning</button>}
+        {step === 2 && (
+          <>
+            <h1 className="fr-title fr-step-title">Add a calendar</h1>
+            <p className="t3 fr-lede">Start with one calendar. You can add more later.</p>
+            <div role="radiogroup" aria-label="How to add it" className="fr-choices">
+              <div className="fr-choice" data-selected={source === "create"}>
+                <button type="button" role="radio" aria-checked={source === "create"} aria-labelledby="fr-create-l" aria-describedby="fr-create-h" className="fr-head" onClick={() => setSource("create")}>
+                  <span className="fr-radio" aria-hidden="true" />
+                  <span className="fr-text">
+                    <b id="fr-create-l">Create a calendar</b>
+                    <small id="fr-create-h" className="fr-more">A calendar of your own. You can add more later.</small>
+                  </span>
+                </button>
+                {source === "create" && (
+                  <>
+                    <label htmlFor="fr-cal-name" className="sr-only">Calendar name</label>
+                    <input id="fr-cal-name" className={calendarError ? "field err" : "field"} placeholder="Calendar name" value={calendarName} aria-invalid={calendarError !== null || undefined} onChange={(e) => setCalendarName(e.target.value)} />
+                    {calendarError && <span className="fr-error" role="alert">{calendarError}</span>}
+                    <Colours value={calendarColour} onChange={setCalendarColour} label="Calendar colour" />
+                  </>
+                )}
+              </div>
+              <div className="fr-choice" data-selected={source === "subscribe"}>
+                <button type="button" role="radio" aria-checked={source === "subscribe"} aria-labelledby="fr-sub-l" aria-describedby="fr-sub-h" className="fr-head" disabled={!subscribeOk} onClick={() => setSource("subscribe")}>
+                  <span className="fr-radio" aria-hidden="true" />
+                  <span className="fr-text">
+                    <b id="fr-sub-l">Subscribe to a calendar feed</b>
+                    <small id="fr-sub-h" className="fr-more">Show events from an address, such as a holiday or team calendar.</small>
+                  </span>
+                </button>
+                {!subscribeOk && <p className="t3" role="note">{NEEDS_ENGINE}.</p>}
+                {source === "subscribe" && (
+                  <>
+                    <label htmlFor="fr-cal-url" className="sr-only">Feed address</label>
+                    <input id="fr-cal-url" className={calendarError ? "field err" : "field"} type="url" placeholder="https://…" value={address} aria-invalid={calendarError !== null || undefined} onChange={(e) => setAddress(e.target.value)} />
+                    {calendarError && <span className="fr-error" role="alert">{calendarError}</span>}
+                    {checking && <span className="t3 fr-checking" role="status"><span className="spin" aria-hidden="true" /> Checking…</span>}
+                  </>
+                )}
+              </div>
+              <div className="fr-choice fr-planned" aria-disabled="true">
+                <span className="fr-radio" aria-hidden="true" />
+                <span className="fr-text">
+                  <b>Connect Google or Outlook</b>
+                  <small><span className="fr-more">Two-way sync with a calendar you already use. </span><Planned /> <NotAvailable /></small>
+                </span>
+              </div>
+            </div>
+          </>
+        )}
+        {step === 3 && (
+          <>
+            <h1 className="fr-title fr-step-title">Make your first list</h1>
+            <p className="t3 fr-lede">Lists keep tasks together, like Work or Errands. Your Inbox already exists.</p>
+            <label htmlFor="fr-list-name" className="fr-label">List name</label>
+            <input id="fr-list-name" className="field" placeholder="Work, Home, Errands" value={listName} onChange={(e) => setListName(e.target.value)} />
+            <span className="fr-label" id="fr-list-colour">Colour</span>
+            <Colours value={listColour} onChange={setListColour} label="Colour" />
+          </>
+        )}
+        <div className="fr-actions">
+          <button type="button" className="ghost fr-back" onClick={back}>Back</button>
+          {step === 3 && listName.trim() === "" ? (
+            <button type="button" className="link-btn quiet-link fr-skip" onClick={() => finish(false)}>I’ll make lists later</button>
+          ) : (
+            <button type="button" className="link-btn quiet-link fr-skip" onClick={skipOn}>Skip for now</button>
+          )}
+          {step === 1 && <button type="button" className="btn fr-go" onClick={() => { applyWeek(); setStep(2); }}>Continue</button>}
+          {step === 2 && <button type="button" className="btn fr-go" disabled={checking} onClick={() => void continueCalendar()}>Continue</button>}
+          {step === 3 && <button type="button" className="btn fr-go" onClick={() => finish(true)}>Start planning</button>}
+        </div>
       </div>
     </div>
   );

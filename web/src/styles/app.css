@@ -751,30 +751,66 @@ button.pillx { border: 0; }
   .cal-btn .lbl { display: none; }
   .cal-btn { padding: 0; width: var(--sp-30); justify-content: center; }
 }
-/* First run (Planner Designs first-run, fr-week, fr-calendar, fr-list). */
-.first-run { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-12); text-align: center; min-height: 100%; padding: var(--sp-28) var(--sp-20); }
-.first-run > * { max-width: var(--sp-520); width: 100%; }
-.fr-title { font-size: var(--fs-18); font-weight: var(--fw-medium); color: var(--t1); }
-.fr-tiles { list-style: none; margin: var(--sp-10) 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-10); max-width: var(--sp-640); }
-.fr-tiles .stat { text-align: left; }
+/* First run (Planner Designs v49+ first-run, fr-week, fr-calendar, fr-list, fr-phone): the welcome is centred; the steps are one 540 px column. */
+.first-run { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-10); text-align: center; min-height: 100%; padding: 0 var(--sp-28) var(--sp-40); }
+.first-run > * { max-width: var(--sp-640); width: 100%; }
+.first-run p { margin: 0; }
+.fr-title { margin: 0; font-size: var(--fs-18); font-weight: var(--fw-medium); color: var(--t1); }
+.fr-tiles { list-style: none; margin: var(--sp-10) 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-12); }
+.fr-tiles .stat { text-align: center; }
 .fr-tiles .stat b { font-size: var(--fs-15); }
 .fr-actions { display: flex; align-items: center; justify-content: center; gap: var(--sp-8); margin-top: var(--sp-8); }
-.fr-cards, .fr-rows { display: flex; flex-direction: column; gap: var(--sp-8); text-align: left; }
-.fr-card, .fr-pick { border: 0; border-radius: var(--r-10); background: var(--raise); color: var(--t1); font: inherit; padding: var(--sp-12) var(--sp-14); text-align: left; cursor: pointer; }
-.fr-card[aria-checked="true"], .fr-row[data-selected="true"] { box-shadow: inset 0 0 0 var(--bw-1-5) var(--t1); }
-.fr-row { display: flex; flex-direction: column; gap: var(--sp-8); padding: var(--sp-10); border-radius: var(--r-10); background: var(--raise); }
-.fr-row .fr-pick { background: none; padding: 0; }
-.fr-row .colours { justify-content: flex-start; }
-.fr-planned { opacity: .6; flex-direction: row; justify-content: space-between; align-items: center; }
+.fr-steps > .fr-step { max-width: var(--sp-540); display: flex; flex-direction: column; gap: var(--sp-14); text-align: left; }
+.fr-progress { display: flex; flex-direction: column; gap: var(--sp-6); }
+.fr-bars { display: flex; gap: var(--sp-4); }
+.fr-bars i { display: inline-block; width: var(--sp-22); height: var(--sp-3); border-radius: var(--r-2); background: var(--line2); }
+.fr-bars i[data-on="true"] { background: var(--t1); }
+.fr-progress .small { font-size: var(--fs-12); }
+.fr-step-title { font-size: var(--fs-22); }
+.fr-lede { font-size: var(--fs-13); }
+.fr-step .small { font-size: var(--fs-12-5); }
+.fr-label { font-size: var(--fs-12); color: var(--t2); text-align: left; }
+.fr-choices { display: flex; flex-direction: column; gap: var(--sp-6); }
+.fr-choice { display: flex; flex-direction: column; gap: var(--sp-8); padding: var(--sp-12) var(--sp-14); border: var(--bw) solid var(--line2); border-radius: var(--r-10); background: var(--main); color: var(--t1); font: inherit; text-align: left; }
+.fr-choice[data-selected="true"], .fr-choice[aria-checked="true"] { border-color: transparent; box-shadow: inset 0 0 0 var(--bw-1-5) var(--t1); }
+.fr-pick-card { flex-direction: row; align-items: flex-start; gap: var(--sp-12); cursor: pointer; width: 100%; }
+.fr-head { display: flex; align-items: flex-start; gap: var(--sp-12); border: 0; background: none; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.fr-head:disabled { cursor: not-allowed; }
+.fr-text { display: flex; flex-direction: column; gap: var(--sp-2); flex: 1; min-width: 0; }
+.fr-text b { font-weight: var(--fw-medium); color: var(--t1); }
+.fr-text small { color: var(--t3); font-size: var(--fs-12-5); }
+.fr-radio { flex: none; position: relative; width: var(--sp-15); height: var(--sp-15); border-radius: var(--r-pill); border: var(--bw-1-5) solid var(--line2); }
+[aria-checked="true"] > .fr-radio, .fr-choice[data-selected="true"] > .fr-head > .fr-radio { border-color: var(--t1); }
+[aria-checked="true"] > .fr-radio::after, .fr-choice[data-selected="true"] > .fr-head > .fr-radio::after { content: ""; position: absolute; inset: var(--sp-3); border-radius: var(--r-pill); background: var(--t1); }
+.fr-planned { flex-direction: row; align-items: flex-start; gap: var(--sp-12); color: var(--planned-text); cursor: not-allowed; }
+.fr-planned .fr-text b { color: inherit; }
+.fr-error { color: var(--red); font-size: var(--fs-12-5); }
+.fr-checking { display: flex; align-items: center; gap: var(--sp-8); font-size: var(--fs-12-5); }
+.fr-colours { gap: var(--sp-10); align-items: center; }
+.fr-colours .colour-btn { width: var(--sp-18); height: var(--sp-18); background: none; }
+.fr-colours .colour-btn { flex: none; padding: 0; }
+.fr-colours .colour-btn .sw { flex: none; width: var(--sp-18); height: var(--sp-18); border-radius: var(--r-pill); }
+.fr-colours .colour-btn[aria-checked="true"] .sw { box-shadow: 0 0 0 var(--sp-2) var(--main), 0 0 0 var(--sp-3-5) var(--t1); }
+.fr-step .fr-actions { justify-content: space-between; gap: var(--sp-12); margin-top: var(--sp-6); }
+.fr-step .fr-skip { font-size: var(--fs-12-5); margin-left: auto; margin-right: var(--sp-14); }
 @media (max-width: 767px) {
   .fr-tiles { grid-template-columns: 1fr; }
-  .first-run { justify-content: flex-start; }
-}
-.fr-label { font-size: var(--fs-12); color: var(--t3); text-align: left; }
-.fr-card { display: flex; flex-direction: column; gap: var(--sp-2); }
-@media (max-width: 767px) {
-  .fr-actions { flex-direction: column-reverse; align-items: stretch; }
-  .fr-actions .btn { width: 100%; }
+  .first-run { justify-content: flex-start; padding: var(--sp-8) var(--sp-20) var(--sp-24); }
+  .fr-steps > .fr-step { flex: 1; min-height: 0; gap: var(--sp-10); }
+  .fr-steps .fr-title { letter-spacing: -.02em; }
+  /* The phone form names each choice and drops the longer hints. */
+  .fr-more { display: none; }
+  .fr-choices { gap: var(--sp-6); }
+  .fr-choice { padding: var(--sp-10) var(--sp-12); }
+  .fr-pick-card, .fr-head, .fr-planned { gap: var(--sp-10); }
+  .fr-text { gap: var(--sp-1); }
+  .fr-colours .colour-btn { width: var(--sp-18); height: var(--sp-18); min-height: 0; }
+  .fr-step .fr-actions { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "go go" "back skip"; gap: var(--sp-10); margin-top: auto; }
+  .fr-step .fr-go { grid-area: go; justify-content: center; height: var(--sp-44); }
+  .fr-step .fr-back { grid-area: back; justify-self: start; }
+  .fr-step .fr-skip { grid-area: skip; margin: 0; }
+  .fr-welcome-actions { flex-direction: column-reverse; align-items: stretch; }
+  .fr-welcome-actions .btn { width: 100%; }
 }
 /* View options as a 280 px list (Planner Designs v49 p-view-options-list): rows with Selected at the right, a two-part direction switch. */
 .vo-group { align-items: stretch; }
