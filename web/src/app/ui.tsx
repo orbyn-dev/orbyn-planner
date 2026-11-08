@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { motionMs } from "../styles/tokens";
 
 /** How long a toast stays: four seconds, five when it has Undo; the pointer or focus on it pauses the clock (Planner Designs v54 p-toast-states). */
@@ -95,10 +95,23 @@ export function UiProvider({ children }: { children: ReactNode }) {
     const next: ToastState = { id: ++toastCounter, message, undo, focusUndo: options?.focusUndo, focusRowOnUndo: options?.focusRowOnUndo, secondary: options?.secondary, ms: options?.ms, spoken: options?.spoken };
     setToasts((all) => [...all, next].slice(-MAX_TOASTS));
   }, []);
+  // The timers that remove a toast once it has left: all cleared when the provider goes, so none fires after the page is gone.
+  const leaving = useRef(new Set<ReturnType<typeof setTimeout>>());
+  useEffect(() => {
+    const timers = leaving.current;
+    return () => {
+      for (const timer of timers) clearTimeout(timer);
+      timers.clear();
+    };
+  }, []);
   const dismissToast = useCallback((id: number) => {
     // It leaves in about 70 percent of the time it took to arrive, then goes.
     setToasts((all) => all.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
-    setTimeout(() => setToasts((all) => all.filter((t) => t.id !== id)), motionMs("fast") * 0.7);
+    const timer = setTimeout(() => {
+      leaving.current.delete(timer);
+      setToasts((all) => all.filter((t) => t.id !== id));
+    }, motionMs("fast") * 0.7);
+    leaving.current.add(timer);
   }, []);
 
   const value = useMemo<Ui>(
