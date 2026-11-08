@@ -959,3 +959,25 @@ button.pillx { border: 0; }
 .authcard.step-card { width: var(--sp-400); }
 .invite .quiet-link { font-size: var(--fs-12); }
 .invite .field:disabled { opacity: .55; }
+
+/* Settings · Tags (Planner Designs v64 p-set-tags and the pages with it): the Add tag row, the rows and the deleted tags. */
+.tag-add { flex-direction: row; align-items: flex-start; gap: var(--sp-12); padding: var(--sp-12) var(--sp-14); }
+.tag-add .fld { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--sp-4); }
+.tag-add .field { height: var(--sp-36); border-radius: var(--r-10); }
+.tag-add .tag-colours { align-self: center; }
+.tag-add .btn { align-self: center; }
+.tag-colours { display: flex; gap: var(--sp-8); align-items: center; }
+.tag-colours .colour-btn { width: var(--sp-14); height: var(--sp-14); min-height: 0; padding: 0; background: none; border: 0; }
+.tag-colours .colour-btn .sw { width: var(--sp-14); height: var(--sp-14); border-radius: var(--r-5); }
+.tag-colours .colour-btn[aria-checked="true"] .sw { box-shadow: 0 0 0 var(--sp-2) var(--main), 0 0 0 var(--sp-3-5) var(--t2); }
+.tag-row { min-height: var(--sp-44); flex-wrap: wrap; }
+.tag-name { display: flex; align-items: center; gap: var(--sp-8); color: var(--t1); min-width: 0; }
+.tag-gone { color: var(--t2); }
+.tag-swatch { display: inline-flex; border: 0; background: none; padding: 0; cursor: pointer; }
+.tag-actions { display: flex; gap: var(--sp-12); align-items: center; font-weight: var(--fw-regular); }
+.tag-actions .link-btn { color: var(--t2); }
+.tag-picker { flex-basis: 100%; padding-bottom: var(--sp-8); }
+.tag-error { flex-basis: 100%; }
+.tags-empty { gap: var(--sp-6); padding: var(--sp-18) var(--sp-14); align-items: flex-start; }
+.tags-empty b { font-weight: var(--fw-medium); color: var(--t1); }
+.tags-empty .t3, .tags-note { font-size: var(--fs-12-5); }
