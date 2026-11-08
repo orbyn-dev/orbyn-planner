@@ -38,6 +38,7 @@ export const ICONS = {
   key: [{"t":"circle","cx":"8","cy":"14","r":"4"},{"t":"path","d":"M11 11l8.5-8.5M16 6l2.5 2.5"}],
   check2: [{"t":"path","d":"M5.5 12.5l4 4 9-9"}],
   ok: [{"t":"circle","cx":"12","cy":"12","r":"8.5"},{"t":"path","d":"M8.5 12.5l2.5 2.5 4.5-5"}],
+  cloudoff: [{"t":"path","d":"M4 4l16 16M8 7.5A5.5 5.5 0 0 1 17.4 10 4 4 0 0 1 19.6 17M15 18H7.5a4 4 0 0 1-1.2-7.8"}],
 } satisfies Record<string, IconShape[]>;
 
 export type IconName = keyof typeof ICONS;

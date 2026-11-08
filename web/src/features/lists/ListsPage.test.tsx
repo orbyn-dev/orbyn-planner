@@ -112,7 +112,9 @@ describe("Lists states (Planner Designs p-lists-empty, p-lists-loading, p-lists-
         store.addTask({ title: "Lemons" });
       });
       expect(await screen.findByText("1 open · offline")).toBeInTheDocument();
-      expect(screen.getByText("You’re offline. Everything here is saved on this device and will sync when you’re back.")).toBeInTheDocument();
+      const notice = screen.getByText("You’re offline. Everything here is saved on this device and will sync when you’re back.");
+      expect(notice.closest(".banner")).not.toBeNull(); // a banner above the rows with the cloud-off icon (p-lists-offline)
+      expect(notice.querySelector("svg")).not.toBeNull();
       expect(document.querySelector(".ph .pillx")).toBeNull(); // the sync state is global, not part of the list header
       expect(screen.getByText("Not synced yet")).toBeInTheDocument();
     } finally {

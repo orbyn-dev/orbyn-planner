@@ -121,12 +121,12 @@ Deep pass (Today, calendar, tasks) was complete at the first run; the refresh ab
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `lists` Lists | `features/lists/ListsPage.tsx:57` | partial | `lists-{light,dark,dim}-side.png` (+ -1440) | the header is now the title with its dot, "3 open", the … menu and Add a task, as the frame; the list rows are about 1.5px further apart than the frame's; "Birthday candles" reads "Tomorrow" where the frame reads "Sun 8" (lib/dates.ts:69); the left list shows "Errands" twice and counts 0 for the others because the fixture's lists have no tasks (fixture); the open count is 3 vs 6 (frame data) |
+| `lists` Lists | `features/lists/ListsPage.tsx:57` | partial | `lists-{light,dark,dim}-side.png` (+ -1440) | the header is now the title with its dot, "3 open", the … menu and Add a task, as the frame; list rows are 38 px apart as the frame's (`app.css` `.tr.list`); "Birthday candles" reads "Sun 8" as the frame (tomorrow is named by its day, lib/dates.ts:69); frames `lists` and `p-lists-offline` are in the kit (`lists-groceries`); the left list shows "Errands" twice and counts 0 for the others because the fixture's lists have no tasks (fixture); the open count is 3 vs 6 (frame data) |
 | `p-lists-empty` Lists · Empty list | `features/lists/ListsPage.tsx:57` | partial | `p-lists-empty-{light,dark,dim}-side.png` (+ -1440) | header agrees in structure; "0 open" sits 11px left of the frame's "Nothing here"; the frame's list counts are its own data |
 | `p-list-menu` Lists · List menu | `features/lists/ListsPage.tsx:60-70` | partial | `p-list-menu-{light,dark,dim}-side.png` (+ -1440) | menu items Rename, Colour, Completed and deleted, Delete list agree; the labels sit 113px left of the frame's and are 4px taller (the frame's menu is narrower) |
 | `p-lists-loading` Lists · Loading | `features/lists/ListsPage.tsx:59` | not built | – | `ready` only disables "New list" (:122); no skeleton rows |
 | `p-lists-error` Lists · Error | none found | not built | – | no list error state in ListsPage |
-| `p-lists-offline` Lists · Offline | `features/lists/ListsPage.tsx` | partial | `p-lists-offline-{light,dark,dim}-side.png` (+ -1440) | "Not synced yet" tags and the offline line are drawn; their column is 40px further right than the frame's and rows sit 33px higher (the frame has a banner above the rows: "You’re offline. Everything here is saved…"); the closing line about sharing is not drawn in ours |
+| `p-lists-offline` Lists · Offline | `features/lists/ListsPage.tsx` | partial | `p-lists-offline-{light,dark,dim}-side.png` (+ -1440) | "Not synced yet" tags and the banner above the rows (cloud-off icon, “You’re offline. Everything here is saved…”) are drawn; the closing line about sharing is not drawn on purpose: sharing is Planned in the beta |
 
 ### Completed and deleted
 

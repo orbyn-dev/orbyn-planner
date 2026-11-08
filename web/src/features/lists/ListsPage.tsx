@@ -204,7 +204,14 @@ export function ListsPage() {
 
       <div className="r" aria-label={selected?.name ?? "List"} role="region">
         {selected && <ListHeader list={selected} sub={[`${openCount(tasks, selected.id)} open`, offline && "offline"].filter(Boolean).join(" · ")} />}
-        {offline && <p className="t3 offline-note">You’re offline. Everything here is saved on this device and will sync when you’re back.</p>}
+        {offline && (
+          <div className="offline-banner">
+            <div className="banner" role="status">
+              <Icon name="cloudoff" small />
+              You’re offline. Everything here is saved on this device and will sync when you’re back.
+            </div>
+          </div>
+        )}
         {missing ? (
           <ListError name="this list" onRetry={() => retry((n) => n + 1)} onOther={() => ui.selectList(inbox?.id ?? ordered[0]?.id ?? "")} />
         ) : !ready ? (
