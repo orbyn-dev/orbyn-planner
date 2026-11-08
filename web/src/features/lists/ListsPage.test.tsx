@@ -104,6 +104,15 @@ describe("Lists states (Planner Designs p-lists-empty, p-lists-loading, p-lists-
     await waitFor(() => expect(store.getState().tasks.find((t) => t.title === "Post the parcel")?.listId).toBe(errands.id));
   });
 
+  it("a task due tomorrow reads by its day in a list row (lists: Sun 8), and keeps the word on the Tasks page", async () => {
+    const store = await open("/lists");
+    act(() => {
+      store.addTask({ title: "Birthday candles", due: "2026-11-08" });
+    });
+    expect(await screen.findByText("Sun 8")).toBeInTheDocument();
+    expect(screen.queryByText("Tomorrow")).toBeNull();
+  });
+
   it("offline, the sub line says so, and a row says its change has not left the device", async () => {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
     try {

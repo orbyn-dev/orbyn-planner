@@ -66,11 +66,16 @@ export function formatTime(d: Date): string {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function formatDue(due: string, now: Date): string {
+/**
+ * A due date as a row writes it. Tomorrow reads "Tomorrow" unless `tomorrowByDay` is set (a Lists row: the lists frames say "Sun 8"
+ * where this says Tomorrow; the Today, Tasks, task panel and board frames show no date for tomorrow, so they keep the word).
+ */
+export function formatDue(due: string, now: Date, options: { tomorrowByDay?: boolean } = {}): string {
   const { date, hasTime } = parseDue(due);
   const diff = Math.round((startOfDay(date).getTime() - startOfDay(now).getTime()) / 86_400_000);
   let day: string;
   if (diff === 0) day = "Today";
+  else if (diff === 1 && !options.tomorrowByDay) day = "Tomorrow";
   else if (diff === -1) day = "Yesterday";
   else if (diff >= 1 && diff < 7) day = `${WEEKDAYS[date.getDay()]!.slice(0, 3)} ${date.getDate()}`;
   else {

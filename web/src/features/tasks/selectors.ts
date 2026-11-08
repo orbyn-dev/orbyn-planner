@@ -88,13 +88,13 @@ export function dueCount(tasks: readonly Task[], now: Date): number {
 }
 
 /** The due text of a row: "Overdue 1d" for earlier days, otherwise "Today 12:00", "Mon 10". */
-export function dueText(task: Task, now: Date): string {
+export function dueText(task: Task, now: Date, options: { tomorrowByDay?: boolean } = {}): string {
   if (!task.due) return "";
   if (!task.done && isOverdue(task.due, now)) {
     const days = Math.round((startOfDay(now).getTime() - startOfDay(parseDue(task.due).date).getTime()) / 86_400_000);
     if (days > 0) return `Overdue ${days}d`;
   }
-  return formatDue(task.due, now);
+  return formatDue(task.due, now, options);
 }
 
 /** Whether the date is the amber kind: the person must act. A task is amber only when it is overdue or due within the hour. */

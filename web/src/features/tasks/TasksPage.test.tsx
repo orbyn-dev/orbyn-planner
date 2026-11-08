@@ -230,7 +230,8 @@ describe("quick add preview", () => {
     await openTasks();
     expect(formatDue("2026-11-09", new Date(2026, 10, 7, 10, 0))).toBe("Mon 9");
     expect(formatDue("2026-11-12T15:00", new Date(2026, 10, 7, 10, 0))).toBe("Thu 12 15:00");
-    expect(formatDue("2026-11-08", new Date(2026, 10, 7, 10, 0))).toBe("Sun 8"); // the frames name tomorrow by its day, as they do the days after it (lists)
+    expect(formatDue("2026-11-08", new Date(2026, 10, 7, 10, 0))).toBe("Tomorrow");
+    expect(formatDue("2026-11-08", new Date(2026, 10, 7, 10, 0), { tomorrowByDay: true })).toBe("Sun 8"); // a Lists row (lists frame)
     expect(formatDue("2026-11-14", new Date(2026, 10, 7, 10, 0))).toBe("14 Nov");
   });
 
