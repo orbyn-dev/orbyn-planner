@@ -59,7 +59,7 @@ Deep pass (Today, calendar, tasks) was complete at the first run; the refresh ab
 | `fr-calendar-error` First run · Calendar error | `features/firstRun/FirstRun.tsx:150` | partial | `fr-calendar-error-{light,dark,dim}-side.png` (+ -1440) | as `fr-week`; the message and the red outline agree in copy and colour; its position is 3px off with the block |
 | `fr-calendar-feed-error` First run · Feed error | `features/firstRun/FirstRun.tsx:90` | partial | `fr-calendar-feed-error-{light,dark,dim}-side.png` (+ -1440) | as `fr-week`; "That address didn’t work. Check it and try again." agrees |
 | `fr-calendar-checking` First run · Checking the feed | `features/firstRun/FirstRun.tsx:174` | partial | `fr-calendar-checking-{light,dark,dim}-side.png` (+ -1440) | as `fr-week`; "Checking…" and its spinner agree |
-| `fr-list` First run · Make your first list | `features/firstRun/FirstRun.tsx:185` | partial | `fr-list-{light,dark,dim}-side.png` (+ -1440) | as `fr-week` (within 2px); the Planned note box on the subscribe card is 2px off |
+| `fr-list` First run · Make your first list | `features/firstRun/FirstRun.tsx:185` | partial | `fr-list-{light,dark,dim}-side.png` (+ -1440) | as `fr-week` (within 2px) |
 | `fr-list-empty` First run · Empty list name | `features/firstRun/FirstRun.tsx:185` | partial | `fr-list-empty-{light,dark,dim}-side.png` (+ -1440) | as `fr-list`; the "I’ll make lists later" link agrees |
 | `fr-phone` First run · Phone | `features/firstRun/FirstRun.tsx` | partial | `fr-phone-{light,dark,dim}-side.png` (+ -1440) | sizes agree after the phone fix (labels and names 14px, hints 12px); offsets within 2px |
 
