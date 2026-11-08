@@ -150,7 +150,8 @@ describe("Week view", () => {
     await open({ seed: seedWeek });
     await userEvent.click(screen.getByRole("radio", { name: "Agenda" }));
     expect(screen.getByText("Today · Fri 6")).toBeInTheDocument();
-    expect(screen.getByText("Room 3 · 2h")).toBeInTheDocument();
+    expect(screen.getByText("Room 3")).toBeInTheDocument(); // the place alone, not "Room 3 · 2h"
+    expect(screen.queryByText(/·\s*2h/)).toBeNull();
   });
 
   it("shows the whole week by default, and Monday to Friday when asked", async () => {
@@ -229,6 +230,23 @@ describe("Day, Month and Agenda", () => {
     await open({ seed: (s) => s.addEvent({ title: "Soon", start: "2026-11-06T09:00", end: "2026-11-06T10:00" }) });
     await userEvent.click(screen.getByRole("radio", { name: "Agenda" }));
     expect(document.querySelector("ul.agenda-rows")).not.toBeNull();
+  });
+
+  it("Agenda rows say the place, or without one the length, never both, and nothing for an all-day event", async () => {
+    await open({
+      seed: (s) => {
+        s.addEvent({ title: "With place", start: "2026-11-06T09:00", end: "2026-11-06T10:00", place: "Room 3" });
+        s.addEvent({ title: "No place", start: "2026-11-06T11:00", end: "2026-11-06T12:00" });
+        s.addEvent({ title: "Half hour", start: "2026-11-06T13:00", end: "2026-11-06T13:30" });
+        s.addEvent({ title: "Birthday", allDay: true, start: "2026-11-06", end: "2026-11-06", place: "Home" });
+      },
+    });
+    await userEvent.click(screen.getByRole("radio", { name: "Agenda" }));
+    const meta = (title: string) => screen.getByRole("button", { name: title }).closest("li")!.querySelector(".meta")!.textContent;
+    expect(meta("With place")).toBe("Room 3");
+    expect(meta("No place")).toBe("1 h"); // durations are written with a space: 1 h, 30 min (Planner Designs v55)
+    expect(meta("Half hour")).toBe("30 min");
+    expect(meta("Birthday")).toBe("");
   });
 
   it("Agenda says when nothing is coming up", async () => {
