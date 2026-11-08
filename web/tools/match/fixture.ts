@@ -179,6 +179,10 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
       } else {
         event("Team planning", 7, "09:00", "11:00", w.work);
       }
+      if (scenario === "week") {
+        store.addTask({ title: "Send the launch brief to Priya", due: `${day(7)}T12:00`, listId: w.workList });
+        store.addTask({ title: "Fix the sign-up email bug", due: `${day(7)}T17:00`, listId: w.workList });
+      }
       store.addTask({ title: "Review the Q2 budget", due: day(6), listId: w.workList });
       store.addTask({ title: "Prepare the launch slides", due: day(12), listId: w.workList });
       store.addTask({ title: "Book the dentist", due: day(13), listId: w.errands });

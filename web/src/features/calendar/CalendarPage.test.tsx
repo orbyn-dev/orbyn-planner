@@ -70,9 +70,51 @@ describe("Week view", () => {
 
     const side = screen.getByRole("complementary", { name: "This week" });
     expect(within(side).getByText("Events").nextSibling).toHaveTextContent("4");
-    expect(within(side).getByText("Overlaps").nextSibling).toHaveTextContent("1");
+    expect(within(side).queryByText("Overlaps")).toBeNull(); // the frame has Events only (Planner Designs v49 calendar-week)
     expect(within(side).getByText("Prepare the launch slides")).toBeInTheDocument();
     expect(within(side).queryByText("Book the dentist")).not.toBeInTheDocument();
+  });
+
+  it("Due this week lists the late tasks and today's, and says \"1 day late\" for a late one", async () => {
+    await open({
+      seed: (s) => {
+        s.addTask({ title: "Late one", due: "2026-11-05" });
+        s.addTask({ title: "Later", due: "2026-11-03" });
+        s.addTask({ title: "Today at noon", due: "2026-11-06T12:00" });
+      },
+    });
+    const side = within(screen.getByRole("complementary", { name: "This week" }));
+    expect(side.getByText("1 day late")).toBeInTheDocument();
+    expect(side.getByText("3 days late")).toBeInTheDocument();
+    expect(side.getByText("Today 12:00")).toBeInTheDocument();
+    expect(side.queryByText(/Overdue/)).toBeNull();
+    expect(side.getByText("Today at noon")).toBeInTheDocument();
+  });
+
+  it("the Day and Agenda toolbars have the range between the arrows, as Week does", async () => {
+    await open({ seed: seedWeek });
+    const range = () => document.querySelector(".ph .range")?.textContent;
+    expect(range()).toBe("2 – 8 Nov");
+    await userEvent.click(screen.getByRole("radio", { name: "Day" }));
+    expect(range()).toBe("Fri 6 Nov");
+    await userEvent.click(screen.getByRole("radio", { name: "Agenda" }));
+    expect(range()).toBe("Fri 6 – Thu 12 Nov");
+    await userEvent.click(screen.getByRole("radio", { name: "Month" }));
+    expect(range()).toBeUndefined();
+  });
+
+  it("Day lists the tasks of the day with a time first, by time, then the ones with only a date", async () => {
+    await open({
+      path: "/calendar",
+      seed: (s) => {
+        s.addTask({ title: "Date only", due: "2026-11-06" });
+        s.addTask({ title: "Evening", due: "2026-11-06T17:00" });
+        s.addTask({ title: "Noon", due: "2026-11-06T12:00" });
+      },
+    });
+    await userEvent.click(screen.getByRole("radio", { name: "Day" }));
+    const side = screen.getByRole("complementary", { name: "Tasks today" });
+    expect(Array.from(side.querySelectorAll(".row .what")).map((e) => e.textContent)).toEqual(["Noon", "Evening", "Date only"]);
   });
 
   it("shows an all-day row and the red current-time line in today's column only", async () => {

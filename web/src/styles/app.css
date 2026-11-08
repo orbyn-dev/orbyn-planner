@@ -393,7 +393,7 @@ button.pillx { border: 0; }
 .cal .hr { font-family: var(--mono); font-size: var(--fs-10-5); color: var(--t3); padding-top: var(--sp-2); height: var(--hour); text-align: right; padding-right: var(--sp-8); }
 .cal .dcol { position: relative; border-left: var(--bw) solid var(--line); }
 .cal .dcol.today { background: var(--raise); }
-.ph .range { color: var(--t1); font-size: var(--fs-13); white-space: nowrap; }
+.ph .range { color: var(--t2); font-size: var(--fs-13); padding: 0 var(--sp-4); white-space: nowrap; }
 .cal .slot { height: var(--hour); border-top: var(--bw) solid var(--line); }
 .ev {
   position: absolute; border-radius: var(--r-8); padding: var(--sp-5) var(--sp-8); font-size: var(--fs-12); z-index: 1; color: var(--t1); overflow: hidden; text-align: left;
