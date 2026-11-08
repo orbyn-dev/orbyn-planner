@@ -159,25 +159,30 @@ describe("Project page", () => {
     expect(store.getState().projects[0]!.sections.some((s) => s.id === kitchen.id)).toBe(false);
   });
 
-  it("Board lanes are the sections, with a Done lane, and Move to moves a card", async () => {
+  it("Board lanes are the sections, with a Done lane, and the … menu moves a card", async () => {
     const { store, bath } = await openHome();
     await userEvent.click(screen.getByRole("tab", { name: "Board" }));
     expect(screen.getAllByRole("region").map((r) => r.getAttribute("aria-label")).filter((n) => ["Kitchen", "Bathroom", "No section", "Done"].includes(n!))).toEqual(["Kitchen", "Bathroom", "No section", "Done"]);
     expect(within(screen.getByRole("region", { name: "Done" })).getByRole("button", { name: "Measure the cabinets" })).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: "Move Choose kitchen tiles to" }));
-    const menu = screen.getByRole("menu", { name: "Move Choose kitchen tiles to" });
-    expect(within(menu).getAllByRole("menuitem").map((m) => m.textContent)).toEqual(["Kitchen", "Bathroom", "No section", "Done"]);
-    await userEvent.click(within(menu).getByRole("menuitem", { name: "Bathroom" }));
+    const moveVia = async (title: string, lane: string) => {
+      await userEvent.click(screen.getByRole("button", { name: `More for ${title}` }));
+      await userEvent.click(screen.getByRole("menuitem", { name: /Move to/ }));
+      await userEvent.click(screen.getByRole("menuitemradio", { name: lane }));
+    };
+    await userEvent.click(screen.getByRole("button", { name: "More for Choose kitchen tiles" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: /Move to/ }));
+    expect(screen.getAllByRole("menuitemradio").map((m) => m.textContent)).toEqual(["KitchenCurrent", "Bathroom", "No section", "Done"]);
+    expect(screen.getByRole("menuitemradio", { name: /^Kitchen/ })).toBeDisabled(); // the current lane, checked
+    expect(screen.getByRole("menuitemradio", { name: /^Kitchen/ })).toBeChecked();
+    await userEvent.click(screen.getByRole("menuitemradio", { name: "Bathroom" }));
     expect(store.getState().tasks.find((t) => t.title === "Choose kitchen tiles")!.sectionId).toBe(bath.id);
     expect(within(screen.getByRole("region", { name: "Bathroom" })).getByRole("button", { name: "Choose kitchen tiles" })).toBeInTheDocument();
 
     // To Done completes it; from Done into a section reopens it.
-    await userEvent.click(screen.getByRole("button", { name: "Move Send the deposit to" }));
-    await userEvent.click(within(screen.getByRole("menu")).getByRole("menuitem", { name: "Done" }));
+    await moveVia("Send the deposit", "Done");
     expect(store.getState().tasks.find((t) => t.title === "Send the deposit")!.done).toBe(true);
-    await userEvent.click(screen.getByRole("button", { name: "Move Measure the cabinets to" }));
-    await userEvent.click(within(screen.getByRole("menu")).getByRole("menuitem", { name: "No section" }));
+    await moveVia("Measure the cabinets", "No section");
     expect(store.getState().tasks.find((t) => t.title === "Measure the cabinets")).toMatchObject({ done: false, sectionId: null });
   });
 

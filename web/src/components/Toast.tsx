@@ -27,7 +27,14 @@ function ToastBody({ toast, dismiss }: { toast: ToastState; dismiss: () => void 
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
     >
-      <span>{toast.message}</span>
+      {toast.spoken ? (
+        <>
+          <span aria-hidden="true">{toast.message}</span>
+          <span className="sr-only">{toast.spoken}</span>
+        </>
+      ) : (
+        <span>{toast.message}</span>
+      )}
       {toast.undo && (
         <button
           ref={undo}
