@@ -46,7 +46,7 @@ export function ViewOptionsButton({ view, options, onChange }: { view: "list" | 
   const popover = usePopover(open, () => setOpen(false), anchor);
   const set = (patch: Partial<ViewOptions>) => onChange({ ...options, ...patch });
   return (
-    <div className="sync-wrap">
+    <div className="sync-wrap vo-wrap">
       <button ref={anchor} type="button" className="ghost" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>View options</button>
       {open && (
         <div ref={popover} className="card popover view-options" role="dialog" aria-label="View options">

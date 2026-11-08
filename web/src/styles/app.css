@@ -819,8 +819,20 @@ button.pillx { border: 0; }
   .fr-welcome-actions .btn { width: 100%; }
 }
 /* View options as a 280 px list (Planner Designs v49 p-view-options-list): rows with Selected at the right, a two-part direction switch. */
+/* The popover hangs from the right edge of the header buttons, 12 px under them, not from the View options button (p-view-options-list, p-view-options-board). */
+.ph .acts { position: relative; }
+.vo-wrap { position: static; }
+.vo-wrap .view-options { top: calc(var(--sp-30) + var(--sp-10)); padding: var(--sp-5); gap: 0; }
+.view-options .vo-group, .view-options .vo-group .opt-menu { gap: var(--sp-1); }
+.view-options .vo-label { padding: var(--sp-10) var(--sp-9) var(--sp-5); font-size: var(--fs-11-5); }
+.view-options .vo-row { height: var(--sp-30); padding: 0 var(--sp-9); border-radius: var(--r-8); gap: var(--sp-9); color: var(--t2); font-weight: var(--fw-regular); }
+.view-options .vo-row[aria-checked="true"] { color: var(--t1); font-weight: var(--fw-regular); }
+.view-options .vo-row .k { margin-left: auto; font-size: var(--fs-10-5); padding-left: var(--sp-18); }
+.view-options .seg { margin: var(--sp-6) var(--sp-9); }
+.view-options .kv { height: var(--sp-30); padding: 0 var(--sp-9); color: var(--t2); }
+.view-options .vo-link { margin-top: var(--sp-6); padding-top: 0; border-radius: 0; }
 .vo-group { align-items: stretch; }
-.vo-group .opt-menu { gap: 0; }
+
 .vo-row { justify-content: space-between; }
 .vo-row .k { font-family: var(--mono); font-size: var(--fs-11-5); }
 .seg { display: inline-flex; align-self: flex-start; padding: var(--sp-2); border-radius: var(--r-9); background: var(--raise); }
