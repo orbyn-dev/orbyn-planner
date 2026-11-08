@@ -31,7 +31,7 @@ export function AgendaView({ days, occurrences, today }: { days: string[]; occur
           <div className="bh" style={i === 0 ? { paddingTop: 0 } : undefined}>
             <b>{g.day === today ? `Today · ${shortDay(dateOf(g.day))}` : shortDay(dateOf(g.day))}</b>
           </div>
-          <ul>
+          <ul className="agenda-rows">
             {g.items.map((o) => {
               const meta = [o.event.place, length(o)].filter(Boolean);
               return (
