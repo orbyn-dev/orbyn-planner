@@ -35,6 +35,12 @@ export const SCENARIOS = [
   "task-panel",
   "task-panel-progress",
   "task-panel-blocked",
+  "board",
+  "board-from-done",
+  "project",
+  "project-no-sections",
+  "lists-groceries",
+  "lists-offline",
 ] as const;
 export type Scenario = (typeof SCENARIOS)[number];
 
@@ -316,6 +322,55 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
       });
       return;
     }
+    case "board":
+    case "board-from-done": {
+      const lists2 = { personal: store.addList("Personal", "c2"), reno: store.addList("Home renovation", "c3"), club: store.addList("Book club", "c3") };
+      const t = (title: string, due: string, listId: string, status: string | null) => {
+        const task = store.addTask({ title, due, listId });
+        if (status) store.updateTask(task.id, { status });
+        return task;
+      };
+      t("Prepare the launch slides", day(12), w.workList, null);
+      t("Renew library books", day(13), lists2.personal.id, null);
+      t("Launch brief", `${day(7)}T12:00`, w.workList, "in_progress");
+      t("Choose kitchen tiles", day(9), lists2.reno.id, "in_progress");
+      t("Book a table for the book club", day(7), lists2.club.id, "blocked");
+      if (scenario === "board") {
+        t("Fix the sign-up email bug", `${day(7)}T17:00`, w.workList, "in_progress");
+        store.setDone(t("Reply to the school", day(7), w.workList, null).id, true);
+      } else {
+        store.setDone(t("Reply to the school", day(7), lists2.personal.id, null).id, true);
+        store.setDone(t("Renew parking permit", day(6), w.errands, null).id, true);
+      }
+      return;
+    }
+    case "project":
+    case "project-no-sections": {
+      const reno = store.addProject({ name: "Home renovation", colour: "c3", goal: "2027-01-30" });
+      const reno2 = store.addList("Home renovation", "c3");
+      const kitchen = scenario === "project" ? store.addSection(reno.id, "Kitchen") : null;
+      const bath = scenario === "project" ? store.addSection(reno.id, "Bathroom") : null;
+      const pt = (title: string, due: string | null, sectionId: string | null) =>
+        store.addTask({ title, due, listId: reno2.id, projectId: reno.id, sectionId });
+      pt("Choose kitchen tiles", day(9), kitchen?.id ?? null);
+      pt("Send the deposit to the builder", day(11), kitchen?.id ?? null);
+      const quotes = pt("Get three plumbing quotes", "2026-11-20", bath?.id ?? null);
+      if (scenario === "project-no-sections") store.updateTask(quotes.id, { status: "blocked" });
+      pt("Pick a shower screen", "2026-12-05", bath?.id ?? null);
+      store.setDone(pt("Measure the cabinets", null, kitchen?.id ?? null).id, true);
+      return;
+    }
+    case "lists-groceries":
+    case "lists-offline": {
+      const groceries = store.addList("Groceries", "c2");
+      store.addList("Home", "c3");
+      store.addList("Errands", "c4");
+      store.addTask({ title: "Oat milk", due: day(7), listId: groceries.id });
+      store.addTask({ title: "Coffee beans", due: day(7), listId: groceries.id });
+      store.addTask({ title: "Birthday candles", due: day(8), listId: groceries.id });
+      if (scenario === "lists-groceries") store.setDone(store.addTask({ title: "Bread", listId: groceries.id }).id, true);
+      return;
+    }
     case "tasks": {
       const home = store.addList("Book club", "c3");
       const reno = store.addList("Home renovation", "c4");
@@ -344,4 +399,12 @@ export function sampleStrings(store: PlannerStore): string[] {
     ...Object.values(PEOPLE),
     FIXTURE_MARKER,
   ].filter((text) => text.length > 0);
+}
+
+/** Changes made after the store was settled: they stay waiting to sync, as the offline frames show. */
+export function seedPending(store: PlannerStore, scenario: Scenario): void {
+  if (scenario !== "lists-offline") return;
+  const groceries = store.getState().lists.find((l) => l.name === "Groceries")!;
+  store.addTask({ title: "Lemons", listId: groceries.id });
+  store.setDone(store.addTask({ title: "Bread", listId: groceries.id }).id, false);
 }

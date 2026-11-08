@@ -708,14 +708,118 @@
     ]
   },
   "p-list-menu": {
-    "design": "p-list-menu",
     "kind": "desktop",
+    "design": "p-list-menu",
     "route": "/lists",
-    "scenario": "tasks",
+    "scenario": "lists-empty",
     "steps": [
+      {
+        "click": "a:has-text(\"Errands\"), button:has-text(\"Errands\")"
+      },
       {
         "role": "button",
         "name": "More"
+      }
+    ]
+  },
+  "work-board": {
+    "kind": "desktop",
+    "design": "work-board",
+    "route": "/tasks",
+    "scenario": "board",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Board"
+      }
+    ]
+  },
+  "p-board-drag": {
+    "kind": "desktop",
+    "design": "p-board-drag",
+    "route": "/tasks",
+    "scenario": "board",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Board"
+      },
+      {
+        "drag": {
+          "from": ".tcard:has-text(\"Fix the sign-up email bug\")",
+          "over": "section.lane:has(h2:has-text(\"Blocked\"))",
+          "drop": false
+        }
+      }
+    ]
+  },
+  "p-board-from-done": {
+    "kind": "desktop",
+    "design": "p-board-from-done",
+    "route": "/tasks",
+    "scenario": "board-from-done",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Board"
+      },
+      {
+        "drag": {
+          "from": ".tcard:has-text(\"Reply to the school\")",
+          "over": "section.lane:has(h2:has-text(\"In progress\"))",
+          "drop": true
+        }
+      }
+    ]
+  },
+  "project-board": {
+    "kind": "desktop",
+    "design": "project-board",
+    "route": "/projects",
+    "scenario": "project",
+    "steps": [
+      {
+        "click": "button.tag:has-text(\"Home renovation\")"
+      },
+      {
+        "click": "button:text-is(\"Board\")"
+      }
+    ]
+  },
+  "project-board-no-sections": {
+    "kind": "desktop",
+    "design": "project-board-no-sections",
+    "route": "/projects",
+    "scenario": "project-no-sections",
+    "steps": [
+      {
+        "click": "button.tag:has-text(\"Home renovation\")"
+      },
+      {
+        "click": "button:text-is(\"Board\")"
+      }
+    ]
+  },
+  "lists": {
+    "kind": "desktop",
+    "design": "lists",
+    "route": "/lists",
+    "scenario": "lists-groceries",
+    "steps": [
+      {
+        "click": "a:has-text(\"Groceries\"), button:has-text(\"Groceries\")"
+      }
+    ]
+  },
+  "p-lists-offline": {
+    "kind": "desktop",
+    "design": "p-lists-offline",
+    "route": "/lists",
+    "scenario": "lists-offline",
+    "offline": true,
+    "steps": [
+      {
+        "click": "a:has-text(\"Groceries\"), button:has-text(\"Groceries\")"
       }
     ]
   }

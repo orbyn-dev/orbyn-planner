@@ -1,4 +1,4 @@
-/* global document */
+/* global document, DataTransfer, DragEvent */
 // DEVELOPMENT ONLY: renders one planner screen and the design frame it should match, side by side. See docs/match-kit.md.
 //   node scripts/match.mjs <frame-id>... [--theme light|dark|dim|all] [--out <folder>] [--pr <name>]   (several frames share one server; "all" is every frame)
 // Needs Playwright and a Chrome it can launch already on this machine (nothing is downloaded): see the doc.
@@ -195,7 +195,22 @@ async function ours(theme, size = SIZE[frame.kind], suffix = "") {
   for (const step of frame.steps ?? []) {
     if (step.role) await page.getByRole(step.role, { name: step.name }).first().click();
     else if (step.click) await page.locator(step.click).first().click();
-    else if (step.fill) await page.locator(step.fill).first().fill(step.value);
+    else if (step.drag) {
+      // A native drag in the page: start on a card, move over a lane, and drop when asked.
+      await page.evaluate(({ from, over, drop }) => {
+        const dt = new DataTransfer();
+        const fire = (el, type) => el.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: dt }));
+        const card = document.querySelector(from);
+        const lane = document.querySelector(over);
+        fire(card, "dragstart");
+        fire(lane, "dragenter");
+        fire(lane, "dragover");
+        if (drop) {
+          fire(lane, "drop");
+          fire(card, "dragend");
+        }
+      }, step.drag);
+    } else if (step.fill) await page.locator(step.fill).first().fill(step.value);
     else if (step.press) await page.keyboard.press(step.press);
     else if (step.select) await page.locator(step.select).first().selectOption(step.value);
   }
