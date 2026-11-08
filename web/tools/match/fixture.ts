@@ -24,6 +24,17 @@ export const SCENARIOS = [
   "tasks",
   "today-event",
   "lists-empty",
+  "first-run",
+  "today-long",
+  "today-week-empty",
+  "today-overnight",
+  "today-overnight-long",
+  "month",
+  "agenda",
+  "week-all-day",
+  "task-panel",
+  "task-panel-progress",
+  "task-panel-blocked",
 ] as const;
 export type Scenario = (typeof SCENARIOS)[number];
 
@@ -120,6 +131,8 @@ function clearToday(store: PlannerStore): void {
 
 /** Seeds one scenario into an empty store: the data one design frame is drawn with. */
 export function seed(store: PlannerStore, scenario: Scenario): void {
+  // A first launch has nothing in it: the Inbox and the Personal calendar every planner starts with.
+  if (scenario === "first-run") return;
   const w = world(store, scenario !== "tasks");
   switch (scenario) {
     case "today":
@@ -215,12 +228,103 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
       for (const t of ["Reply to the school", "Renew library books", "Book the dentist"]) store.addTask({ title: t, listId: w.inbox });
       return;
     }
+    case "today-long": {
+      todayData(store, w);
+      const home = store.addList("Home", "c3");
+      const club = store.addList("Book club", "c3");
+      const ev = (title: string, from: string, to: string, calendarId: string, place: string) =>
+        store.addEvent({ title, calendarId, start: `${day(7)}T${from}`, end: `${day(7)}T${to}`, place });
+      ev("Swim", "07:30", "08:15", w.personal, "Pool");
+      ev("Call with the builder", "11:00", "11:30", w.work, "Video");
+      ev("Spanish lesson", "18:30", "19:30", w.personal, "");
+      store.addTask({ title: "Order the tile samples", due: `${day(7)}T10:00`, listId: home.id });
+      store.addTask({ title: "Book a table for the book club", due: `${day(7)}T12:30`, listId: club.id });
+      store.addTask({ title: "Reply to Priya about the timeline", due: `${day(7)}T14:00`, listId: w.workList });
+      store.addTask({ title: "Collect the parcel", due: `${day(7)}T16:00`, listId: w.errands });
+      store.addTask({ title: "Water the plants", due: day(7), listId: home.id });
+      return;
+    }
+    case "today-week-empty": {
+      todayData(store, w);
+      store.addEvent({ title: "Dentist visit", calendarId: w.personal, start: `${day(8)}T10:00`, end: `${day(8)}T11:00` });
+      for (const t of store.getState().tasks) if (t.due && [day(9), day(11)].includes(t.due.slice(0, 10))) store.deleteTask(t.id);
+      for (const e of store.getState().events) if (e.start.slice(0, 10) === day(9)) store.deleteEvent(e.id);
+      return;
+    }
+    case "today-overnight": {
+      todayData(store, w);
+      store.addEvent({ title: "Night shift: ward 4", calendarId: w.work, start: `${day(6)}T22:00`, end: `${day(7)}T06:00` });
+      store.addEvent({ title: "Night shift: ward 4", calendarId: w.work, start: `${day(7)}T22:00`, end: `${day(8)}T06:00` });
+      return;
+    }
+    case "today-overnight-long": {
+      store.addEvent({ title: "Conference: Lisbon", calendarId: w.work, allDay: true, start: day(5), end: day(9) });
+      store.addEvent({ title: "On-call: platform", calendarId: w.work, start: `${day(4)}T22:00`, end: `${day(7)}T06:00` });
+      store.addEvent({ title: "Team planning: spring launch", calendarId: w.work, start: `${day(7)}T09:00`, end: `${day(7)}T10:00`, place: "Room 3" });
+      store.addEvent({ title: "Release freeze", calendarId: w.work, start: `${day(7)}T22:00`, end: `${day(10)}T06:00` });
+      store.addEvent({ title: "Dentist", calendarId: w.personal, start: `${day(8)}T15:00`, end: `${day(8)}T16:00` });
+      store.addTask({ title: "Birthday candles", due: day(11), listId: w.errands });
+      return;
+    }
+    case "month": {
+      const ev = (title: string, d: number, from: string, to: string, calendarId: string) =>
+        store.addEvent({ title, calendarId, start: `${day(d)}T${from}`, end: `${day(d)}T${to}` });
+      ev("Call with the builder", 4, "11:00", "12:00", w.personal);
+      ev("Lunch", 5, "13:00", "14:00", w.family);
+      ev("Book club", 6, "15:00", "17:00", w.personal);
+      ev("Book club", 7, "15:00", "17:00", w.personal);
+      ev("Swim", 11, "18:00", "19:00", w.work);
+      store.addEvent({ title: "Lab report due", calendarId: w.work, allDay: true, start: day(12), end: day(12) });
+      store.addEvent({ title: "Exam", calendarId: w.work, allDay: true, start: day(16), end: day(16) });
+      return;
+    }
+    case "agenda": {
+      store.addEvent({ title: "Team planning: spring launch", calendarId: w.work, start: `${day(7)}T09:00`, end: `${day(7)}T10:00`, place: "Room 3" });
+      store.addEvent({ title: "Lunch with Maya", calendarId: w.family, start: `${day(7)}T13:00`, end: `${day(7)}T14:00` });
+      store.addEvent({ title: "Book club", calendarId: w.personal, start: `${day(7)}T15:00`, end: `${day(7)}T17:00`, place: "Library, level 2" });
+      store.addEvent({ title: "Launch stand-up", calendarId: w.work, start: `${day(9)}T09:00`, end: `${day(9)}T09:30` });
+      store.addEvent({ title: "Swim", calendarId: w.personal, start: `${day(9)}T18:00`, end: `${day(9)}T19:00` });
+      store.addEvent({ title: "Site visit with Jordan", calendarId: w.personal, start: `${day(10)}T10:00`, end: `${day(10)}T11:00`, place: "Home" });
+      store.addEvent({ title: "Spanish lesson", calendarId: w.personal, start: `${day(10)}T19:00`, end: `${day(10)}T20:00`, repeat: { frequency: "weekly", interval: 1, weekdays: [], end: { type: "never" } } });
+      return;
+    }
+    case "week-all-day": {
+      const event = (title: string, d: number, from: string, to: string, calendarId: string) =>
+        store.addEvent({ title, calendarId, start: `${day(d)}T${from}`, end: `${day(d)}T${to}` });
+      event("Call with the builder", 4, "11:00", "12:00", w.personal);
+      event("Lunch with Maya", 5, "13:00", "14:00", w.family);
+      event("Team planning", 7, "09:00", "11:00", w.work);
+      event("Book club", 6, "15:00", "17:00", w.personal);
+      const home = store.addCalendar("Home", "c3");
+      store.addEvent({ title: "Home renovation: tiling", calendarId: home.id, allDay: true, start: day(5), end: day(8) });
+      store.addEvent({ title: "Maya’s birthday", calendarId: w.family, allDay: true, start: day(7), end: day(7) });
+      return;
+    }
+    case "task-panel":
+    case "task-panel-progress":
+    case "task-panel-blocked": {
+      todayData(store, w);
+      const bug = store.getState().tasks.find((t) => t.title === "Fix the sign-up email bug")!;
+      store.updateTask(bug.id, {
+        notes: scenario === "task-panel-blocked" ? "Waiting on the logs from support." : "The welcome email is sent twice when someone signs up with a passkey.",
+        checklist: [
+          { id: "c1", title: "Reproduce it", done: true, order: "a" },
+          { id: "c2", title: "Ship the fix", done: false, order: "b" },
+          { id: "c3", title: "Tell support", done: false, order: "c" },
+        ],
+        status: scenario === "task-panel" ? null : scenario === "task-panel-progress" ? "in_progress" : "blocked",
+      });
+      return;
+    }
     case "tasks": {
       const home = store.addList("Book club", "c3");
       const reno = store.addList("Home renovation", "c4");
       store.addTask({ title: "Review the Q2 budget", due: day(6), listId: w.workList, priority: "high" });
       store.addTask({ title: "Send the launch brief to Priya", due: `${day(7)}T12:00`, listId: w.workList, priority: "high" });
-      store.addTask({ title: "Book a table for the book club", due: day(7), listId: home.id, priority: "medium" });
+      store.addTask({ title: "Fix the sign-up email bug", due: `${day(7)}T17:00`, listId: w.workList, priority: "high" });
+      const table = store.addTask({ title: "Book a table for the book club", due: day(7), listId: home.id, priority: "medium" });
+      store.updateTask(table.id, { status: "blocked" });
+      store.addTask({ title: "Book the dentist", due: day(13), listId: w.errands, priority: "medium" });
       store.addTask({ title: "Choose kitchen tiles", due: day(9), listId: reno.id, priority: "medium" });
       store.addTask({ title: "Prepare the launch slides", due: day(12), listId: w.workList, priority: "low" });
       store.setDone(store.addTask({ title: "Reply to the school about the trip", due: day(7), listId: w.workList }).id, true);
