@@ -75,13 +75,13 @@ describe("Tasks page", () => {
     expect(store.getState().tasks[0]!.deletedAt).toBeNull();
   });
 
-  it("drops the Undo toast after six seconds", async () => {
+  it("drops a toast without Undo after four seconds", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const { field } = await openTasks();
     await add(field, "short lived");
     expect(screen.getByRole("status")).toHaveTextContent("Added");
     await act(async () => {
-      vi.advanceTimersByTime(TOAST_MS + 10);
+      vi.advanceTimersByTime(TOAST_MS + 300);
     });
     expect(screen.queryByText(/Added/)).not.toBeInTheDocument();
   });
@@ -198,7 +198,7 @@ describe("quick add preview", () => {
       });
       expect(screen.getByText("Marked done.")).toBeInTheDocument();
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(200);
+        await vi.advanceTimersByTimeAsync(500);
       });
       expect(screen.queryByText("Marked done.")).toBeNull();
     } finally {

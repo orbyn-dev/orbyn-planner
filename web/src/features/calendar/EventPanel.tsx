@@ -97,7 +97,7 @@ function Panel({ occ }: { occ: Occurrence }) {
     const undo = deleteOccurrence(store, occ, scope);
     setAsk(null);
     ui.closeEvent();
-    ui.showToast("Event deleted", undo, { focusUndo: true, focusRowOnUndo: event.id });
+    ui.showToast(`“${event.title}” deleted. Kept for 30 days.`, undo, { focusUndo: true, focusRowOnUndo: event.id });
   };
 
   const duplicate = () => {

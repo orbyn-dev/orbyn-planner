@@ -1,6 +1,11 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { motionMs } from "../styles/tokens";
 
-export const TOAST_MS = 10_000;
+/** How long a toast stays: four seconds, five when it has Undo; the pointer or focus on it pauses the clock (Planner Designs v54 p-toast-states). */
+export const TOAST_MS = 4_000;
+export const TOAST_UNDO_MS = 5_000;
+/** At most this many toasts show at once; the oldest goes when another comes. */
+export const MAX_TOASTS = 3;
 
 export interface ToastState {
   id: number;
@@ -12,17 +17,19 @@ export interface ToastState {
   focusRowOnUndo?: string;
   /** A second action beside Undo. */
   secondary?: { label: string; run: () => void };
-  /** How long it stays, when not the usual ten seconds. */
+  /** How long it stays, when not the usual four seconds (five with Undo). */
   ms?: number;
   /** What a screen reader hears when it differs from what is shown ("Moved “Title” to Blocked" for "Moved to Blocked"). */
   spoken?: string;
+  /** It is on its way out: the exit animation is playing. */
+  leaving?: boolean;
 }
 
 export interface ToastOptions {
   focusUndo?: boolean;
   focusRowOnUndo?: string;
   secondary?: { label: string; run: () => void };
-  /** How long the toast stays, when not the usual ten seconds. */
+  /** How long the toast stays, when not the usual four seconds (five with Undo). */
   ms?: number;  /** What a screen reader hears when it differs from what is shown ("Moved “Title” to Blocked" for "Moved to Blocked"). */
   spoken?: string;
 }
@@ -62,9 +69,10 @@ interface Ui {
   searchOpen: boolean;
   openSearch: () => void;
   closeSearch: () => void;
-  toast: ToastState | null;
+  /** Oldest first, so the newest is at the bottom. */
+  toasts: ToastState[];
   showToast: (message: string, undo?: () => void, options?: ToastOptions) => void;
-  dismissToast: () => void;
+  dismissToast: (id: number) => void;
 }
 
 const UiContext = createContext<Ui | null>(null);
@@ -81,12 +89,17 @@ export function UiProvider({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [newTaskOpen, setNewTaskOpen] = useState(false);
   const [newTaskDefaults, setNewTaskDefaults] = useState<{ projectId?: string | null; sectionId?: string | null }>({});
-  const [toast, setToast] = useState<ToastState | null>(null);
+  const [toasts, setToasts] = useState<ToastState[]>([]);
 
   const showToast = useCallback((message: string, undo?: () => void, options?: ToastOptions) => {
-    setToast({ id: ++toastCounter, message, undo, focusUndo: options?.focusUndo, focusRowOnUndo: options?.focusRowOnUndo, secondary: options?.secondary, ms: options?.ms, spoken: options?.spoken });
+    const next: ToastState = { id: ++toastCounter, message, undo, focusUndo: options?.focusUndo, focusRowOnUndo: options?.focusRowOnUndo, secondary: options?.secondary, ms: options?.ms, spoken: options?.spoken };
+    setToasts((all) => [...all, next].slice(-MAX_TOASTS));
   }, []);
-  const dismissToast = useCallback(() => setToast(null), []);
+  const dismissToast = useCallback((id: number) => {
+    // It leaves in about 70 percent of the time it took to arrive, then goes.
+    setToasts((all) => all.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
+    setTimeout(() => setToasts((all) => all.filter((t) => t.id !== id)), motionMs("fast") * 0.7);
+  }, []);
 
   const value = useMemo<Ui>(
     () => ({
@@ -127,11 +140,11 @@ export function UiProvider({ children }: { children: ReactNode }) {
       searchOpen,
       openSearch: () => setSearchOpen(true),
       closeSearch: () => setSearchOpen(false),
-      toast,
+      toasts,
       showToast,
       dismissToast,
     }),
-    [newTaskDefaults, taskId, eventKey, newEventDate, newEventTime, newEventTitle, listId, newTaskOpen, searchOpen, menuOpen, toast, showToast, dismissToast],
+    [newTaskDefaults, taskId, eventKey, newEventDate, newEventTime, newEventTitle, listId, newTaskOpen, searchOpen, menuOpen, toasts, showToast, dismissToast],
   );
   return <UiContext.Provider value={value}>{children}</UiContext.Provider>;
 }
