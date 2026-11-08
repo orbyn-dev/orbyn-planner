@@ -27,6 +27,7 @@ export const SCENARIOS = [
   "today-event",
   "lists-empty",
   "first-run",
+  "task-panel-tags",
   "board",
   "board-moved",
   "project-board",
@@ -315,6 +316,7 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
       return;
     }
     case "task-panel":
+    case "task-panel-tags":
     case "task-panel-progress":
     case "task-panel-blocked": {
       todayData(store, w);
@@ -326,8 +328,17 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
           { id: "c2", title: "Ship the fix", done: false, order: "b" },
           { id: "c3", title: "Tell support", done: false, order: "c" },
         ],
-        status: scenario === "task-panel" ? null : scenario === "task-panel-progress" ? "in_progress" : "blocked",
+        status: scenario === "task-panel" || scenario === "task-panel-tags" ? null : scenario === "task-panel-progress" ? "in_progress" : "blocked",
       });
+      if (scenario === "task-panel-tags") {
+        // Planner Designs task-panel-tags and p-row-tags: errands, bug and email exist; the task carries bug and email.
+        const errands = store.addTag("errands", "c4");
+        const bugTag = store.addTag("bug", "c1");
+        const email = store.addTag("email", "c2");
+        void errands;
+        store.setTaskTag(bug.id, bugTag.id, true);
+        store.setTaskTag(bug.id, email.id, true);
+      }
       return;
     }
     case "board":

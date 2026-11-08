@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../app/App";
@@ -39,31 +39,62 @@ afterEach(() => document.getElementById("root")?.remove());
 const row = (title: string) => screen.getByRole("button", { name: title }).closest("li")!;
 
 describe("tags in the planner", () => {
-  it("a task gets a tag by typing a new one in its panel, or by picking an existing one, and shows each as a chip in the panel and its row", async () => {
+  const openTags = async (panel: HTMLElement) => {
+    await userEvent.click(within(panel).getByRole("button", { name: /^Tags,/ }));
+    return screen.getByRole("dialog", { name: "Tags" });
+  };
+
+  it("the Tags row is always there, after List: \"Add tag\" when empty, then chips and a +", async () => {
     const { store, water } = await open();
     await userEvent.click(await screen.findByRole("button", { name: "water plants" }));
     const panel = screen.getByRole("complementary", { name: "Task" });
-    await userEvent.type(within(panel).getByRole("textbox", { name: "New tag" }), "Home{Enter}");
-    expect(within(panel).getByText("Home")).toBeInTheDocument();
-    expect(store.getState().tasks.find((t) => t.id === water.id)!.tags).toHaveLength(1);
-
-    store.addTag("Work", "c1");
-    await userEvent.selectOptions(await within(panel).findByRole("combobox", { name: "Add a tag" }), "Work");
-    expect(within(row("water plants")).getByText("Home")).toBeInTheDocument();
-    expect(within(row("water plants")).getByText("Work")).toBeInTheDocument();
-    expect(within(row("post the parcel")).queryByText("Home")).toBeNull();
+    const labels = () => Array.from(panel.querySelectorAll(".kv > span:first-child")).map((e) => e.textContent);
+    expect(labels().slice(0, 4)).toEqual(["Due", "List", "Tags", "Priority"]);
+    const button = within(panel).getByRole("button", { name: "Tags, none" });
+    expect(button).toHaveTextContent("Add tag");
+    expect(button.querySelector(".t3")).not.toBeNull(); // muted
+    await act(async () => {
+      store.setTaskTag(water.id, store.addTag("bug", "c1").id, true);
+      store.setTaskTag(water.id, store.addTag("email", "c2").id, true);
+    });
+    expect(within(panel).getByRole("button", { name: "Tags, bug, email" })).toHaveTextContent("bugemail+");
   });
 
-  it("× on a tag chip in the panel removes just that tag", async () => {
-    await open("/tasks", (store, task) => {
-      store.setTaskTag(task.id, store.addTag("Home", "c2").id, true);
-      store.setTaskTag(task.id, store.addTag("Work", "c1").id, true);
+  it("the popover has a search field, the existing tags with checkboxes and Create tag “…” when none has exactly that name; changes apply at once", async () => {
+    const { store, water } = await open("/tasks", (s) => {
+      s.addTag("errands", "c4");
+      s.addTag("bug", "c1");
     });
     await userEvent.click(await screen.findByRole("button", { name: "water plants" }));
     const panel = screen.getByRole("complementary", { name: "Task" });
-    await userEvent.click(within(panel).getByRole("button", { name: "Remove tag Work" }));
-    expect(within(row("water plants")).queryByText("Work")).toBeNull();
+    const dialog = await openTags(panel);
+    expect(within(dialog).getByRole("textbox", { name: "Search tags" })).toHaveFocus();
+    expect(within(dialog).getAllByRole("checkbox").map((c) => c.closest("label")!.textContent)).toEqual(["errands", "bug"]);
+    await userEvent.click(within(dialog).getByRole("checkbox", { name: "bug" }));
+    expect(store.getState().tasks.find((t) => t.id === water.id)!.tags).toHaveLength(1);
+    expect(within(row("water plants")).getByText("bug")).toBeInTheDocument();
+    await userEvent.type(within(dialog).getByRole("textbox", { name: "Search tags" }), "er");
+    expect(within(dialog).getAllByRole("checkbox").map((c) => c.closest("label")!.textContent)).toEqual(["errands"]);
+    expect(within(dialog).getByRole("button", { name: /Create tag “er”/ })).toBeInTheDocument();
+    await userEvent.clear(within(dialog).getByRole("textbox", { name: "Search tags" }));
+    await userEvent.type(within(dialog).getByRole("textbox", { name: "Search tags" }), "BUG");
+    expect(within(dialog).queryByRole("button", { name: /Create tag/ })).toBeNull(); // exactly that name, in any case
+    await userEvent.click(within(dialog).getByRole("checkbox", { name: "bug" }));
+    expect(store.getState().tasks.find((t) => t.id === water.id)!.tags).toHaveLength(0);
+  });
+
+  it("Enter in the search field creates the tag and gives it to the task; Escape closes with focus back on the row", async () => {
+    const { store, water } = await open();
+    await userEvent.click(await screen.findByRole("button", { name: "water plants" }));
+    const panel = screen.getByRole("complementary", { name: "Task" });
+    const dialog = await openTags(panel);
+    await userEvent.type(within(dialog).getByRole("textbox", { name: "Search tags" }), "Home{Enter}");
+    expect(store.getState().tags.map((t) => t.name)).toEqual(["Home"]);
+    expect(store.getState().tasks.find((t) => t.id === water.id)!.tags).toEqual([store.getState().tags[0]!.id]);
     expect(within(row("water plants")).getByText("Home")).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog", { name: "Tags" })).toBeNull();
+    expect(within(panel).getByRole("button", { name: "Tags, Home" })).toHaveFocus();
   });
 
   it("the Tasks page filters by tag", async () => {
@@ -98,7 +129,7 @@ describe("tags in the planner", () => {
     expect(store.getState().tasks.find((t) => t.id === mail.id)!.tags).toEqual([tag.id]);
   });
 
-  it("a task at the tag limit can't be given another: Add a tag and New tag go, and come back when one is removed", async () => {
+  it("a task at the tag limit can't be given another: the unticked tags and Create tag are disabled or go, and come back when one is unticked", async () => {
     // The limit is 100; the panel only compares a count with it, so the page is built with a limit of 3 (see the mock above) and not 100 chips.
     await open("/tasks", (store, water) => {
       for (let i = 0; i < 3; i++) store.setTaskTag(water.id, store.addTag(`Tag ${i}`, "c1").id, true);
@@ -106,11 +137,13 @@ describe("tags in the planner", () => {
     });
     await userEvent.click(await screen.findByText("water plants"));
     const panel = screen.getByLabelText("Task", { selector: "aside" });
-    expect(within(panel).getByText("A task can have 3 tags at most.")).toBeInTheDocument();
-    expect(within(panel).queryByLabelText("Add a tag")).toBeNull();
-    expect(within(panel).queryByLabelText("New tag")).toBeNull();
-    await userEvent.click(within(panel).getByLabelText("Remove tag Tag 0"));
-    expect(within(panel).getByLabelText("Add a tag")).toBeInTheDocument();
-    expect(within(panel).getByLabelText("New tag")).toBeInTheDocument();
+    const dialog = await openTags(panel);
+    expect(within(dialog).getByText("A task can have 3 tags at most.")).toBeInTheDocument();
+    expect(within(dialog).getByRole("checkbox", { name: "One more" })).toBeDisabled();
+    await userEvent.type(within(dialog).getByRole("textbox", { name: "Search tags" }), "brand new");
+    expect(within(dialog).queryByRole("button", { name: /Create tag/ })).toBeNull();
+    await userEvent.clear(within(dialog).getByRole("textbox", { name: "Search tags" }));
+    await userEvent.click(within(dialog).getByRole("checkbox", { name: "Tag 0" }));
+    expect(within(dialog).getByRole("checkbox", { name: "One more" })).toBeEnabled();
   });
 });
