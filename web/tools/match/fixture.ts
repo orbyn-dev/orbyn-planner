@@ -154,6 +154,8 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
       return;
     case "today-all-day": {
       todayData(store, w);
+      // Sun 8 holds the tiling alone in this frame, so the week list reads its title and "day 4 of 4".
+      for (const t of store.getState().tasks) if (t.title === "Birthday candles") store.deleteTask(t.id);
       const home = store.addCalendar("Home", "c3");
       store.addEvent({ title: "Home renovation: tiling", calendarId: home.id, allDay: true, start: day(5), end: day(8) });
       store.addEvent({ title: "Maya’s birthday", calendarId: w.family, allDay: true, start: day(7), end: day(7) });
