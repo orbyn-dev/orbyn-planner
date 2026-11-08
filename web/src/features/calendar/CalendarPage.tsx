@@ -45,6 +45,16 @@ export function weekRange(anchor: string, weekStart: WeekStart): string {
   return first.getMonth() === last.getMonth() ? `${first.getDate()} – ${last.getDate()} ${m(last)}` : `${first.getDate()} ${m(first)} – ${last.getDate()} ${m(last)}`;
 }
 
+/** The label between the arrows of the Day and Agenda toolbars: "Sat 7 Nov", "Sat 7 – Fri 13 Nov", or "Mon 30 Nov – Sun 6 Dec" across a month. */
+export function dayRange(first: string, last: string): string {
+  const a = dateOf(first);
+  const b = dateOf(last);
+  const m = (d: Date) => MONTHS[d.getMonth()]!.slice(0, 3);
+  const w = (d: Date) => WEEKDAYS[d.getDay()]!.slice(0, 3);
+  if (first === last) return `${w(a)} ${a.getDate()} ${m(a)}`;
+  return a.getMonth() === b.getMonth() ? `${w(a)} ${a.getDate()} – ${w(b)} ${b.getDate()} ${m(b)}` : `${w(a)} ${a.getDate()} ${m(a)} – ${w(b)} ${b.getDate()} ${m(b)}`;
+}
+
 function shift(view: View, anchor: string, direction: 1 | -1): string {
   const a = dateOf(anchor);
   if (view === "day") return dateKey(addDays(a, direction));
@@ -108,6 +118,7 @@ function CalendarGrid() {
         </button>
         {elsewhere && <button type="button" className="ghost" onClick={() => setAnchor(today)}>Today</button>}
         {view === "week" && <span className="range">{weekRange(anchor, prefs.weekStart)}</span>}
+        {(view === "day" || view === "agenda") && <span className="range">{dayRange(days[0]!, days.at(-1)!)}</span>}
         <button type="button" className="ghost icon" aria-label="Next" onClick={() => setAnchor(shift(view, anchor, 1))}>
           <Icon name="right" small />
         </button>
