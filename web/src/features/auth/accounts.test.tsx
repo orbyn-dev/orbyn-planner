@@ -347,6 +347,17 @@ describe("sign in", () => {
     expect(row.querySelector("button")).toBeNull(); // nothing to press
   });
 
+  it("Settings › Account has a Data protection row (settings-account) that says the level and whose Change opens Privacy", async () => {
+    await mount(services(), "/settings");
+    await fillSignUp();
+    await openAccount();
+    const row = (await screen.findByText("Data protection", { selector: "span" })).closest(".kv")!;
+    await waitFor(() => expect(row).toHaveTextContent("Data protectionStandard · Change"));
+    expect(screen.queryByText("Password", { selector: ".kv > span" })).toBeNull(); // change password is after the beta
+    await userEvent.click(within(row as HTMLElement).getByRole("button", { name: "Change" }));
+    expect(await screen.findByLabelText("Protection")).toBeInTheDocument(); // the Privacy category
+  });
+
   it("an unknown email looks exactly like a wrong password", async () => {
     await mount(services());
     await userEvent.click(await screen.findByRole("button", { name: "Sign in" }));

@@ -96,7 +96,7 @@ export function SettingsPage() {
               <InstallHint />
             </>
           ) : category === "Account" ? (
-            <AccountSettings />
+            <AccountSettings onOpenPrivacy={() => setCategory("Privacy")} />
           ) : category === "Notifications" ? (
             <NotificationsSettings />
           ) : category === "Calendars" ? (
