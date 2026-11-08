@@ -1173,7 +1173,8 @@
     "design": "landing",
     "account": "out",
     "route": "/today",
-    "scenario": "today"
+    "scenario": "today",
+    "fit": "app"
   },
   "p-signup-invite-default": {
     "kind": "desktop",
@@ -1185,7 +1186,8 @@
       {
         "click": "button:text-is(\"Get started\")"
       }
-    ]
+    ],
+    "fit": "app"
   },
   "p-signup-invite-filled": {
     "kind": "desktop",
@@ -1201,7 +1203,8 @@
         "fill": "input",
         "value": "ABCD-EFGH-JKLM"
       }
-    ]
+    ],
+    "fit": "app"
   },
   "sign-in": {
     "kind": "desktop",
@@ -1213,7 +1216,8 @@
       {
         "click": "button:text-is(\"Sign in\")"
       }
-    ]
+    ],
+    "fit": "app"
   },
   "recovery": {
     "kind": "desktop",
@@ -1228,6 +1232,7 @@
       {
         "click": "button:has-text(\"Forgot your password?\")"
       }
-    ]
+    ],
+    "fit": "app"
   }
 }

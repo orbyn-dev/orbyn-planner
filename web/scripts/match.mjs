@@ -243,12 +243,14 @@ async function design(theme) {
     el.querySelector(".tb")?.setAttribute("style", "display:none");
   }, theme);
   await app.scrollIntoViewIfNeeded();
-  await page.waitForTimeout(250);
+  await page.waitForTimeout(frame.fit === "app" ? 1500 : 250); // the sign-in cards of the design fade in
   const box = await app.boundingBox();
   const size = SIZE[frame.kind];
   const top = frame.kind === "phone" ? 51 : 1; // the phone's status bar is device chrome; the desktop title bar is hidden
   const png = join(outDir, `${name.replace("@", "-")}-${theme}-design.png`);
-  await page.screenshot({ path: png, clip: { x: box.x + 1, y: box.y + top, width: size.width, height: size.height } });
+  // A frame that is not a window with a sidebar (the sign-in screens) is taken whole.
+  if (frame.fit === "app") await app.screenshot({ path: png });
+  else await page.screenshot({ path: png, clip: { x: box.x + 1, y: box.y + top, width: size.width, height: size.height } });
   const text = await app.evaluate((el) => el.innerText);
   const boxes = await app.evaluate((el, [ox, oy]) => {
     const out = [];
