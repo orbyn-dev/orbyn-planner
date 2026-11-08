@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../src/app/App";
 import { ClockProvider } from "../../src/app/clock";
 import { PINNED_NOW, SCENARIOS } from "./fixture";
+import { pretendAccount } from "./account";
+import { ACCOUNT } from "./fixture";
 import { seededStore } from "./mount";
 
 // The fixture runs the planner on an in-memory store. No scenario may reach the network at all, so none can reach an engine.
@@ -53,4 +55,12 @@ describe("the match fixture", () => {
     const others = calls.filter((c) => !/\/health\)$/.test(c));
     expect(others).toEqual([]);
   });
+
+  it("the pretend account is signed in on a trusted device, in this page only: no network call at all", async () => {
+    const services = await pretendAccount();
+    const session = services.tokens.getSession();
+    expect(session?.name).toBe(ACCOUNT.name);
+    expect(session?.deviceState).toBe("trusted");
+    expect(calls).toEqual([]);
+  }, 30_000);
 });

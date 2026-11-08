@@ -16,6 +16,8 @@ Nothing is downloaded. Output goes to `.match/<pr or branch>/` (ignored by Git, 
 `<frame>-<theme>-side.png` (ours left, design right), the two halves, and `<frame>-<theme>-text.txt` (copy only one side has).
 `ORBYN_DESIGN_FILE` points at a saved copy of the design page instead.
 
+The planner is signed in to a pretend account ("Sam Arden", three devices, synced) on an in-page mock engine, because the frames draw one; a frame can set `"account": false` for the planner of this device alone. The account, its engine and its socket live in the page and never touch a real account, an engine or the network (`web/tools/match/account.ts`, `noSocket.ts`).
+
 What is pinned: Sat 7 Nov 2026 08:30, time zone UTC, locale `en-GB`, reduced motion, one pixel per CSS pixel. Ours runs on an in-memory planner (no account), in the dev server only.
 Ours is 1160x700 (desktop) or 390x730 (phone). The design is cropped to the same: the window title bar is hidden and the phone's status bar is left out.
 

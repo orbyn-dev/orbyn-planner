@@ -7,6 +7,8 @@ import type { ListColour, PlannerStore } from "../../src/store/types";
 export const PINNED_NOW = "2026-11-07T08:30:00.000Z";
 export const TIME_ZONE = "UTC";
 export const LOCALE = "en-GB";
+/** The pretend signed-in account of the phone frames and of every frame drawn with the sidebar's account row. */
+export const ACCOUNT = { name: "Sam Arden", email: "sam@example.test", password: "correct horse battery staple" } as const;
 export const FIXTURE_MARKER = "orbyn-match-fixture-v1";
 
 export const SCENARIOS = [
@@ -342,6 +344,8 @@ export function sampleStrings(store: PlannerStore): string[] {
     ...s.events.flatMap((e) => [e.place, ...e.people.map((p) => p.email)]),
     ...s.projects.map((p) => p.name),
     ...Object.values(PEOPLE),
+    ACCOUNT.name,
+    ACCOUNT.password,
     FIXTURE_MARKER,
   ].filter((text) => text.length > 0);
 }
