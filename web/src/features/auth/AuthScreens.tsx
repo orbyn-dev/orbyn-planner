@@ -130,7 +130,7 @@ function CheckEmail({ pending, onBack, onDone, onInviteRejected, onSignIn }: { p
   const seconds = `${Math.floor(wait / 60)}:${String(wait % 60).padStart(2, "0")}`;
   if (keysLost) return <StartOver email={pending.email} onBackToSignIn={onSignIn} />;
   return (
-    <form className="authcard" onSubmit={(e) => void verify(e)} aria-label="Check your inbox" noValidate>
+    <form className="authcard step-card" onSubmit={(e) => void verify(e)} aria-label="Check your inbox" noValidate>
       <StepBar step={3} label="Check your email" />
       <h1 className="auth-title">Check your inbox</h1>
       {inviteRejected && (
