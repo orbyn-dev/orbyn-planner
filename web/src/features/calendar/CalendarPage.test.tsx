@@ -244,7 +244,7 @@ describe("Day, Month and Agenda", () => {
     await userEvent.click(screen.getByRole("radio", { name: "Agenda" }));
     const meta = (title: string) => screen.getByRole("button", { name: title }).closest("li")!.querySelector(".meta")!.textContent;
     expect(meta("With place")).toBe("Room 3");
-    expect(meta("No place")).toBe("1h");
+    expect(meta("No place")).toBe("1 h"); // durations are written with a space: 1 h, 30 min (Planner Designs v55)
     expect(meta("Half hour")).toBe("30 min");
     expect(meta("Birthday")).toBe("");
   });

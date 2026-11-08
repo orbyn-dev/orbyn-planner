@@ -4,14 +4,12 @@ import { dateOf, formatTime, parseDue, shortDay } from "../../lib/dates";
 import { touchesDay } from "../../lib/wall";
 import { usePlanner } from "../../store/context";
 import type { Occurrence } from "../../store/occurrences";
+import { duration } from "./PhoneCalendar";
 import { colourOf } from "./TimeGrid";
 
 function length(o: Occurrence): string {
   const minutes = Math.round((parseDue(o.end).date.getTime() - parseDue(o.start).date.getTime()) / 60_000);
-  if (o.allDay || minutes <= 0) return "";
-  if (minutes < 60) return `${minutes} min`;
-  const h = Math.floor(minutes / 60);
-  return minutes % 60 ? `${h}h ${minutes % 60}m` : `${h}h`;
+  return o.allDay || minutes <= 0 ? "" : duration(minutes);
 }
 
 /** What an event row says after its title (Planner Designs: the place; with no place its length; never both; an all-day event says neither). */
