@@ -4,6 +4,9 @@ export type Theme = (typeof THEMES)[number];
 export type ThemeChoice = Theme | "system";
 export const CHOICES: readonly ThemeChoice[] = ["system", ...THEMES];
 export const THEME_KEY = "orbyn-planner.theme";
+/** Which dark theme System and Dark use: Dark or Dim (Settings › Planning › Dark theme). */
+export const DARK_KEY = "orbyn-planner.dark-theme";
+export type DarkTheme = "dark" | "dim";
 
 export function isChoice(value: unknown): value is ThemeChoice {
   return typeof value === "string" && (CHOICES as readonly string[]).includes(value);
@@ -33,8 +36,28 @@ export function systemTheme(): Theme {
   return dark ? "dark" : "light";
 }
 
+/** The dark theme the person chose; a stored "Dim" choice from before this setting counts as Dim. */
+export function readDarkTheme(): DarkTheme {
+  try {
+    const value = localStorage.getItem(DARK_KEY);
+    if (value === "dark" || value === "dim") return value;
+    return localStorage.getItem(THEME_KEY) === "dim" ? "dim" : "dark";
+  } catch {
+    return "dark";
+  }
+}
+
+export function setDarkTheme(theme: DarkTheme): void {
+  try {
+    localStorage.setItem(DARK_KEY, theme);
+  } catch {
+    // Storage can be blocked; the choice then lasts for this visit only.
+  }
+}
+
 export function resolveTheme(choice: ThemeChoice): Theme {
-  return choice === "system" ? systemTheme() : choice;
+  if (choice !== "system") return choice;
+  return systemTheme() === "dark" ? readDarkTheme() : "light";
 }
 
 export function applyChoice(choice: ThemeChoice): void {

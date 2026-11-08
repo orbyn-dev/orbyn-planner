@@ -12,7 +12,14 @@
           t = localStorage.getItem("orbyn-planner.theme");
         } catch (e) {}
         if (t !== "light" && t !== "dark" && t !== "dim") {
-          t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          t = "light";
+          if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+            var d = null;
+            try {
+              d = localStorage.getItem("orbyn-planner.dark-theme");
+            } catch (e) {}
+            t = d === "dim" ? "dim" : "dark";
+          }
         }
         document.documentElement.setAttribute("data-theme", t);
       })();

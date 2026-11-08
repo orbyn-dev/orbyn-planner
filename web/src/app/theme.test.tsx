@@ -5,7 +5,7 @@ import html from "../../index.html?raw";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PrefsProvider } from "./prefs";
 import { SettingsPage } from "../features/settings/SettingsPage";
-import { applyChoice, chooseTheme, readStoredChoice, THEME_KEY, watchSystemTheme } from "./theme";
+import { applyChoice, chooseTheme, DARK_KEY, readDarkTheme, readStoredChoice, THEME_KEY, watchSystemTheme } from "./theme";
 
 function stubSystem(dark: boolean) {
   let listener: (() => void) | undefined;
@@ -28,13 +28,33 @@ function stubSystem(dark: boolean) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("theme", () => {
-  it("persists the choice and sets data-theme", async () => {
+  it("persists the choice and sets data-theme: Theme says Dark, Dark theme says which (Planner Designs v62 settings)", async () => {
     stubSystem(false);
     render(<PrefsProvider><SettingsPage /></PrefsProvider>);
-    await userEvent.click(screen.getByRole("radio", { name: "Dim" }));
+    const theme = within(screen.getByRole("radiogroup", { name: "Theme" }));
+    const dark = within(screen.getByRole("radiogroup", { name: "Dark theme" }));
+    expect(dark.getAllByRole("radio").map((r) => r.textContent)).toEqual(["Dark", "Dim"]);
+    await userEvent.click(dark.getByRole("radio", { name: "Dim" })); // System on a light system: stays light, remembers Dim
+    expect(document.documentElement.dataset.theme).toBe("light");
+    expect(localStorage.getItem(DARK_KEY)).toBe("dim");
+    await userEvent.click(theme.getByRole("radio", { name: "Dark" })); // Dark is the chosen dark theme: Dim
     expect(document.documentElement.dataset.theme).toBe("dim");
     expect(localStorage.getItem(THEME_KEY)).toBe("dim");
-    expect(screen.getByRole("radio", { name: "Dim" })).toBeChecked();
+    expect(theme.getByRole("radio", { name: "Dark" })).toBeChecked();
+    await userEvent.click(dark.getByRole("radio", { name: "Dark" }));
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(theme.getByRole("radio", { name: "Dark" })).toBeChecked();
+  });
+
+  it("System on a dark system uses the chosen dark theme, and a Dim chosen before this setting counts as Dim", () => {
+    stubSystem(true);
+    localStorage.setItem(DARK_KEY, "dim");
+    applyChoice("system");
+    expect(document.documentElement.dataset.theme).toBe("dim");
+    localStorage.clear();
+    firstRunDoneForTests();
+    localStorage.setItem(THEME_KEY, "dim");
+    expect(readDarkTheme()).toBe("dim");
   });
 
   it("defaults to the system and ignores junk in storage", () => {
@@ -59,10 +79,10 @@ describe("theme", () => {
     stop();
   });
 
-  it("offers System, Light, Dark and Dim", () => {
+  it("offers System, Light and Dark", () => {
     stubSystem(false);
     render(<PrefsProvider><SettingsPage /></PrefsProvider>);
-    expect(within(screen.getByRole("radiogroup", { name: "Theme" })).getAllByRole("radio").map((r) => r.textContent)).toEqual(["System", "Light", "Dark", "Dim"]);
+    expect(within(screen.getByRole("radiogroup", { name: "Theme" })).getAllByRole("radio").map((r) => r.textContent)).toEqual(["System", "Light", "Dark"]);
     expect(screen.getByRole("radio", { name: "System" })).toBeChecked();
   });
 });
@@ -87,6 +107,14 @@ describe("theme before first paint", () => {
     stubSystem(false);
     new Function(script)();
     expect(document.documentElement.dataset.theme).toBe("light");
+  });
+
+  it("uses the chosen dark theme when the system is dark and nothing else is chosen", () => {
+    stubSystem(true);
+    localStorage.setItem(DARK_KEY, "dim");
+    new Function(script)();
+    expect(document.documentElement.dataset.theme).toBe("dim");
+    localStorage.clear();
   });
 
   it("survives blocked storage", () => {
