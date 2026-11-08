@@ -200,8 +200,8 @@ async function ours(theme, size = SIZE[frame.kind], suffix = "") {
       await page.evaluate(({ from, over, drop }) => {
         const dt = new DataTransfer();
         const fire = (el, type) => el.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: dt }));
-        const card = document.querySelector(from);
-        const lane = document.querySelector(over);
+        const card = [...document.querySelectorAll(".tcard")].find((e) => e.textContent.includes(from));
+        const lane = [...document.querySelectorAll("section.lane")].find((e) => e.querySelector("h2")?.textContent.startsWith(over));
         fire(card, "dragstart");
         fire(lane, "dragenter");
         fire(lane, "dragover");

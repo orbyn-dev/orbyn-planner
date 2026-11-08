@@ -746,8 +746,8 @@
       },
       {
         "drag": {
-          "from": ".tcard:has-text(\"Fix the sign-up email bug\")",
-          "over": "section.lane:has(h2:has-text(\"Blocked\"))",
+          "from": "Fix the sign-up email bug",
+          "over": "Blocked",
           "drop": false
         }
       }
@@ -765,8 +765,8 @@
       },
       {
         "drag": {
-          "from": ".tcard:has-text(\"Reply to the school\")",
-          "over": "section.lane:has(h2:has-text(\"In progress\"))",
+          "from": "Reply to the school",
+          "over": "In progress",
           "drop": true
         }
       }
