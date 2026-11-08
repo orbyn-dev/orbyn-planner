@@ -60,6 +60,25 @@ describe("tags in the planner", () => {
     expect(within(panel).getByRole("button", { name: "Tags, bug, email" })).toHaveTextContent("bugemail+");
   });
 
+  it("in a list row the chips follow the title inside their own box, which gives way first in a narrow row, so they never sit over the title", async () => {
+    const { store, water } = await open();
+    await act(async () => {
+      store.setTaskTag(water.id, store.addTag("bug", "c1").id, true);
+      store.setTaskTag(water.id, store.addTag("email", "c2").id, true);
+    });
+    const wrap = row("water plants").querySelector(".ttwrap")!;
+    expect(Array.from(wrap.children).map((c) => c.className.split(" ")[0])).toEqual(["tt", "tagchips"]);
+    expect(wrap.querySelector(".tagchips")!.querySelectorAll(".tagchip")).toHaveLength(2);
+    // The rule that does it (jsdom has no layout): the chips box shrinks far faster than the title and clips instead of overflowing.
+    const nodeFs = "node:fs";
+    const fs = (await import(/* @vite-ignore */ nodeFs)) as { readFileSync(path: string, encoding: "utf8"): string };
+    const css = fs.readFileSync(`${(globalThis as { process?: { cwd(): string } }).process!.cwd()}/src/styles/app.css`, "utf8");
+    const i = css.indexOf(".ttwrap .tagchips {");
+    expect(i).toBeGreaterThan(-1);
+    expect(css.slice(i, css.indexOf("}", i))).toMatch(/flex: 0 20 auto; min-width: 0; overflow: hidden/);
+    expect(css.slice(css.indexOf(".ttwrap {"), css.indexOf("}", css.indexOf(".ttwrap {")))).toMatch(/overflow: hidden/);
+  });
+
   it("the popover has a search field, the existing tags with checkboxes and Create tag “…” when none has exactly that name; changes apply at once", async () => {
     const { store, water } = await open("/tasks", (s) => {
       s.addTag("errands", "c4");

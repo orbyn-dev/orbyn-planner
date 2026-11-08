@@ -492,8 +492,10 @@ button.pillx { border: 0; }
 .device-row b { align-items: center; }
 
 /* Tags: a small chip next to a task's title, and the row that manages them in the task panel */
-.ttwrap { display: flex; align-items: center; gap: var(--sp-8); min-width: 0; }
+.ttwrap { display: flex; align-items: center; gap: var(--sp-8); min-width: 0; overflow: hidden; }
 .ttwrap .tt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The title comes first: in a narrow row the chips give way (they shrink far faster than the title) and never sit over it or the next column. */
+.ttwrap .tagchips { display: flex; gap: var(--sp-6); flex: 0 20 auto; min-width: 0; overflow: hidden; }
 .tagchip { display: inline-flex; align-items: center; gap: var(--sp-5); height: var(--sp-20); padding: 0 var(--sp-8); border-radius: var(--r-pill); background: var(--raise); color: var(--t2); font-size: var(--fs-11-5); white-space: nowrap; flex: none; }
 .chip-x { border: 0; background: transparent; color: var(--t3); cursor: pointer; padding: 0 0 0 var(--sp-2); font: inherit; line-height: 1; }
 .chip-x:hover, .chip-x:focus-visible { color: var(--t1); }
