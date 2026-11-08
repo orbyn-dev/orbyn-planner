@@ -4,7 +4,7 @@ import { DuplicateTagName, LIST_COLOURS, type Tag } from "../../store/types";
 import { TAG_COLOUR_NAMES, tagLabels } from "../tasks/TagChips";
 import { Swatch } from "../tasks/TaskRow";
 
-function TagRow({ tag, label, uses }: { tag: Tag; label: string; uses: number }) {
+function TagRow({ tag, label }: { tag: Tag; label: string }) {
   const store = useStore();
   const [name, setName] = useState(tag.name);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +34,6 @@ function TagRow({ tag, label, uses }: { tag: Tag; label: string; uses: number })
           </button>
         ))}
       </div>
-      <span className="t3 tag-uses">{uses} {uses === 1 ? "task" : "tasks"}</span>
       <button type="button" className="ghost red" aria-label={`Delete tag ${tag.name}`} onClick={() => store.deleteTag(tag.id)}>Delete</button>
     </div>
   );
@@ -69,15 +68,9 @@ export function TagsSettings() {
     <>
       <div className="bh"><b>Your tags</b><span></span></div>
       <div className="card" style={{ gap: 0, padding: "0 var(--sp-14)" }}>
-        {live.length === 0 && (
-          <div className="tags-empty">
-            <b>No tags yet.</b>
-            <span className="t3">Add a tag from a task and it appears here, where you can rename it, change its colour or delete it.</span>
-          </div>
-        )}
-        {live.map((t) => <TagRow key={t.id} tag={t} label={labels.get(t.id) ?? t.name} uses={uses(t.id)} />)}
+        {live.length === 0 && <div className="kv" style={{ height: "var(--sp-44)" }}><span className="t3">No tags yet.</span></div>}
+        {live.map((t) => <TagRow key={t.id} tag={t} label={labels.get(t.id) ?? t.name} />)}
       </div>
-      {live.length > 0 && <span className="t3" style={{ fontSize: "var(--fs-12-5)" }}>Deleting a tag takes it off its tasks. The tasks stay.</span>}
       <div className="ctl" style={{ display: "flex", gap: "var(--sp-8)" }}>
         <input className="inp" aria-label="New tag name" placeholder="New tag" value={name} onChange={(e) => { setName(e.target.value); setAddError(null); }} onKeyDown={(e) => e.key === "Enter" && add()} />
         <button type="button" className="btn" onClick={add}>Add tag</button>

@@ -79,14 +79,6 @@ describe("tags in the planner", () => {
     expect(css.slice(css.indexOf(".ttwrap {"), css.indexOf("}", css.indexOf(".ttwrap {")))).toMatch(/overflow: hidden/);
   });
 
-  it("Settings · Tags with no tags says where tags come from (p-set-tags-empty)", async () => {
-    await open("/settings");
-    await userEvent.click(await screen.findByRole("button", { name: "Tags" }));
-    expect(screen.getByText("No tags yet.")).toBeInTheDocument();
-    expect(screen.getByText("Add a tag from a task and it appears here, where you can rename it, change its colour or delete it.")).toBeInTheDocument();
-    expect(screen.queryByText("Deleting a tag takes it off its tasks. The tasks stay.")).toBeNull();
-  });
-
   it("the popover has a search field, the existing tags with checkboxes and Create tag “…” when none has exactly that name; changes apply at once", async () => {
     const { store, water } = await open("/tasks", (s) => {
       s.addTag("errands", "c4");
@@ -139,9 +131,6 @@ describe("tags in the planner", () => {
     const tag = store.addTag("Errands", "c4");
     store.setTaskTag(mail.id, tag.id, true);
     await userEvent.click(await screen.findByRole("button", { name: "Tags" }));
-    // Planner Designs v62 p-set-tags: how many tasks use the tag, and the line about deleting.
-    expect(screen.getByText("1 task")).toBeInTheDocument();
-    expect(screen.getByText("Deleting a tag takes it off its tasks. The tasks stay.")).toBeInTheDocument();
     await userEvent.type(screen.getByRole("textbox", { name: "New tag name" }), "Later{Enter}");
     expect(screen.getByRole("textbox", { name: "Name of tag Later" })).toBeInTheDocument();
     await userEvent.type(screen.getByRole("textbox", { name: "New tag name" }), "later{Enter}");

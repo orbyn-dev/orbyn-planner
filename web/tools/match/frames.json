@@ -1844,27 +1844,5 @@
         "name": "Board"
       }
     ]
-  },
-  "p-set-tags": {
-    "kind": "desktop",
-    "design": "p-set-tags",
-    "route": "/settings",
-    "scenario": "task-panel-tags",
-    "steps": [
-      {
-        "click": "button.nav:has-text(\"Tags\")"
-      }
-    ]
-  },
-  "p-set-tags-empty": {
-    "kind": "desktop",
-    "design": "p-set-tags-empty",
-    "route": "/settings",
-    "scenario": "today",
-    "steps": [
-      {
-        "click": "button.nav:has-text(\"Tags\")"
-      }
-    ]
   }
 }
