@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { usePopover } from "../../components/usePopover";
 
 export interface CardLane {
@@ -33,6 +33,20 @@ export function CardMenu({ title, lanes, current, done, onOpen, onMarkDone, onMo
   };
   const pop = usePopover(open, close, anchor);
   const menu = useRef<HTMLDivElement>(null);
+  const row = useRef<HTMLDivElement>(null);
+  /** Both lists are placed on the screen, not inside the board, so a lane that scrolls or clips never cuts them off. */
+  const [place, setPlace] = useState<{ menu: CSSProperties; sub: CSSProperties } | null>(null);
+  useLayoutEffect(() => {
+    if (!open || !anchor.current) return setPlace(null);
+    const a = anchor.current.getBoundingClientRect();
+    const m = pop.current?.getBoundingClientRect();
+    const r = row.current?.getBoundingClientRect();
+    const left = Math.min(a.left, window.innerWidth - (m?.width ?? 176) - 8);
+    setPlace({
+      menu: { position: "fixed", top: a.bottom + 4, left: Math.max(8, left), right: "auto" },
+      sub: r && m ? { position: "fixed", top: r.top - 5, left: m.right + 4, right: "auto" } : {},
+    });
+  }, [open, moving, anchor, pop]);
   const items = () => [...(menu.current?.querySelectorAll<HTMLButtonElement>("[role^=menuitem]:not(:disabled)") ?? [])];
 
   useEffect(() => {
@@ -66,18 +80,18 @@ export function CardMenu({ title, lanes, current, done, onOpen, onMarkDone, onMo
         <span aria-hidden="true">…</span>
       </button>
       {open && (
-        <div ref={pop} className="card popover chip-menu card-menu">
+        <div ref={pop} className="card popover chip-menu card-menu" style={place?.menu}>
           <div ref={menu} role="menu" aria-label={`${title}`} onKeyDown={onKey}>
             <button type="button" role="menuitem" className="opt" onClick={() => { close(); onOpen(); }}>Open</button>
             <button type="button" role="menuitem" className="opt" disabled={done} onClick={() => { close(); onMarkDone(); }}>Mark done</button>
             <div className="cm-sep" role="separator" />
-            <div className="cm-row">
+            <div className="cm-row" ref={row}>
               <button type="button" role="menuitem" className="opt" data-sub="move" aria-haspopup="menu" aria-expanded={moving} onClick={() => setMoving(!moving)}>
                 <span>Move to</span>
                 <span className="k t3" aria-hidden="true">›</span>
               </button>
               {moving && (
-                <div className="card popover card-sub" role="menu" aria-label="Move to">
+                <div className="card popover card-sub" role="menu" aria-label="Move to" style={place?.sub}>
                   {lanes.map((l) => (
                     <button key={l.key} type="button" role="menuitemradio" aria-checked={l.key === current} disabled={l.key === current} className="opt" onClick={() => { close(); onMove(l.key); }}>
                       {l.key === current && (

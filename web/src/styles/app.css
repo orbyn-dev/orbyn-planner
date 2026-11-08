@@ -882,7 +882,7 @@ button.pillx { border: 0; }
 .card-menu .opt[aria-checked="true"] .k { font-family: var(--mono); font-size: var(--fs-10-5); }
 .cm-sep { height: var(--bw); margin: var(--sp-4) var(--sp-2); background: var(--line); }
 .cm-row { position: relative; }
-.card-sub { position: absolute; top: calc(-1 * var(--sp-5)); left: calc(100% + var(--sp-4)); right: auto; width: var(--sp-196); padding: var(--sp-5); display: flex; flex-direction: column; z-index: 6; }
+.card-sub { gap: 0; position: absolute; top: calc(-1 * var(--sp-5)); left: calc(100% + var(--sp-4)); right: auto; width: var(--sp-196); padding: var(--sp-5); display: flex; flex-direction: column; z-index: 6; }
 /* The hint under the board, for a keyboard user: shown while focus is on a card. */
 .board-hint { display: none; padding: 0 var(--sp-28); font-size: var(--fs-12-5); color: var(--t3); }
 .board:focus-within + .board-hint { display: block; }

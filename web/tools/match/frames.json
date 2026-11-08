@@ -772,7 +772,13 @@
         "press": "Alt+ArrowRight"
       },
       {
+        "wait": 200
+      },
+      {
         "press": "Alt+ArrowRight"
+      },
+      {
+        "wait": 200
       }
     ]
   },

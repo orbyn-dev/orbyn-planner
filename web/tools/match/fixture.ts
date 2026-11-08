@@ -136,7 +136,7 @@ function clearToday(store: PlannerStore): void {
 export function seed(store: PlannerStore, scenario: Scenario): void {
   // A first launch has nothing in it: the Inbox and the Personal calendar every planner starts with.
   if (scenario === "first-run") return;
-  const w = world(store, scenario !== "tasks");
+  const w = world(store, scenario !== "tasks" && scenario !== "board" && scenario !== "board-moved" && scenario !== "project-board");
   switch (scenario) {
     case "today":
       todayData(store, w);
