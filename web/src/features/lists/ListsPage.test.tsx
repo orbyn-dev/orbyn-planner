@@ -46,19 +46,26 @@ describe("Lists page", () => {
     expect(home.isInbox).toBe(false);
     expect(rows()).toEqual(["Inbox2", "Home0", "New list"]);
 
-    await userEvent.click(screen.getByRole("button", { name: "Rename" }));
+    await userEvent.click(screen.getByRole("button", { name: "More" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Rename" }));
     const name = screen.getByRole("textbox", { name: "List name" });
     await userEvent.clear(name);
     await userEvent.type(name, "House{Enter}");
     expect(store.getState().lists.find((l) => l.id === home.id)!.name).toBe("House");
 
+    await userEvent.click(screen.getByRole("button", { name: "More" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Colour" }));
     await userEvent.click(screen.getByRole("radio", { name: "Purple" }));
     expect(store.getState().lists.find((l) => l.id === home.id)!.colour).toBe("c3");
 
     await userEvent.click(within(nav).getByRole("button", { name: /^Inbox/ }));
     expect(screen.getByRole("button", { name: "one" })).toBeInTheDocument();
     expect(inbox.isInbox).toBe(true);
-    expect(screen.queryByRole("button", { name: "Rename" })).not.toBeInTheDocument();
+    // The Inbox keeps its name and colour: its menu has only Completed and deleted.
+    await userEvent.click(screen.getByRole("button", { name: "More" }));
+    expect(screen.queryByRole("menuitem", { name: "Rename" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Colour" })).not.toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Completed and deleted" })).toHaveAttribute("href", "/completed");
   });
 });
 
@@ -90,14 +97,14 @@ describe("Lists states (Planner Designs p-lists-empty, p-lists-loading, p-lists-
     await userEvent.click(await screen.findByRole("button", { name: /Errands/ }));
     expect(await screen.findByRole("heading", { name: "No tasks in Errands" })).toBeInTheDocument();
     expect(screen.getByText("Add the first one, or move a task here from another list.")).toBeInTheDocument();
-    expect(screen.getByText("Nothing here")).toBeInTheDocument();
+    expect(screen.getByText("0 open")).toBeInTheDocument();
     const field = screen.getByRole("textbox", { name: "Add a task" });
     expect(field).toHaveAttribute("placeholder", "Add a task: Post the parcel tomorrow");
     await userEvent.type(field, "Post the parcel{Enter}");
     await waitFor(() => expect(store.getState().tasks.find((t) => t.title === "Post the parcel")?.listId).toBe(errands.id));
   });
 
-  it("offline, the sub line says so, the pill counts the waiting changes, and a row says its change has not left the device", async () => {
+  it("offline, the sub line says so, and a row says its change has not left the device", async () => {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
     try {
       const store = await open("/lists");
@@ -106,7 +113,7 @@ describe("Lists states (Planner Designs p-lists-empty, p-lists-loading, p-lists-
       });
       expect(await screen.findByText("1 open · offline")).toBeInTheDocument();
       expect(screen.getByText("You’re offline. Everything here is saved on this device and will sync when you’re back.")).toBeInTheDocument();
-      expect(document.querySelector(".ph .pillx")!.textContent).toMatch(/^Offline/);
+      expect(document.querySelector(".ph .pillx")).toBeNull(); // the sync state is global, not part of the list header
       expect(screen.getByText("Not synced yet")).toBeInTheDocument();
     } finally {
       vi.restoreAllMocks();
@@ -132,5 +139,38 @@ describe("Lists states (Planner Designs p-lists-empty, p-lists-loading, p-lists-
     await userEvent.click(screen.getByRole("button", { name: "Open another list" }));
     expect(retry).toHaveBeenCalledTimes(1);
     expect(other).toHaveBeenCalledTimes(1);
+  });
+
+  it("the header is the dot and name, the open count, Add a task and a … menu; clicking the name renames, and done tasks are not counted", async () => {
+    const store = await open("/lists");
+    const home = store.addList("Home", "c4");
+    act(() => {
+      store.addTask({ title: "open one", listId: home.id });
+      const done = store.addTask({ title: "done one", listId: home.id });
+      store.setDone(done.id, true);
+    });
+    await userEvent.click(await screen.findByRole("button", { name: /Home/ }));
+    const header = document.querySelector(".ph")!;
+    expect(within(header as HTMLElement).getByText("1 open")).toBeInTheDocument(); // the done row is not counted
+    expect([...header.querySelectorAll(".acts button")].map((e) => e.getAttribute("aria-label") ?? e.textContent?.trim())).toEqual(["More", "Add a task"]);
+    expect(within(header as HTMLElement).queryByRole("radiogroup", { name: "Colour" })).toBeNull(); // the colour row is in the menu
+    expect(within(header as HTMLElement).queryByRole("link", { name: "Completed and deleted" })).toBeNull();
+    await userEvent.click(within(header as HTMLElement).getByRole("button", { name: "Home" })); // the name
+    const name = screen.getByRole("textbox", { name: "List name" });
+    await userEvent.clear(name);
+    await userEvent.type(name, "House{Enter}");
+    expect(store.getState().lists.find((l) => l.id === home.id)!.name).toBe("House");
+  });
+
+  it("the … menu lists Rename, Colour and Completed and deleted; Escape closes it and focus returns to the button", async () => {
+    const store = await open("/lists");
+    store.addList("Home", "c4");
+    await userEvent.click(await screen.findByRole("button", { name: /Home/ }));
+    const more = screen.getByRole("button", { name: "More" });
+    await userEvent.click(more);
+    expect(within(screen.getByRole("menu", { name: "List menu" })).getAllByRole("menuitem").map((i) => i.textContent)).toEqual(["Rename", "Colour", "Completed and deleted"]);
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("menu", { name: "List menu" })).toBeNull();
+    expect(more).toHaveFocus();
   });
 });

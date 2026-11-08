@@ -30,9 +30,9 @@ describe("view options", () => {
 
   it("board lanes: Done lane is optional and cards follow the lane sort", () => {
     const all = [...ts, task({ title: "d", done: true })];
-    expect(lanesFor(all, DEFAULT_VIEW_OPTIONS).map((l) => l.label)).toEqual(["To do", "Done"]);
+    expect(lanesFor(all, DEFAULT_VIEW_OPTIONS).map((l) => l.label)).toEqual(["To do", "In progress", "Blocked", "Done"]);
     const lanes = lanesFor(all, { ...DEFAULT_VIEW_OPTIONS, showDone: false, boardSort: "priority" });
-    expect(lanes).toHaveLength(1);
+    expect(lanes.map((l) => l.lane)).toEqual(["todo", "in_progress", "blocked"]);
     expect(titles(lanes[0]!.tasks)).toEqual(["a", "c", "b"]);
   });
 

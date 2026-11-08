@@ -1,0 +1,29 @@
+import { useNow } from "../../app/clock";
+import { useUi } from "../../app/ui";
+import { useStore } from "../../store/context";
+import { LANE_LABELS, laneOf, moveTo, type Lane } from "../../store/taskStatus";
+import { undoableTasks } from "../../store/taskRepeat";
+import type { Task } from "../../store/types";
+
+/**
+ * Moves a card to a lane of the Tasks board (the contract in `taskStatus.ts`). Out of Done the card is no longer done and takes the lane's
+ * status, and a quiet toast says where it went, with Undo (Planner Designs p-board-from-done); to Done it says "Marked done." with Undo.
+ * Undo puts the exact earlier status, done and done time back in one write. A repeating task moved to Done goes to its next date, in To do.
+ */
+export function useMoveTask() {
+  const store = useStore();
+  const ui = useUi();
+  const now = useNow();
+  return (task: Task, lane: Lane) => {
+    const from = laneOf(task);
+    if (from === lane) return;
+    const stamp = new Date(now).toISOString();
+    if (lane === "done" && task.repeat) {
+      store.setDone(task.id, true);
+      return;
+    }
+    const { undo } = undoableTasks(store, () => store.updateTask(task.id, moveTo(task, lane, stamp)));
+    if (from === "done") ui.showToast(`Moved “${task.title}” to ${LANE_LABELS[lane]}`, undo, { focusRowOnUndo: task.id });
+    else if (lane === "done") ui.showToast("Marked done.", undo, { focusRowOnUndo: task.id, ms: 5_000 });
+  };
+}

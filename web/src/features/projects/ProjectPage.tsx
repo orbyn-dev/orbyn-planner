@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { statusOf } from "../../store/taskStatus";
 import { useNow } from "../../app/clock";
 import { usePrefs } from "../../app/prefs";
 import { Link } from "../../app/router";
@@ -182,7 +183,7 @@ function BoardTab({ project }: { project: Project }) {
   const visible = lanes.filter((l) => l.sectionId !== null || l.tasks.length > 0 || lanes.length === 1);
   const finished = tasksOf(tasks, project.id).filter((t) => t.done);
   const all: { key: string; name: string; tasks: Task[]; done?: boolean }[] = [
-    ...visible.map((l) => ({ key: l.sectionId ?? "none", name: l.name === "Tasks" ? "To do" : l.name, tasks: l.tasks })),
+    ...visible.map((l) => ({ key: l.sectionId ?? "none", name: l.name, tasks: l.tasks })), // a project with no sections has one "Tasks" lane (the status lanes belong to the Tasks board)
     { key: "done", name: "Done", tasks: finished, done: true },
   ];
   return (
@@ -193,7 +194,7 @@ function BoardTab({ project }: { project: Project }) {
           <ul className="cards">
             {lane.tasks.map((t) => (
               <li className="tcard" key={t.id} data-row-id={t.id} data-done={t.done}>
-                <button type="button" className="tt link-btn" onClick={() => open(t.id)}>{t.title}</button>
+                <button type="button" className="tt link-btn" onClick={() => open(t.id)}>{t.title}{!t.done && statusOf(t) === "blocked" && <span className="t3"> · Blocked</span>}</button>
                 <span className="m" style={needsAction(t, now) ? { color: "var(--amber-text)" } : undefined}>{t.done ? "Done" : t.due ? formatDue(t.due, now) : ""}</span>
                 <MoveMenu task={t} project={project} />
               </li>
