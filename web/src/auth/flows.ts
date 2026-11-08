@@ -486,9 +486,11 @@ async function bindKeys(services: AuthServices, keys: DeviceKeys, existing: bool
 /**
  * Signs this device out. The session is forgotten here even if the server cannot be reached, and the
  * other tabs are told. Then the device is forgotten too: its keys, the engine's saved state (bound to
- * them) and the wrapping key go together. If that fails, the person is told.
+ * them) and the wrapping key go together. If that fails, the person is told. With `keepDevice` (the
+ * person kept their data on this browser) the device stays, so the next sign-in of the same account
+ * is this same trusted device; only the session goes.
  */
-export async function signOut(services: AuthServices): Promise<void> {
+export async function signOut(services: AuthServices, options: { keepDevice?: boolean } = {}): Promise<void> {
   try {
     await services.api.signOut();
   } catch {
@@ -496,6 +498,8 @@ export async function signOut(services: AuthServices): Promise<void> {
   }
   await services.tokens.clear();
   services.signedOut.post();
+  // Keep on this browser: the device's keys stay with the kept data, so signing back in is the same trusted device (no approval).
+  if (options.keepDevice) return;
   try {
     await services.engine.forget();
   } catch {
