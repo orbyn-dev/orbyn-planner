@@ -58,7 +58,7 @@ export function InviteStep({ onAccepted, go }: { onAccepted: (invite: string) =>
 
   const refused = phase === "refused";
   return (
-    <form className="authcard invite" onSubmit={(e) => void submit(e)} aria-label="Sign up with an invite" noValidate>
+    <form className="authcard invite step-card" onSubmit={(e) => void submit(e)} aria-label="Sign up with an invite" noValidate>
       <StepBar step={1} label="Invite code" />
       <h1 className="auth-title">Orbyn is invite-only for now</h1>
       {phase === "limited" && <div className="banner warn" role="alert"><Icon name="clock" small />{LIMITED}</div>}

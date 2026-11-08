@@ -954,3 +954,7 @@ button.pillx { border: 0; }
 .scope-row small { display: block; font-size: var(--fs-12); margin-top: var(--sp-2); }
 .scope-radio { position: relative; flex: none; width: var(--sp-14); height: var(--sp-14); margin-top: var(--sp-2); border-radius: var(--r-pill); border: var(--bw-1-5) solid var(--t1); }
 .scope-row[aria-checked="true"] .scope-radio::after { content: ""; position: absolute; inset: var(--sp-2); border-radius: var(--r-pill); background: var(--t1); }
+/* Sign-up steps 1 and 3 and the verify frames draw their card 400 px wide (p-signup-invite-*, verify, p-verify-*); step 2 keeps the default. */
+.authcard.step-card { width: var(--sp-400); }
+.invite .quiet-link { font-size: var(--fs-12); }
+.invite .field:disabled { opacity: .55; }
