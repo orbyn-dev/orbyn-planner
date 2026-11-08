@@ -37,7 +37,7 @@ describe("the stand-in sealing used by tests", () => {
     const sealed = fakeSeal(wrap, "snapshot", plain);
     expect(Array.from(fakeOpen(wrap, "snapshot", sealed))).toEqual(Array.from(plain));
     const changed = sealed.slice();
-    changed[changed.length - 1] ^= 1;
+    changed[changed.length - 1] = changed[changed.length - 1]! ^ 1;
     expect(() => fakeOpen(wrap, "snapshot", changed)).toThrow(/open_failed/);
     expect(() => fakeOpen(wrap, "keys", sealed)).toThrow(/open_failed/);
   });
