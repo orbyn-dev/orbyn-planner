@@ -510,6 +510,7 @@ button.pillx { border: 0; }
 .banner { display: flex; align-items: center; gap: var(--sp-12); padding: var(--sp-10) var(--sp-14); border-radius: var(--r-14); background: var(--raise); color: var(--t1); font-size: var(--fs-12-5); }
 .banner.warn { background: var(--amber-bg); box-shadow: var(--ring-amber); }
 .banner.info { background: var(--blue-bg); }
+.banner.err { background: var(--red-bg); }
 .banner .end { margin-left: auto; display: flex; gap: var(--sp-6); }
 .srow { display: flex; align-items: center; gap: var(--sp-16); min-height: var(--sp-52); border-top: var(--bw) solid var(--line); border-bottom: var(--bw) solid var(--line); padding: var(--sp-8) 0; }
 .srow .lab2 { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
@@ -926,3 +927,8 @@ button.pillx { border: 0; }
 .cfield input { width: 100%; height: 100%; border: 0; padding: 0; background: transparent; color: var(--t1); font-family: var(--mono); font-size: var(--fs-20); letter-spacing: .12em; text-transform: uppercase; outline: none; }
 .cfield input::placeholder { color: var(--t3); letter-spacing: .12em; }
 .banner .end .ghost { white-space: nowrap; }
+
+/* Calendar loading and sync error (Planner Designs p-cal-loading, p-cal-sync-error). */
+.cal-loading { padding: 0 var(--sp-28) var(--sp-4); }
+.cal-loading-line { display: inline-flex; align-items: center; gap: var(--sp-8); }
+.cal-banners { display: flex; flex-direction: column; gap: var(--sp-6); padding: var(--sp-4) var(--sp-28) 0; }

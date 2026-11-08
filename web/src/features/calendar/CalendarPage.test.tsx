@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import { firstRunDoneForTests } from "../../test-setup";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -738,5 +738,52 @@ describe("a move the repeat cannot say", () => {
     await userEvent.click(screen.getByRole("button", { name: /^All events/ }));
     expect(await within(panel).findByRole("alert")).toHaveTextContent("some of its days would fall in a different week of the cycle");
     expect(store.getState().events[0]!.start).toBe("2026-11-07T09:00");
+  });
+});
+
+describe("Calendar loading and sync error (Planner Designs p-cal-loading, p-cal-sync-error)", () => {
+  it("loading: the header and grid are there at once, nothing shows for 400 ms, then Loading this week’s events", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      window.history.replaceState(null, "", "/calendar");
+      vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new Error("offline"))));
+      const store = new LocalStore({ persistence: new MemoryPersistence(), now: () => NOW });
+      await store.ready;
+      const notReady = { ...store.getState(), ready: false }; // one object: a new one each call would loop
+      const loading = Object.assign(Object.create(store) as LocalStore, { getState: () => notReady });
+      render(<ClockProvider value={() => NOW}><App store={loading} /></ClockProvider>);
+      expect(screen.getByRole("button", { name: "New event" })).toBeInTheDocument(); // the header stays
+      expect(screen.queryByText("Loading this week’s events")).toBeNull();
+      await act(async () => void (await vi.advanceTimersByTimeAsync(450)));
+      expect(screen.getByText("Loading this week’s events")).toHaveAttribute("role", "status");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a calendar from outside Orbyn that failed to sync says so with when its events are from; Try again reads it again", async () => {
+    let id = "";
+    await open({
+      seed: (s) => {
+        const c = s.addSubscription("School holidays", "c3", "https://example.com/school.ics");
+        id = c.id;
+        s.replaceFeedEvents(c.id, []);
+        s.failSubscription(c.id, "The calendar’s server took too long to answer.");
+      },
+    });
+    const banner = await screen.findByRole("alert");
+    expect(banner).toHaveTextContent("Couldn’t sync School holidays, a calendar from outside Orbyn. Showing what it had at 10:00.");
+    expect(banner).toHaveClass("banner", "err");
+    expect(within(banner).getByRole("button", { name: "Open settings" })).toBeInTheDocument();
+    const fetched = vi.mocked(fetch);
+    fetched.mockClear();
+    await userEvent.click(within(banner).getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(fetched).toHaveBeenCalledWith("https://example.com/school.ics", expect.anything()));
+    expect(id).not.toBe("");
+  });
+
+  it("no banner when every calendar synced", async () => {
+    await open({ seed: (s) => { const c = s.addSubscription("School holidays", "c3", "https://example.com/school.ics"); s.replaceFeedEvents(c.id, []); } });
+    expect(screen.queryByText(/Couldn’t sync/)).toBeNull();
   });
 });

@@ -149,6 +149,25 @@
       }
     ]
   },
+  "p-cal-loading": {
+    "kind": "desktop",
+    "design": "p-cal-loading",
+    "route": "/calendar",
+    "scenario": "week",
+    "loading": true,
+    "steps": [
+      {
+        "wait": 700
+      }
+    ]
+  },
+  "p-cal-sync-error": {
+    "kind": "desktop",
+    "design": "p-cal-sync-error",
+    "route": "/calendar",
+    "scenario": "week-sync-error",
+    "now": "2026-11-07T08:12:00.000Z"
+  },
   "p-cal-calendars-popover": {
     "design": "p-cal-calendars-popover",
     "kind": "desktop",

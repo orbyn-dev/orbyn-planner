@@ -42,6 +42,7 @@ export const SCENARIOS = [
   "task-panel-progress",
   "task-panel-blocked",
   "search-data",
+  "week-sync-error",
 ] as const;
 export type Scenario = (typeof SCENARIOS)[number];
 
@@ -140,6 +141,14 @@ function clearToday(store: PlannerStore): void {
 export function seed(store: PlannerStore, scenario: Scenario): void {
   // A first launch has nothing in it: the Inbox and the Personal calendar every planner starts with.
   if (scenario === "first-run") return;
+  if (scenario === "week-sync-error") {
+    // The week, plus a calendar from outside Orbyn that read once and then failed (p-cal-sync-error).
+    seed(store, "week");
+    const holidays = store.addSubscription("School holidays", "c4", "https://calendar.example.com/school.ics");
+    store.replaceFeedEvents(holidays.id, []);
+    store.failSubscription(holidays.id, "The calendar’s server took too long to answer.");
+    return;
+  }
   const w = world(store, scenario !== "tasks" && scenario !== "board" && scenario !== "board-moved" && scenario !== "project-board");
   switch (scenario) {
     case "today":

@@ -18,6 +18,8 @@ export interface MatchOptions {
   now?: string;
   /** Draw the planner signed in to the pretend account (the default); false is the planner of this device alone. */
   account?: boolean | "out";
+  /** Draw the planner while it is still opening (a store that is not ready), for the loading frames. */
+  loading?: boolean;
 }
 
 /** An in-memory planner with one scenario seeded and every change acknowledged, so the screen shows a settled planner. Nothing is stored or sent. */
@@ -38,8 +40,11 @@ export async function seededStore(scenario: Scenario, pinned: string = PINNED_NO
 }
 
 /** Renders the planner (no accounts, no engine) on a seeded store at the pinned time. */
-export async function mountMatch(root: Root, { scenario, route, theme, now = PINNED_NOW, account = true }: MatchOptions): Promise<void> {
-  const store = await seededStore(scenario, now);
+export async function mountMatch(root: Root, { scenario, route, theme, now = PINNED_NOW, account = true, loading = false }: MatchOptions): Promise<void> {
+  const seeded = await seededStore(scenario, now);
+  // A loading frame shows the planner before its data is here: the same store, reporting that it is not ready (one object, so React sees a stable snapshot).
+  const notReady = { ...seeded.getState(), ready: false, events: [], tasks: [] };
+  const store = loading ? Object.assign(Object.create(seeded) as LocalStore, { getState: () => notReady }) : seeded;
   // The match runner's steps can change the store (a task deleted on "another device") through this.
   (window as unknown as { __match: unknown }).__match = store;
   let auth: AuthServices | undefined;
