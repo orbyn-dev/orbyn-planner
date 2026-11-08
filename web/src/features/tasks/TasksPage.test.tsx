@@ -138,6 +138,13 @@ describe("Tasks page", () => {
     expect(screen.getAllByRole("progressbar")).toHaveLength(1);
   });
 
+  it("a board card's title keeps the whole width: the … button does not reserve room beside it (work-board)", async () => {
+    const nodeFs = "node:fs";
+    const fs = (await import(/* @vite-ignore */ nodeFs)) as { readFileSync(path: string, encoding: "utf8"): string };
+    const css = fs.readFileSync(`${(globalThis as { process?: { cwd(): string } }).process!.cwd()}/src/styles/app.css`, "utf8");
+    expect(css).not.toMatch(/\.tcard:has\(\.card-more\) \.tt \{[^}]*padding-right/);
+  });
+
   it("shows the board lanes", async () => {
     const { field } = await openTasks();
     await add(field, "card");
