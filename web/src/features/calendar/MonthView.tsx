@@ -20,6 +20,8 @@ export function MonthView({ days, anchor, occurrences, today, weekStart, onDay }
   const ui = useUi();
   const month = dateOf(anchor).getMonth();
   const order = weekOrder(weekStart);
+  /** The days after the month's last day are drawn as empty cells: only the days before the first one show their numbers (Planner Designs v49 calendar-month). */
+  const lastOfMonth = dateKey(new Date(dateOf(anchor).getFullYear(), month + 1, 0));
   // Hide a sixth week that falls wholly in the next month.
   const shownDays = days.slice(0, 35).concat(dateOf(days[35]!).getMonth() === month ? days.slice(35) : []);
 
@@ -33,7 +35,7 @@ export function MonthView({ days, anchor, occurrences, today, weekStart, onDay }
     if (step !== undefined) {
       event.preventDefault();
       const next = dateKey(addDays(dateOf(day), step));
-      if (shownDays.includes(next)) {
+      if (shownDays.includes(next) && next <= lastOfMonth) {
         setFocusDay(next);
         event.currentTarget.parentElement?.parentElement?.querySelector<HTMLElement>(`[data-day="${next}"]`)?.focus();
       }
@@ -57,6 +59,7 @@ export function MonthView({ days, anchor, occurrences, today, weekStart, onDay }
           {week.map((day) => {
             const date = dateOf(day);
             const inMonth = date.getMonth() === month;
+            if (day > lastOfMonth) return <div className="md after" role="gridcell" aria-hidden="true" key={day} />;
             const here = occurrences.filter((o) => touchesDay(o, day));
             const classes = ["md", day === today ? "today" : "", inMonth ? "" : "out"].filter(Boolean).join(" ");
             return (

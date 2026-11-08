@@ -121,6 +121,8 @@ button { cursor: pointer; }
 .row .time.amber { color: var(--amber-text); }
 .row .what { color: var(--t1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row .meta { font-size: var(--fs-12); color: var(--t3); }
+/* The Agenda: a day's first row is 12 px under its header and the rows repeat every 52 px (Planner Designs v49 calendar-agenda). */
+.agenda-rows { display: flex; flex-direction: column; gap: var(--sp-14); margin-top: var(--sp-12); }
 /* A long day: the list scrolls inside the page and the week column stays in view (Today only). */
 @media (min-width: 768px) {
   .today-cols { flex: 1; overflow: hidden; }
@@ -416,6 +418,7 @@ button.pillx { border: 0; }
 .md .n { color: var(--t3); align-self: flex-start; background: none; border: 0; padding: 0; font-size: var(--fs-11-5); }
 .md.today .n { display: inline-grid; place-items: center; width: var(--sp-20); height: var(--sp-20); border-radius: var(--r-pill); background: var(--btn); color: var(--btnt); }
 .md.out .n { color: var(--t3); }
+.md.after, .md.after:nth-child(7n) { border: 0; }
 .more-link { color: var(--t3); background: none; border: 0; padding: 0; text-align: left; font-size: var(--fs-11-5); }
 .ph .acts .ghost.icon { padding: 0; width: var(--sp-30); justify-content: center; }
 .modal-back .authcard.wide { width: var(--sp-520); }
