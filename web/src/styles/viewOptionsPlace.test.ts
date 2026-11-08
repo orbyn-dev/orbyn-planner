@@ -11,7 +11,7 @@ const rule = (selector: string) => {
 
 describe("The View options popover place (Planner Designs v49 p-view-options-list, p-view-options-board)", () => {
   it("hangs from the right edge of the header buttons, 40 px under their top, not from the View options button", () => {
-    expect(rule(".ph .acts")).toContain("position: relative");
+    expect(css).toContain("\n.ph .acts { position: relative; }");
     expect(rule(".vo-wrap")).toContain("position: static");
     expect(rule(".vo-wrap .view-options")).toContain("top: calc(var(--sp-30) + var(--sp-10))");
   });
