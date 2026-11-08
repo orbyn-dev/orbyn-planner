@@ -133,7 +133,7 @@ button { cursor: pointer; }
 .sw { width: var(--sp-8); height: var(--sp-8); border-radius: var(--r-3); display: inline-block; }
 
 .empty { flex: 1; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: var(--sp-10); padding: 0 var(--sp-28) var(--sp-40); }
-.empty h2 { font-size: var(--fs-18); font-weight: var(--fw-medium); color: var(--t1); }
+.empty h2, .empty h4 { font-size: var(--fs-18); font-weight: var(--fw-medium); color: var(--t1); margin: 0; }
 .empty p { color: var(--t3); }
 .blk .empty { flex: none; padding: calc(var(--sp-20) + var(--sp-48) + var(--sp-3)) 0 var(--sp-20); }
 .blk .empty .btn { margin-top: var(--sp-6); }
@@ -911,3 +911,6 @@ button.pillx { border: 0; }
 /* The task panel when its task is not there (Planner Designs p-task-loading, p-task-error). */
 .task-panel .line, .card.red-ring .line { display: flex; align-items: center; gap: var(--sp-8); }
 .task-panel > .card.red-ring { gap: var(--sp-8); margin: var(--sp-16); }
+/* Notifications, all caught up: centred, near the top of the page (Planner Designs p-notif-empty). */
+.notif-empty { align-items: center; justify-content: flex-start; text-align: center; padding-top: var(--sp-80); }
+.notif-empty .empty-actions { display: flex; gap: var(--sp-8); margin-top: var(--sp-6); }

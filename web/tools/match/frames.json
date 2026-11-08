@@ -371,7 +371,7 @@
       },
       {
         "fill": ".when input.field",
-        "value": "Fri 14:00\u201315:00"
+        "value": "Fri 14:00–15:00"
       }
     ]
   },
@@ -864,17 +864,16 @@
     ]
   },
   "search": {
-    "kind": "desktop",
     "design": "search",
+    "kind": "desktop",
     "route": "/today",
-    "scenario": "search-data",
+    "scenario": "today",
     "steps": [
       {
-        "role": "button",
-        "name": "Search or add"
+        "press": "Control+k"
       },
       {
-        "fill": "[role=\"dialog\"] input",
+        "fill": "input[role=combobox]",
         "value": "dentist friday 3pm"
       }
     ]
@@ -914,8 +913,8 @@
     "scenario": "today"
   },
   "p-notif-empty": {
-    "kind": "desktop",
     "design": "p-notif-empty",
+    "kind": "desktop",
     "route": "/notifications",
     "scenario": "today-empty"
   },
@@ -1054,7 +1053,7 @@
       },
       {
         "role": "button",
-        "name": "Export\u2026"
+        "name": "Export…"
       }
     ]
   },

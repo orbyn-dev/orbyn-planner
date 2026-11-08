@@ -73,7 +73,7 @@ describe("Search or add", () => {
     await userEvent.type(screen.getByRole("combobox", { name: "Search or add" }), "call mum friday 3pm #errands !high");
     await userEvent.keyboard("{ArrowDown}{Enter}"); // the event is first when a time is written; the task is second
     await waitFor(() => expect(store.getState().tasks).toHaveLength(3));
-    const added = store.getState().tasks.find((t) => t.title === "call mum")!;
+    const added = store.getState().tasks.find((t) => t.title === "Call mum")!;
     expect(added).toMatchObject({ due: "2026-11-13T15:00", priority: "high", listId: errands.id });
     expect(screen.queryByRole("dialog", { name: "Search or add" })).not.toBeInTheDocument();
   });
@@ -109,7 +109,7 @@ describe("Search or add", () => {
     await open();
     await userEvent.keyboard("{Control>}k{/Control}");
     await userEvent.type(screen.getByRole("combobox", { name: "Search or add" }), "dentist friday 3pm");
-    expect(options().slice(0, 2)).toEqual(["Add event “dentist” · Fri 13 Nov, 15:00", "Add task “dentist” · due Fri 13 Nov"]);
+    expect(options().slice(0, 2)).toEqual(["Add event “Dentist” · Fri 13 Nov, 15:00", "Add task “Dentist” · due Fri 13 Nov"]);
     expect(screen.getByText("Enter to add")).toBeInTheDocument();
     expect(screen.getAllByRole("option")[0]).toHaveAttribute("aria-selected", "true");
   });
@@ -119,7 +119,7 @@ describe("Search or add", () => {
     await userEvent.keyboard("{Control>}k{/Control}");
     await userEvent.type(screen.getByRole("combobox", { name: "Search or add" }), "call dentist friday 3pm{Enter}");
     await waitFor(() => expect(store.getState().events).toHaveLength(1));
-    expect(store.getState().events[0]).toMatchObject({ title: "call dentist", start: "2026-11-13T15:00", end: "2026-11-13T16:00", allDay: false });
+    expect(store.getState().events[0]).toMatchObject({ title: "Call dentist", start: "2026-11-13T15:00", end: "2026-11-13T16:00", allDay: false });
   });
 
   it("an event with no day or time opens the New event card with the title in", async () => {
@@ -169,5 +169,33 @@ describe("Search or add", () => {
     const note = screen.getByText("No results for “plumber invoice”").parentElement!;
     expect(note).toHaveTextContent("No results for “plumber invoice”");
     expect(note).toHaveTextContent("Nothing in tasks, events, lists or projects matches. Search covers completed tasks and the last 30 days of deleted ones.");
+  });
+
+  it("searches the words, not the date written after them: dentist friday 3pm lists Tasks, Calendar and Lists matching dentist", async () => {
+    const { store } = await open();
+    store.addEvent({ title: "Dentist check-up", start: "2026-08-14T10:00", end: "2026-08-14T11:00" });
+    store.addList("Dentist notes", "c2");
+    await userEvent.keyboard("{Control>}k{/Control}");
+    await userEvent.type(screen.getByRole("combobox", { name: "Search or add" }), "dentist friday 3pm");
+    const dialog = screen.getByRole("dialog", { name: "Search or add" });
+    const groups = Array.from(dialog.querySelectorAll(".grp")).map((g) => g.textContent);
+    expect(groups).toEqual(["Add", "Tasks", "Calendar", "Lists"]);
+    expect(within(dialog).getByText("Book the dentist")).toBeInTheDocument(); // the open() planner already has this task
+    expect(within(dialog).getByText(/Dentist check-up/)).toBeInTheDocument();
+    expect(within(dialog).getByText("Dentist notes")).toBeInTheDocument();
+  });
+
+  it("has no Keep as typed box: the dialog is the field and its rows", async () => {
+    await open();
+    await userEvent.keyboard("{Control>}k{/Control}");
+    await userEvent.type(screen.getByRole("combobox", { name: "Search or add" }), "dentist friday 3pm");
+    expect(screen.queryByRole("checkbox", { name: /Keep as typed/ })).toBeNull();
+  });
+
+  it("typed words with nothing read out of them stay as typed", async () => {
+    await open();
+    await userEvent.keyboard("{Control>}k{/Control}");
+    await userEvent.type(screen.getByRole("combobox", { name: "Search or add" }), "plumber invoice");
+    expect(options()).toEqual(["Add task “plumber invoice”", "Add event “plumber invoice”"]);
   });
 });
