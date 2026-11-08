@@ -6,7 +6,7 @@ import { useUi } from "../../app/ui";
 import { useAuth } from "../../auth/AuthProvider";
 import { initialsOf } from "../../app/initials";
 import { PHONE_QUERY, useMediaQuery } from "../../components/useMediaQuery";
-import { motionMs } from "../../styles/tokens";
+import { useSlow } from "../../lib/useSlow";
 import { projectStats } from "../projects/stats";
 import { PageHeader } from "../../components/EmptyState";
 import { Icon } from "../../components/Icon";
@@ -63,20 +63,6 @@ function useProgressive(total: number): number {
     return () => cancelAnimationFrame(frame);
   }, [shown, total]);
   return Math.min(shown, total);
-}
-
-/** True once `active` has lasted 400 ms: a quick load never flashes a skeleton. */
-function useSlow(active: boolean): boolean {
-  const [slow, setSlow] = useState(false);
-  useEffect(() => {
-    if (!active) return;
-    const timer = setTimeout(() => setSlow(true), motionMs("wait"));
-    return () => {
-      clearTimeout(timer);
-      setSlow(false);
-    };
-  }, [active]);
-  return active && slow;
 }
 
 /** Where a row stands in a list drawn in steps, for a screen reader; a list that fits in the first rows needs no such thing. */

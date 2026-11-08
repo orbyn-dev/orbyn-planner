@@ -908,3 +908,6 @@ button.pillx { border: 0; }
 .tag-opt { height: var(--sp-30); padding: 0 var(--sp-9); gap: var(--sp-9); cursor: pointer; }
 .tag-opt:has(input:disabled) { color: var(--t3); cursor: default; }
 .tags-pop .opt .k { margin-left: auto; font-family: var(--mono); font-size: var(--fs-10-5); }
+/* The task panel when its task is not there (Planner Designs p-task-loading, p-task-error). */
+.task-panel .line, .card.red-ring .line { display: flex; align-items: center; gap: var(--sp-8); }
+.task-panel > .card.red-ring { gap: var(--sp-8); margin: var(--sp-16); }

@@ -848,5 +848,19 @@
         "value": "er"
       }
     ]
+  },
+  "p-task-error": {
+    "kind": "desktop",
+    "design": "p-task-error",
+    "route": "/tasks",
+    "scenario": "task-panel",
+    "steps": [
+      {
+        "click": "button:has-text(\"Fix the sign-up email bug\")"
+      },
+      {
+        "eval": "(() => { const s = window.__match; const t = s.getState().tasks.find((x) => x.title === 'Fix the sign-up email bug'); s.deleteTask(t.id); })()"
+      }
+    ]
   }
 }
