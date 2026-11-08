@@ -337,15 +337,15 @@ export function TodayPage() {
             <div className="today-list">
               {allDay.length > 0 && (
                 <>
-                  <div className="bh"><b>All day</b><span>{allDay.length}</span></div>
+                  <div className="bh" style={{ paddingTop: "var(--sp-2)" }}><b>All day</b><span>{allDay.length}</span></div>
                   <ul>{allDay.map((occ) => <EventRow key={`${occ.event.id}-${occ.date}`} occ={occ} day={key} phone={phone} />)}</ul>
-                  {entries.length > 0 && <div className="bh"><b>Timed</b><span></span></div>}
+                  {entries.length > 0 && <div className="bh" style={{ paddingTop: "var(--sp-10)" }}><b>Timed</b><span></span></div>}
                 </>
               )}
               {entries.length > 0 && <MotionList>{rows(entries.slice(0, entryRows), entries.length)}</MotionList>}
               {g.overdue.length > 0 && (
                 <>
-                  <div className="bh" style={{ paddingTop: "var(--sp-16)" }}>
+                  <div className="bh" style={{ paddingTop: allDay.length > 0 ? "var(--sp-12)" : "var(--sp-16)" }}>
                     <b className="amber">Overdue</b>
                     <span>{g.overdue.length}</span>
                   </div>

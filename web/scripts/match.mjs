@@ -1,4 +1,4 @@
-/* global document */
+/* global document, getComputedStyle */
 // DEVELOPMENT ONLY: renders one planner screen and the design frame it should match, side by side. See docs/match-kit.md.
 //   node scripts/match.mjs <frame-id>... [--theme light|dark|dim|all] [--out <folder>] [--pr <name>]   (several frames share one server; "all" is every frame)
 // Needs Playwright and a Chrome it can launch already on this machine (nothing is downloaded): see the doc.
@@ -181,6 +181,21 @@ async function guardNetwork(context, label, strict = true) {
   });
 }
 
+/** Runs in the page: every element with text of its own, with where it is (from the screen's corner) and its type. */
+function textBoxes([originX, originY]) {
+  const out = [];
+  const root = document.querySelector(".app") ?? document.body;
+  for (const el of root.querySelectorAll("*")) {
+    const own = [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent.replace(/\s+/g, " ").trim()).join(" ").trim();
+    if (!own) continue;
+    const style = getComputedStyle(el);
+    const r = el.getBoundingClientRect();
+    if (style.display === "none" || style.visibility === "hidden" || r.width === 0 || r.height === 0) continue;
+    out.push({ text: own.slice(0, 60), x: Math.round(r.x - originX), y: Math.round(r.y - originY), w: Math.round(r.width), h: Math.round(r.height), size: style.fontSize, weight: style.fontWeight });
+  }
+  return out;
+}
+
 async function ours(theme, size = SIZE[frame.kind], suffix = "") {
   const context = await browser.newContext({ viewport: size, timezoneId: TIME_ZONE, locale: LOCALE, reducedMotion: "reduce", deviceScaleFactor: 1 });
   await guardNetwork(context, "ours");
@@ -205,8 +220,9 @@ async function ours(theme, size = SIZE[frame.kind], suffix = "") {
   await page.screenshot({ path: png });
   const text = await page.evaluate(() => document.body.innerText);
   const parts = await page.evaluate(collect);
+  const boxes = await page.evaluate(textBoxes, [0, 0]);
   await context.close();
-  return { png, text, parts };
+  return { png, text, parts, boxes };
 }
 
 async function design(theme) {
@@ -230,8 +246,20 @@ async function design(theme) {
   const png = join(outDir, `${name.replace("@", "-")}-${theme}-design.png`);
   await page.screenshot({ path: png, clip: { x: box.x + 1, y: box.y + top, width: size.width, height: size.height } });
   const text = await app.evaluate((el) => el.innerText);
+  const boxes = await app.evaluate((el, [ox, oy]) => {
+    const out = [];
+    for (const e of el.querySelectorAll("*")) {
+      const own = [...e.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent.replace(/\s+/g, " ").trim()).join(" ").trim();
+      if (!own) continue;
+      const st = getComputedStyle(e);
+      const r = e.getBoundingClientRect();
+      if (st.display === "none" || st.visibility === "hidden" || r.width === 0 || r.height === 0) continue;
+      out.push({ text: own.slice(0, 60), x: Math.round(r.x - ox), y: Math.round(r.y - oy), w: Math.round(r.width), h: Math.round(r.height), size: st.fontSize, weight: st.fontWeight });
+    }
+    return out;
+  }, [box.x + 1, box.y + top]);
   await context.close();
-  return { png, text };
+  return { png, text, boxes };
 }
 
 async function sideBySide(a, b, theme) {
@@ -247,6 +275,38 @@ async function sideBySide(a, b, theme) {
   await page.screenshot({ path: png, fullPage: true });
   await context.close();
   return png;
+}
+
+/** Where each piece of text is in the design and in ours: a line per text that moved, changed size or weight, or is missing on one side. */
+function layoutDiff(ourBoxes, designBoxes) {
+  const key = (list) => {
+    const seen = new Map();
+    return list.map((b) => {
+      const n = (seen.get(b.text) ?? 0) + 1;
+      seen.set(b.text, n);
+      return { ...b, id: `${b.text} #${n}` };
+    });
+  };
+  const o = new Map(key(ourBoxes).map((b) => [b.id, b]));
+  const lines = [];
+  for (const d of key(designBoxes)) {
+    const m = o.get(d.id);
+    if (!m) {
+      lines.push(`${d.id}: design only (design at ${d.x},${d.y})`);
+      continue;
+    }
+    const parts = [];
+    if (m.x !== d.x) parts.push(`x ${m.x - d.x > 0 ? "+" : ""}${m.x - d.x}`);
+    if (m.y !== d.y) parts.push(`y ${m.y - d.y > 0 ? "+" : ""}${m.y - d.y}`);
+    if (m.w !== d.w) parts.push(`w ${m.w - d.w > 0 ? "+" : ""}${m.w - d.w}`);
+    if (m.h !== d.h) parts.push(`h ${m.h - d.h > 0 ? "+" : ""}${m.h - d.h}`);
+    if (m.size !== d.size) parts.push(`size ${d.size} -> ${m.size}`);
+    if (m.weight !== d.weight) parts.push(`weight ${d.weight} -> ${m.weight}`);
+    if (parts.length) lines.push(`${d.id}: ${parts.join(", ")} (ours minus design)`);
+    o.delete(d.id);
+  }
+  for (const m of o.values()) lines.push(`${m.id}: ours only (ours at ${m.x},${m.y})`);
+  return lines;
 }
 
 /** Lines of text only one side has: a quick read of copy differences, not a verdict. */
@@ -276,6 +336,7 @@ try {
           if (bad.length > 0) differences.push(`${name} (${theme}) differs between 1160 and 1440 px:\n    ${bad.join("\n    ")}`);
         }
         writeFileSync(join(outDir, `${name.replace("@", "-")}-${theme}-text.txt`), textDiff(o.text, d.text) + "\n");
+        writeFileSync(join(outDir, `${name.replace("@", "-")}-${theme}-layout.txt`), layoutDiff(o.boxes, d.boxes).join("\n") + "\n");
         console.log(side);
       }
     } catch (error) {
