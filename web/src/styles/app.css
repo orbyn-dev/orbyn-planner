@@ -919,3 +919,10 @@ button.pillx { border: 0; }
 .lists-error { padding: var(--sp-12) var(--sp-28); }
 .lists-error .card.red-ring { gap: var(--sp-8); }
 .lists-error .line { display: flex; align-items: center; gap: var(--sp-8); }
+/* The sign-up email code: one field, grouped like K7QM-R4TW (Account Designs v62 pv-signup-code, Planner Designs v57 verify). */
+.cfield { display: flex; align-items: center; height: var(--sp-48); padding: 0 var(--sp-14); border: var(--bw) solid var(--line2); border-radius: var(--r-10); background: var(--main); }
+.cfield.on { border-color: var(--t2); box-shadow: 0 0 0 var(--sp-3) var(--sel); }
+.cfield.err { border-color: var(--red); }
+.cfield input { width: 100%; height: 100%; border: 0; padding: 0; background: transparent; color: var(--t1); font-family: var(--mono); font-size: var(--fs-20); letter-spacing: .12em; text-transform: uppercase; outline: none; }
+.cfield input::placeholder { color: var(--t3); letter-spacing: .12em; }
+.banner .end .ghost { white-space: nowrap; }

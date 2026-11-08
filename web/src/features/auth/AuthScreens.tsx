@@ -1,3 +1,4 @@
+import { formatSignupCode, normaliseSignupCode, SIGNUP_CODE_LENGTH } from "../../lib/signupCode";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { NotAvailable, PasskeyButton, Planned } from "../../components/Planned";
 import { ApiFailure } from "../../api/auth";
@@ -82,8 +83,8 @@ function CheckEmail({ pending, onBack, onDone, onInviteRejected, onSignIn }: { p
   const recent = resends.filter((t) => clock() - t < HOUR_MS);
   const wait = Math.max(0, Math.ceil((lastSent + RESEND_AFTER_MS - clock()) / 1000));
   const limited = engineLimited || recent.length >= RESENDS_PER_HOUR;
-  const digits = code.replace(/\D/g, "").slice(0, 6);
-  const ready = digits.length === 6;
+  const entered = normaliseSignupCode(code);
+  const ready = entered.length === SIGNUP_CODE_LENGTH;
   const [focused, setFocused] = useState(true);
   const [wrong, setWrong] = useState(false);
 
@@ -93,7 +94,7 @@ function CheckEmail({ pending, onBack, onDone, onInviteRejected, onSignIn }: { p
     setError(null);
     setWrong(false);
     try {
-      await pending.verify(digits);
+      await pending.verify(entered);
       onDone();
     } catch (e) {
       if (e instanceof ApiFailure && e.code === "keys_not_saved") {
@@ -140,20 +141,21 @@ function CheckEmail({ pending, onBack, onDone, onInviteRejected, onSignIn }: { p
           <span className="end"><button type="button" className="ghost" onClick={onInviteRejected}>Back to the form</button></span>
         </div>
       )}
-      <p className="t3">We sent a 6-digit code to {pending.email}. It works for 30 minutes.</p>
-      <div className="cboxes">
-        {Array.from({ length: 6 }, (_, i) => (
-          <span key={i} className={`cbox${wrong ? " err" : ""}${focused && !wrong && i === Math.min(digits.length, 5) ? " on" : ""}`} aria-hidden="true">{digits[i] ?? ""}</span>
-        ))}
-        {/* One real field under the six boxes: typing, paste and autofill all land in it. */}
+      <p className="t3">Enter the 8-character code we emailed to {pending.email}. It works for 30 minutes.</p>
+      {/* One field, grouped like K7QM-R4TW: paste with or without the hyphen or spaces, capitals, case ignored (Account Designs pv-signup-code). */}
+      <div className={`cfield${wrong ? " err" : focused ? " on" : ""}`} role="group" aria-label="8-character code">
         <input
           id="su-code"
           aria-label="Code"
-          inputMode="numeric"
+          inputMode="text"
+          autoCapitalize="characters"
           autoComplete="one-time-code"
-          value={digits}
+          autoCorrect="off"
+          spellCheck={false}
+          placeholder="ABCD-EFGH"
+          value={formatSignupCode(code)}
           onChange={(e) => {
-            setCode(e.target.value);
+            setCode(formatSignupCode(e.target.value));
             setWrong(false);
             setError(null);
           }}

@@ -1613,7 +1613,7 @@
         "click": "button:text-is(\"Get started\")"
       },
       {
-        "fill": "#su-code",
+        "fill": "#su-invite",
         "value": "K7QM-2XWH-9QXA-LC2D"
       },
       {
@@ -1647,7 +1647,7 @@
       },
       {
         "fill": "#su-code",
-        "value": "100000"
+        "valueEval": "window.__matchEngine.engine.latestEmailCode('sam@example.com')"
       },
       {
         "role": "button",
@@ -1673,7 +1673,18 @@
         "click": "a[href=\"/settings\"], a:has-text(\"Settings\")"
       },
       {
+        "click": "button:text-is(\"Account\"), a:text-is(\"Account\"), [role=tab]:text-is(\"Account\")"
+      },
+      {
         "click": "button:text-is(\"Sign in\")"
+      },
+      {
+        "fill": "#si-email",
+        "value": "sam@example.com"
+      },
+      {
+        "fill": "#si-password",
+        "value": "correct horse"
       },
       {
         "wait": 300

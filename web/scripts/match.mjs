@@ -213,7 +213,7 @@ async function ours(theme, size = SIZE[frame.kind], suffix = "") {
   for (const step of frame.steps ?? []) {
     if (step.role) await page.getByRole(step.role, { name: step.name }).first().click();
     else if (step.click) await page.locator(step.click).first().click();
-    else if (step.fill) await page.locator(step.fill).first().fill(step.value);
+    else if (step.fill) await page.locator(step.fill).first().fill(step.valueEval ? String(await page.evaluate(step.valueEval)) : step.value);
     else if (step.time) await page.clock.setFixedTime(new Date(step.time));
     else if (step.type) await page.keyboard.type(step.type);
     else if (step.eval) await page.evaluate(step.eval);
