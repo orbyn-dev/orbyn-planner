@@ -443,7 +443,8 @@
         "click": "button:text-is(\"Start\")"
       },
       {
-        "click": "button:text-is(\"Continue\")"
+        "role": "button",
+        "name": "Continue"
       }
     ]
   },
@@ -457,14 +458,16 @@
         "click": "button:text-is(\"Start\")"
       },
       {
-        "click": "button:text-is(\"Continue\")"
+        "role": "button",
+        "name": "Continue"
       },
       {
         "fill": "#fr-cal-name",
         "value": ""
       },
       {
-        "click": "button:text-is(\"Continue\")"
+        "role": "button",
+        "name": "Continue"
       }
     ]
   },
@@ -480,7 +483,8 @@
         "click": "button:text-is(\"Start\")"
       },
       {
-        "click": "button:text-is(\"Continue\")"
+        "role": "button",
+        "name": "Continue"
       },
       {
         "click": "button[role=\"radio\"]:has-text(\"Subscribe\")"
@@ -490,7 +494,8 @@
         "value": "https://calendar.example.com/feed.ics"
       },
       {
-        "click": "button:text-is(\"Continue\")"
+        "role": "button",
+        "name": "Continue"
       }
     ]
   },
@@ -506,7 +511,8 @@
         "click": "button:text-is(\"Start\")"
       },
       {
-        "click": "button:text-is(\"Continue\")"
+        "role": "button",
+        "name": "Continue"
       },
       {
         "click": "button[role=\"radio\"]:has-text(\"Subscribe\")"
@@ -516,7 +522,8 @@
         "value": "https://calendar.example.com/feed.ics"
       },
       {
-        "click": "button:text-is(\"Continue\")"
+        "role": "button",
+        "name": "Continue"
       }
     ]
   },
@@ -530,10 +537,12 @@
         "click": "button:text-is(\"Start\")"
       },
       {
-        "click": "button:text-is(\"Continue\")"
+        "role": "button",
+        "name": "Continue"
       },
       {
-        "click": "button:text-is(\"Continue\")"
+        "role": "button",
+        "name": "Continue"
       },
       {
         "fill": "#fr-list-name",
@@ -551,10 +560,12 @@
         "click": "button:text-is(\"Start\")"
       },
       {
-        "click": "button:text-is(\"Continue\")"
+        "role": "button",
+        "name": "Continue"
       },
       {
-        "click": "button:text-is(\"Continue\")"
+        "role": "button",
+        "name": "Continue"
       }
     ]
   },
@@ -581,7 +592,8 @@
         "click": "button:text-is(\"Start\")"
       },
       {
-        "click": "button:text-is(\"Continue\")"
+        "role": "button",
+        "name": "Continue"
       }
     ]
   },
@@ -596,10 +608,12 @@
         "click": "button:text-is(\"Start\")"
       },
       {
-        "click": "button:text-is(\"Continue\")"
+        "role": "button",
+        "name": "Continue"
       },
       {
-        "click": "button:text-is(\"Continue\")"
+        "role": "button",
+        "name": "Continue"
       }
     ]
   },
@@ -1233,5 +1247,437 @@
       }
     ],
     "fit": "app"
+  },
+  "sign-up": {
+    "kind": "desktop",
+    "design": "sign-up",
+    "account": "out",
+    "route": "/today",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "eval": "window.__matchEngine.engine.requireInvites('K7QM-2XWH-9QXA-LC2D')"
+      },
+      {
+        "click": "button:text-is(\"Get started\")"
+      },
+      {
+        "fill": "#su-invite",
+        "value": "K7QM-2XWH-9QXA-LC2D"
+      },
+      {
+        "role": "button",
+        "name": "Continue"
+      },
+      {
+        "wait": 300
+      },
+      {
+        "fill": "#su-name",
+        "value": "Sam Rivera"
+      },
+      {
+        "fill": "#su-email",
+        "value": "sam@example.com"
+      },
+      {
+        "fill": "#su-password",
+        "value": "correct horse battery"
+      }
+    ]
+  },
+  "p-signup-invite-email": {
+    "kind": "desktop",
+    "design": "p-signup-invite-email",
+    "account": "out",
+    "route": "/today",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "eval": "window.__matchEngine.engine.requireInvites('K7QM-2XWH-9QXA-LC2D')"
+      },
+      {
+        "click": "button:text-is(\"Get started\")"
+      },
+      {
+        "fill": "#su-invite",
+        "value": "K7QM-2XWH-9QXA-LC2D"
+      },
+      {
+        "role": "button",
+        "name": "Continue"
+      },
+      {
+        "wait": 300
+      },
+      {
+        "fill": "#su-email",
+        "value": "sam@example.com"
+      },
+      {
+        "fill": "#su-password",
+        "value": "correct horse battery"
+      }
+    ]
+  },
+  "p-signup-invite-checking": {
+    "kind": "desktop",
+    "design": "p-signup-invite-checking",
+    "account": "out",
+    "route": "/today",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "eval": "window.__matchEngine.engine.requireInvites('K7QM-2XWH-9QXA-LC2D')"
+      },
+      {
+        "eval": "window.__matchEngine.hold.add('/v1/invites/check')"
+      },
+      {
+        "click": "button:text-is(\"Get started\")"
+      },
+      {
+        "fill": "#su-invite",
+        "value": "K7QM-2XWH-9QXA-LC2D"
+      },
+      {
+        "role": "button",
+        "name": "Continue"
+      },
+      {
+        "wait": 300
+      }
+    ]
+  },
+  "p-signup-invite-error": {
+    "kind": "desktop",
+    "design": "p-signup-invite-error",
+    "account": "out",
+    "route": "/today",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "eval": "window.__matchEngine.engine.requireInvites('AAAA-BBBB-CCCC-DDDD')"
+      },
+      {
+        "click": "button:text-is(\"Get started\")"
+      },
+      {
+        "fill": "#su-invite",
+        "value": "K7QM-2XWH-9QXA-LC2D"
+      },
+      {
+        "role": "button",
+        "name": "Continue"
+      },
+      {
+        "wait": 300
+      }
+    ]
+  },
+  "p-signup-invite-limited": {
+    "kind": "desktop",
+    "design": "p-signup-invite-limited",
+    "account": "out",
+    "route": "/today",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "eval": "window.__matchEngine.engine.requireInvites('K7QM-2XWH-9QXA-LC2D')"
+      },
+      {
+        "eval": "window.__matchEngine.engine.refuseNext('/v1/invites/check',429,'too_many_attempts')"
+      },
+      {
+        "click": "button:text-is(\"Get started\")"
+      },
+      {
+        "fill": "#su-invite",
+        "value": "K7QM-2XWH-9QXA-LC2D"
+      },
+      {
+        "role": "button",
+        "name": "Continue"
+      },
+      {
+        "wait": 300
+      }
+    ]
+  },
+  "p-signup-invite-network": {
+    "kind": "desktop",
+    "design": "p-signup-invite-network",
+    "account": "out",
+    "route": "/today",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "eval": "window.__matchEngine.engine.requireInvites('K7QM-2XWH-9QXA-LC2D')"
+      },
+      {
+        "click": "button:text-is(\"Get started\")"
+      },
+      {
+        "fill": "#su-invite",
+        "value": "K7QM-2XWH-9QXA-LC2D"
+      },
+      {
+        "eval": "window.__matchEngine.offline.value = true"
+      },
+      {
+        "role": "button",
+        "name": "Continue"
+      },
+      {
+        "wait": 300
+      }
+    ]
+  },
+  "verify": {
+    "kind": "desktop",
+    "design": "verify",
+    "account": "out",
+    "route": "/today",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "eval": "window.__matchEngine.engine.requireInvites('K7QM-2XWH-9QXA-LC2D')"
+      },
+      {
+        "click": "button:text-is(\"Get started\")"
+      },
+      {
+        "fill": "#su-invite",
+        "value": "K7QM-2XWH-9QXA-LC2D"
+      },
+      {
+        "role": "button",
+        "name": "Continue"
+      },
+      {
+        "wait": 300
+      },
+      {
+        "fill": "#su-name",
+        "value": "Sam Rivera"
+      },
+      {
+        "fill": "#su-email",
+        "value": "sam@example.com"
+      },
+      {
+        "fill": "#su-password",
+        "value": "correct horse battery"
+      },
+      {
+        "role": "button",
+        "name": "Continue with a password"
+      },
+      {
+        "wait": 600
+      }
+    ]
+  },
+  "p-verify-ready": {
+    "kind": "desktop",
+    "design": "p-verify-ready",
+    "account": "out",
+    "route": "/today",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "eval": "window.__matchEngine.engine.requireInvites('K7QM-2XWH-9QXA-LC2D')"
+      },
+      {
+        "click": "button:text-is(\"Get started\")"
+      },
+      {
+        "fill": "#su-invite",
+        "value": "K7QM-2XWH-9QXA-LC2D"
+      },
+      {
+        "role": "button",
+        "name": "Continue"
+      },
+      {
+        "wait": 300
+      },
+      {
+        "fill": "#su-name",
+        "value": "Sam Rivera"
+      },
+      {
+        "fill": "#su-email",
+        "value": "sam@example.com"
+      },
+      {
+        "fill": "#su-password",
+        "value": "correct horse battery"
+      },
+      {
+        "role": "button",
+        "name": "Continue with a password"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "time": "2026-11-07T08:32:30.000Z"
+      },
+      {
+        "wait": 1500
+      }
+    ]
+  },
+  "p-verify-throttled": {
+    "kind": "desktop",
+    "design": "p-verify-throttled",
+    "account": "out",
+    "route": "/today",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "eval": "window.__matchEngine.engine.requireInvites('K7QM-2XWH-9QXA-LC2D')"
+      },
+      {
+        "click": "button:text-is(\"Get started\")"
+      },
+      {
+        "fill": "#su-invite",
+        "value": "K7QM-2XWH-9QXA-LC2D"
+      },
+      {
+        "role": "button",
+        "name": "Continue"
+      },
+      {
+        "wait": 300
+      },
+      {
+        "fill": "#su-name",
+        "value": "Sam Rivera"
+      },
+      {
+        "fill": "#su-email",
+        "value": "sam@example.com"
+      },
+      {
+        "fill": "#su-password",
+        "value": "correct horse battery"
+      },
+      {
+        "role": "button",
+        "name": "Continue with a password"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "time": "2026-11-07T08:32:30.000Z"
+      },
+      {
+        "wait": 1500
+      },
+      {
+        "eval": "window.__matchEngine.engine.refuseNext('/v1/accounts/email/resend',429,'too_many_attempts')"
+      },
+      {
+        "click": "button:has-text(\"Send a new code\")"
+      },
+      {
+        "wait": 400
+      }
+    ]
+  },
+  "p-signup-invite-rejected-later": {
+    "kind": "desktop",
+    "design": "p-signup-invite-rejected-later",
+    "account": "out",
+    "route": "/today",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "eval": "window.__matchEngine.engine.requireInvites('K7QM-2XWH-9QXA-LC2D')"
+      },
+      {
+        "click": "button:text-is(\"Get started\")"
+      },
+      {
+        "fill": "#su-code",
+        "value": "K7QM-2XWH-9QXA-LC2D"
+      },
+      {
+        "role": "button",
+        "name": "Continue"
+      },
+      {
+        "wait": 300
+      },
+      {
+        "fill": "#su-name",
+        "value": "Sam Rivera"
+      },
+      {
+        "fill": "#su-email",
+        "value": "sam@example.com"
+      },
+      {
+        "fill": "#su-password",
+        "value": "correct horse battery"
+      },
+      {
+        "role": "button",
+        "name": "Continue with a password"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "eval": "window.__matchEngine.engine.spendInvite('K7QM-2XWH-9QXA-LC2D')"
+      },
+      {
+        "fill": "#su-code",
+        "value": "100000"
+      },
+      {
+        "role": "button",
+        "name": "Verify"
+      },
+      {
+        "wait": 500
+      }
+    ]
+  },
+  "p-sign-in-local": {
+    "kind": "desktop",
+    "design": "p-sign-in-local",
+    "account": "out",
+    "route": "/today",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "click": "button:text-is(\"Use without an account\")"
+      },
+      {
+        "click": "a[href=\"/settings\"], a:has-text(\"Settings\")"
+      },
+      {
+        "click": "button:text-is(\"Sign in\")"
+      },
+      {
+        "wait": 300
+      }
+    ]
   }
 }
