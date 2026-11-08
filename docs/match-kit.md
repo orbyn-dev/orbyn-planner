@@ -37,3 +37,9 @@ The fixture, the demo page and the runner never reach a production or staging bu
 - They live in `web/tools/` and `web/scripts/`, outside `src/`; the Docker build context skips `tools/`.
 - The runner answers the planner's `/health` check itself and fails the run if any other request leaves the dev server.
 - `web/tools/match/guard.test.ts` (part of `npm test`, so the Web job) builds the production and staging bundles and fails if the fixture's code, its marker, its sample strings or the demo page appear, or if anything in `src/` imports `tools/`, or if the kit imports engine, sync or sign-in code or calls a network API. `fixture.test.tsx` runs every scenario with the network stubbed and fails on any call.
+
+## Two desktop widths
+
+Every desktop frame is drawn at 1160 px. `node scripts/match.mjs <frame> --wide` also draws it at 1440 px and compares the two: the same visible parts, each with the same display, alignment, list style, type and colour (sizes and positions are left out). A rule that only applies at some widths, such as an unclosed `@media` block, shows up as a difference and the run exits 1. A difference the screen is meant to have (Calendars icon-only at 1240 px and below) is listed with its reason in `web/tools/match/responsive.json`. `<frame>-<theme>-structure.txt` lists what differed.
+
+`src/styles/cssBalance.test.ts` runs in CI's Web job (`npm test`) and fails on an unbalanced brace in `app.css` or `tokens.css`, naming the file and the line of the block that is never closed.

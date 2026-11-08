@@ -1,0 +1,14 @@
+[
+  {
+    "match": "button.ghost.cal-btn #1: justifyContent is center at 1160 px",
+    "why": "Calendars is icon-only at 1240 px and below (Planner Designs v49 calendar toolbar)"
+  },
+  {
+    "match": "span.lbl \"Calendars\" #1: only at 1440 px",
+    "why": "the Calendars label is hidden at 1240 px and below"
+  },
+  {
+    "match": "h1. \"Agenda\" #1: only at 1440 px",
+    "why": "KNOWN, reported: the Agenda title collapses to nothing in the never-wrapping toolbar at 1160 px; fixed with the Agenda toolbar's range label"
+  }
+]
