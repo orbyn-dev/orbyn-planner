@@ -835,3 +835,15 @@ button.pillx { border: 0; }
 .list-menu .mi:hover, .list-menu .mi:focus-visible { background: var(--raise); }
 /* The day strip: a filled pill is the selected day, a ring marks today, and a small dot marks a day that has events. */
 .pm-day button.today:not(.on) { box-shadow: inset 0 0 0 var(--bw-1-5) var(--t3); }
+/* The month sheet and the offline phone use the structure of Phone · Calendar week (Planner Designs v49): a plainer sheet, and the offline banner on top of the header. */
+.month-sheet { border-radius: var(--r-22) var(--r-22) 0 0; }
+.month-sheet .ms-head .ghost.icon { background: none; }
+.month-sheet .ms-head b { font-weight: var(--fw-regular); font-size: var(--fs-16); }
+.month-sheet { gap: var(--sp-6); padding: var(--sp-10) var(--sp-16) var(--sp-14); }
+.month-sheet .ms-grid { gap: var(--sp-4); }
+.month-sheet .ms-grid button { height: calc(var(--sp-36) - var(--sp-2)); }
+.month-sheet .dialog-actions > * { height: var(--sp-40); }
+@media (max-width: 767px) {
+  .ph:has(.pillx.offline) .acts { order: -1; padding: 0 0 var(--sp-6); }
+  .ph .acts .pillx.offline { width: 100%; box-sizing: border-box; }
+}

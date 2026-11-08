@@ -92,7 +92,7 @@
 }
 /* ---- Radii ---- */
 :root {
-  --r-2: 2px; --r-3: 3px; --r-5: 5px; --r-6: 6px; --r-7: 7px; --r-8: 8px; --r-9: 9px; --r-10: 10px; --r-12: 12px; --r-14: 14px; --r-16: 16px;
+  --r-2: 2px; --r-3: 3px; --r-5: 5px; --r-6: 6px; --r-7: 7px; --r-8: 8px; --r-9: 9px; --r-10: 10px; --r-12: 12px; --r-14: 14px; --r-16: 16px; --r-22: 22px;
   --r-pill: 999px; --r-round: 50%;
 }
 /* ---- Border and outline widths ---- */
