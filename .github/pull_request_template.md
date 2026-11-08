@@ -7,6 +7,14 @@ Keep it short: bullets and fragments, under about 150 words outside AI usage. --
 
 Closes #
 
+## Frames built
+
+<!-- A change to the web app names the match kit frames it draws and the design version, for example:
+Frames built: p-today, p-today-empty @ v47
+A change that draws nothing says "Frames built: none". A bot reads this line and posts screenshots of those screens (ours only, from the seeded dev planner, Light first, up to 12), so write it; nothing is blocked if you do not. -->
+
+Frames built:
+
 ## Testing
 
 - CI covers the rest.

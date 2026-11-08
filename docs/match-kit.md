@@ -45,3 +45,12 @@ The fixture, the demo page and the runner never reach a production or staging bu
 Every desktop frame is drawn at 1160 px. `node scripts/match.mjs <frame> --wide` also draws it at 1440 px and compares the two: the same visible parts, each with the same display, alignment, list style, type and colour (sizes and positions are left out). A rule that only applies at some widths, such as an unclosed `@media` block, shows up as a difference and the run exits 1. A difference the screen is meant to have (Calendars icon-only at 1240 px and below) is listed with its reason in `web/tools/match/responsive.json`. `<frame>-<theme>-structure.txt` lists what differed.
 
 `src/styles/cssBalance.test.ts` runs in CI's Web job (`npm test`) and fails on an unbalanced brace in `app.css` or `tokens.css`, naming the file and the line of the block that is never closed.
+
+## UI preview on pull requests
+
+A pull request that changes `web/` names the frames it built in its description: `Frames built: p-today, p-today-empty @ v47` (match kit frame ids, then the design version; `Frames built: none` when it draws nothing). The workflow `.github/workflows/ui-preview.yml` draws those frames with `node scripts/match.mjs <ids> --ours-only --theme all` (the seeded, dev-only planner: fake data, no account, no design page read) and posts one sticky comment: Light first, Dark and Dim folded, at most 12 frames, with a link to the run, which keeps every image. Screenshots live on the `pr-previews` branch, one folder per pull request, linked with `?raw=true` and removed when the pull request closes (`ui-preview-cleanup.yml`).
+
+- It shows our screens only. The design frames are private and this repository is public, so nothing here reads or publishes them.
+- Same-repository pull requests only; a fork's pull request is skipped.
+- It is informational, not a required check. No line gets a comment asking for one; a render that fails says so in the comment.
+- Locally: `node tools/pr-preview/render.mjs --body <file> --out <dir>`.
