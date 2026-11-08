@@ -14,6 +14,12 @@ function length(o: Occurrence): string {
   return minutes % 60 ? `${h}h ${minutes % 60}m` : `${h}h`;
 }
 
+/** What an event row says after its title (Planner Designs: the place; with no place its length; never both; an all-day event says neither). */
+export function eventMeta(o: Occurrence): string {
+  if (o.allDay) return "";
+  return o.event.place || length(o);
+}
+
 export function AgendaView({ days, occurrences, today }: { days: string[]; occurrences: Occurrence[]; today: string }) {
   const { calendars } = usePlanner();
   const ui = useUi();
@@ -33,7 +39,7 @@ export function AgendaView({ days, occurrences, today }: { days: string[]; occur
           </div>
           <ul className="agenda-rows">
             {g.items.map((o) => {
-              const meta = [o.event.place, length(o)].filter(Boolean);
+              const meta = eventMeta(o);
               return (
                 <li
                   className="row"
@@ -44,7 +50,7 @@ export function AgendaView({ days, occurrences, today }: { days: string[]; occur
                   <span className="time">{o.allDay ? "All day" : formatTime(parseDue(o.start).date)}</span>
                   <span className="sw" style={{ background: colourOf(calendars, o.event) }} aria-hidden="true" />
                   <button type="button" className="what link-btn" onClick={() => ui.openEvent(o.event.id, o.date)}>{o.event.title}</button>
-                  <span className="meta">{meta.join(" · ")}</span>
+                  <span className="meta">{meta}</span>
                 </li>
               );
             })}
