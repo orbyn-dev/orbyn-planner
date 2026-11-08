@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { MotionList } from "../../components/MotionList";
 import { useNow } from "../../app/clock";
 import { useRouter } from "../../app/router";
@@ -92,7 +92,9 @@ function EventRow({ occ, day, phone, at }: { occ: Occurrence; day: string; phone
   const calendar = calendars.find((c) => c.id === occ.event.calendarId);
   // An all-day event names its calendar; a timed one says it is an event, and where.
   const total = daysBetween(occ.date, lastDayOf(occ.start, occ.end, occ.allDay)) + 1;
-  const title = occ.allDay && total > 1 ? `${occ.event.title} · day ${daysBetween(occ.date, day) + 1} of ${total}` : occ.event.title;
+  // A day of a longer all-day event reads its title, then a muted "day 3 of 4" (Planner Designs v51 p-today-all-day).
+  const tiling = occ.allDay && total > 1 ? `day ${daysBetween(occ.date, day) + 1} of ${total}` : null;
+  const title = occ.event.title;
   // A timed event that began on an earlier day and is still going reads "Until 06:00" (it sorts as if it began at 00:00); one that begins
   // today and runs past midnight keeps its start and says when it ends.
   const startedEarlier = !occ.allDay && occ.start.slice(0, 10) < day;
@@ -114,7 +116,7 @@ function EventRow({ occ, day, phone, at }: { occ: Occurrence; day: string; phone
     <li className="row" data-row-id={occ.event.id} {...(at ? { "aria-posinset": at.index + 1, "aria-setsize": at.of } : {})}>
       <span className="time">{time}</span>
       <span className="sw" style={{ background: colourOf(calendars, occ.event) }} aria-hidden="true" />
-      <button type="button" className="what link-btn" onClick={() => ui.openEvent(occ.event.id, occ.date)}>{title}</button>
+      <button type="button" className="what link-btn" onClick={() => ui.openEvent(occ.event.id, occ.date)}>{title}{tiling && <span className="t3"> · {tiling}</span>}</button>
       <span className="meta">{meta}</span>
     </li>
   );
@@ -138,13 +140,24 @@ function inTimeOrder(entries: Entry[], day: string): Entry[] {
 }
 
 /** What the week column says of one day: the one item by name (an event with its time), or the counts. */
-function dayLabel(tasks: Task[], events: Occurrence[]): string {
+function dayLabel(tasks: Task[], events: Occurrence[], day: string): ReactNode {
   const total = tasks.length + events.length;
   if (total === 0) return "Nothing planned";
   if (total === 1) {
     if (tasks[0]) return tasks[0].title;
     const o = events[0]!;
-    return o.allDay ? o.event.title : `${o.event.title} ${formatTime(parseDue(o.start).date)}`;
+    if (!o.allDay) return `${o.event.title} ${formatTime(parseDue(o.start).date)}`;
+    // One day of a longer all-day event: its title and a muted "day 4 of 4".
+    const last = lastDayOf(o.start, o.end, true);
+    const length = daysBetween(o.date, last) + 1;
+    return length > 1 ? (
+      <>
+        {o.event.title}
+        <span className="t3"> · day {daysBetween(o.date, day) + 1} of {length}</span>
+      </>
+    ) : (
+      o.event.title
+    );
   }
   return [tasks.length > 0 && countWords(tasks.length, "task", "tasks"), events.length > 0 && countWords(events.length, "event", "events")].filter(Boolean).join(" · ");
 }
@@ -201,7 +214,7 @@ export function TodayPage() {
       g.week.map(({ date, tasks: due }) => {
         const k = dateKey(date);
         const evs = weekEvents.filter((o) => touchesDay(o, k));
-        return { date, key: k, label: dayLabel(due, evs), total: due.length + evs.length };
+        return { date, key: k, label: dayLabel(due, evs, k), total: due.length + evs.length };
       }),
     [g.week, weekEvents],
   );
@@ -337,15 +350,15 @@ export function TodayPage() {
             <div className="today-list">
               {allDay.length > 0 && (
                 <>
-                  <div className="bh"><b>All day</b><span>{allDay.length}</span></div>
+                  <div className="bh" style={{ paddingTop: "var(--sp-2)" }}><b>All day</b><span>{allDay.length}</span></div>
                   <ul>{allDay.map((occ) => <EventRow key={`${occ.event.id}-${occ.date}`} occ={occ} day={key} phone={phone} />)}</ul>
-                  {entries.length > 0 && <div className="bh"><b>Timed</b><span></span></div>}
+                  {entries.length > 0 && <div className="bh" style={{ paddingTop: "var(--sp-10)" }}><b>Timed</b><span></span></div>}
                 </>
               )}
               {entries.length > 0 && <MotionList>{rows(entries.slice(0, entryRows), entries.length)}</MotionList>}
               {g.overdue.length > 0 && (
                 <>
-                  <div className="bh" style={{ paddingTop: "var(--sp-16)" }}>
+                  <div className="bh" style={{ paddingTop: allDay.length > 0 ? "var(--sp-12)" : "var(--sp-16)" }}>
                     <b className="amber">Overdue</b>
                     <span>{g.overdue.length}</span>
                   </div>

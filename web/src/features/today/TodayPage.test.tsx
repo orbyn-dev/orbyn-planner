@@ -74,6 +74,48 @@ describe("Today page", () => {
     expect(screen.getByText("Saturday 7 November · 5 tasks")).toBeInTheDocument();
   });
 
+  it("the headers of the all-day, timed and overdue groups use the frame's top spacing (2, 10 and 12 px); Overdue is 16 px without an all-day group", async () => {
+    await openToday((s) => {
+      s.addEvent({ title: "Maya’s birthday", allDay: true, start: "2026-11-07", end: "2026-11-07" });
+      s.addEvent({ title: "Team planning", start: "2026-11-07T09:00", end: "2026-11-07T10:00" });
+      s.addTask({ title: "Late one", due: "2026-11-06" });
+    });
+    const top = (word: string) => (screen.getByText(word, { selector: "b" }).parentElement as HTMLElement).style.paddingTop;
+    expect(top("All day")).toBe("var(--sp-2)");
+    expect(top("Timed")).toBe("var(--sp-10)");
+    expect(top("Overdue")).toBe("var(--sp-12)");
+  });
+
+  it("Overdue keeps 16 px above it when there is no all-day group", async () => {
+    await openToday((s) => {
+      s.addEvent({ title: "Team planning", start: "2026-11-07T09:00", end: "2026-11-07T10:00" });
+      s.addTask({ title: "Late one", due: "2026-11-06" });
+    });
+    expect((screen.getByText("Overdue", { selector: "b" }).parentElement as HTMLElement).style.paddingTop).toBe("var(--sp-16)");
+  });
+
+  it("a day of a longer all-day event reads its full title and a muted \"day N of M\", in the day's list and in the week", async () => {
+    await openToday((s) => {
+      s.addEvent({ title: "Home renovation: tiling", allDay: true, start: "2026-11-05", end: "2026-11-08" });
+    });
+    // Today is day 3 of 4 (5, 6, 7, 8 November).
+    const row = screen.getByRole("button", { name: /Home renovation: tiling/ });
+    expect(row).toHaveTextContent("Home renovation: tiling · day 3 of 4");
+    expect(row.querySelector(".t3")).toHaveTextContent("· day 3 of 4");
+    // Sun 8 is the last day, and the only thing on it: the title, then the muted suffix.
+    const glance = within(screen.getByRole("list", { name: "The week at a glance" }));
+    const sun = glance.getByText(/Sun 8/).closest("li")!;
+    expect(sun).toHaveTextContent("Home renovation: tiling · day 4 of 4");
+    expect(sun.querySelector(".t3")).toHaveTextContent("· day 4 of 4");
+  });
+
+  it("a one-day all-day event has no day suffix", async () => {
+    await openToday((s) => s.addEvent({ title: "Maya’s birthday", allDay: true, start: "2026-11-08", end: "2026-11-08" }));
+    const glance = within(screen.getByRole("list", { name: "The week at a glance" }));
+    expect(glance.getByText(/Sun 8/).closest("li")).toHaveTextContent("Maya’s birthday");
+    expect(glance.getByText(/Sun 8/).closest("li")!.querySelector(".t3")).toBeNull();
+  });
+
   it("puts all-day events in their own group above the timed ones, with the calendar's name and the day of a longer one", async () => {
     await openToday((s) => {
       s.addEvent({ title: "Maya’s birthday", allDay: true, start: "2026-11-07", end: "2026-11-07" });

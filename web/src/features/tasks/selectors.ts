@@ -21,8 +21,20 @@ export function activeTasks(tasks: readonly Task[], now: Date): Task[] {
   );
 }
 
+/** By day, and within a day the ones with a time first (earliest first), then the ones with only a date (Planner Designs v49 calendar-day, tasks). */
+export function compareDueTimedFirst(a: string | null, b: string | null): number {
+  if (a === null || b === null) return compareDue(a, b);
+  const x = parseDue(a);
+  const y = parseDue(b);
+  const dayA = dueDayKey(a);
+  const dayB = dueDayKey(b);
+  if (dayA !== dayB) return dayA < dayB ? -1 : 1;
+  if (x.hasTime !== y.hasTime) return x.hasTime ? -1 : 1;
+  return x.date.getTime() - y.date.getTime();
+}
+
 export function sortByDue(tasks: readonly Task[]): Task[] {
-  return [...tasks].sort((a, b) => compareDue(a.due, b.due) || a.createdAt.localeCompare(b.createdAt));
+  return [...tasks].sort((a, b) => compareDueTimedFirst(a.due, b.due) || a.createdAt.localeCompare(b.createdAt));
 }
 
 export function matchesDue(task: Task, filter: DueFilter, now: Date): boolean {

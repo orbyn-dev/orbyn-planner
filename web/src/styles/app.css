@@ -107,6 +107,8 @@ button { cursor: pointer; }
 /* The pitch of Today's lists is the row plus the gap: 38 + 2 = 40 for rows, 26 + 2 = 28 for the week at a glance (Planner Designs v49). The gap of
    .blk does not reach the rows (they are in a ul), so the lists carry it. */
 .blk ul { display: flex; flex-direction: column; gap: var(--sp-2); }
+/* Today's list is one column with 2 px between its parts, rows and headers alike (Planner Designs v49 today, p-today-all-day). */
+.today-list { display: flex; flex-direction: column; gap: var(--sp-2); }
 .bh { display: flex; justify-content: space-between; align-items: baseline; font-size: var(--fs-12); color: var(--t3); padding: var(--sp-12) 0 var(--sp-6); }
 .bh b { font-weight: var(--fw-medium); color: var(--t1); font-size: var(--fs-13); }
 .bh b.amber { color: var(--amber-text); }
@@ -119,6 +121,8 @@ button { cursor: pointer; }
 .row .time.amber { color: var(--amber-text); }
 .row .what { color: var(--t1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row .meta { font-size: var(--fs-12); color: var(--t3); }
+/* The Agenda: a day's first row is 12 px under its header and the rows repeat every 52 px (Planner Designs v49 calendar-agenda). */
+.agenda-rows { display: flex; flex-direction: column; gap: var(--sp-14); margin-top: var(--sp-12); }
 /* A long day: the list scrolls inside the page and the week column stays in view (Today only). */
 @media (min-width: 768px) {
   .today-cols { flex: 1; overflow: hidden; }
@@ -131,7 +135,8 @@ button { cursor: pointer; }
 .empty { flex: 1; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: var(--sp-10); padding: 0 var(--sp-28) var(--sp-40); }
 .empty h2 { font-size: var(--fs-18); font-weight: var(--fw-medium); color: var(--t1); }
 .empty p { color: var(--t3); }
-.blk .empty { flex: none; padding: calc(var(--sp-20) + var(--sp-48)) 0 var(--sp-20); }
+.blk .empty { flex: none; padding: calc(var(--sp-20) + var(--sp-48) + var(--sp-3)) 0 var(--sp-20); }
+.blk .empty .btn { margin-top: var(--sp-6); }
 /* The week at a glance: 28 px between the days. */
 .kv.wk { height: var(--sp-26); }
 .pad { padding: var(--sp-6) var(--sp-28) var(--sp-24); display: flex; flex-direction: column; gap: var(--sp-12); min-height: 0; }
@@ -264,7 +269,8 @@ button.pill { border: 0; }
 .tag { display: inline-flex; align-items: center; gap: var(--sp-6); font-size: var(--fs-12); color: var(--t2); }
 .due { font-size: var(--fs-12); color: var(--t3); }
 .due.amber { color: var(--amber-text); font-weight: var(--fw-medium); }
-.addbar { margin-top: auto; padding: var(--sp-10) var(--sp-28); }
+/* The quick-add line sits right under the rows, not at the foot of the page (Planner Designs v49 work-list). */
+.addbar { padding: var(--sp-10) var(--sp-28); }
 .hint { min-height: var(--sp-18); margin-top: var(--sp-4); color: var(--t3); font-size: var(--fs-12); }
 
 .field {
@@ -390,7 +396,7 @@ button.pillx { border: 0; }
 .cal .hr { font-family: var(--mono); font-size: var(--fs-10-5); color: var(--t3); padding-top: var(--sp-2); height: var(--hour); text-align: right; padding-right: var(--sp-8); }
 .cal .dcol { position: relative; border-left: var(--bw) solid var(--line); }
 .cal .dcol.today { background: var(--raise); }
-.ph .range { color: var(--t1); font-size: var(--fs-13); white-space: nowrap; }
+.ph .range { color: var(--t2); font-size: var(--fs-13); padding: 0 var(--sp-4); white-space: nowrap; }
 .cal .slot { height: var(--hour); border-top: var(--bw) solid var(--line); }
 .ev {
   position: absolute; border-radius: var(--r-8); padding: var(--sp-5) var(--sp-8); font-size: var(--fs-12); z-index: 1; color: var(--t1); overflow: hidden; text-align: left;
@@ -413,6 +419,7 @@ button.pillx { border: 0; }
 .md .n { color: var(--t3); align-self: flex-start; background: none; border: 0; padding: 0; font-size: var(--fs-11-5); }
 .md.today .n { display: inline-grid; place-items: center; width: var(--sp-20); height: var(--sp-20); border-radius: var(--r-pill); background: var(--btn); color: var(--btnt); }
 .md.out .n { color: var(--t3); }
+.md.after, .md.after:nth-child(7n) { border: 0; }
 .more-link { color: var(--t3); background: none; border: 0; padding: 0; text-align: left; font-size: var(--fs-11-5); }
 .ph .acts .ghost.icon { padding: 0; width: var(--sp-30); justify-content: center; }
 .modal-back .authcard.wide { width: var(--sp-520); }
@@ -813,8 +820,20 @@ button.pillx { border: 0; }
   .fr-welcome-actions .btn { width: 100%; }
 }
 /* View options as a 280 px list (Planner Designs v49 p-view-options-list): rows with Selected at the right, a two-part direction switch. */
+/* The popover hangs from the right edge of the header buttons, 12 px under them, not from the View options button (p-view-options-list, p-view-options-board). */
+.ph .acts { position: relative; }
+.vo-wrap { position: static; }
+.vo-wrap .view-options { top: calc(var(--sp-30) + var(--sp-10)); padding: var(--sp-5); gap: 0; }
+.view-options .vo-group, .view-options .vo-group .opt-menu { gap: var(--sp-1); }
+.view-options .vo-label { padding: var(--sp-10) var(--sp-9) var(--sp-5); font-size: var(--fs-11-5); }
+.view-options .vo-row { height: var(--sp-30); padding: 0 var(--sp-9); border-radius: var(--r-8); gap: var(--sp-9); color: var(--t2); font-weight: var(--fw-regular); }
+.view-options .vo-row[aria-checked="true"] { color: var(--t1); font-weight: var(--fw-regular); }
+.view-options .vo-row .k { margin-left: auto; font-size: var(--fs-10-5); padding-left: var(--sp-18); }
+.view-options .seg { margin: var(--sp-6) var(--sp-9); }
+.view-options .kv { height: var(--sp-30); padding: 0 var(--sp-9); color: var(--t2); }
+.view-options .vo-link { margin-top: var(--sp-6); padding-top: 0; border-radius: 0; }
 .vo-group { align-items: stretch; }
-.vo-group .opt-menu { gap: 0; }
+
 .vo-row { justify-content: space-between; }
 .vo-row .k { font-family: var(--mono); font-size: var(--fs-11-5); }
 .seg { display: inline-flex; align-self: flex-start; padding: var(--sp-2); border-radius: var(--r-9); background: var(--raise); }
@@ -847,3 +866,26 @@ button.pillx { border: 0; }
   .ph:has(.pillx.offline) .acts { order: -1; padding: 0 0 var(--sp-6); }
   .ph .acts .pillx.offline { width: 100%; box-sizing: border-box; }
 }
+/* The board card's "…" button and menu (Planner Designs v52 p-board-card-focus, p-board-card-menu, p-board-card-project). */
+.tcard { position: relative; }
+.tcard:focus-visible { outline: var(--bw-2) solid var(--t1); outline-offset: var(--sp-2); }
+.tcard:has(.card-more) .tt { padding-right: var(--sp-24); }
+.card-more { position: absolute; top: var(--sp-6); right: var(--sp-6); }
+.more-btn { display: flex; align-items: center; justify-content: center; width: var(--sp-22); height: var(--sp-22); padding: 0; border: 0; border-radius: var(--r-7); background: var(--raise); color: var(--t2); opacity: 0; transition: opacity var(--m-fast) var(--m-out); }
+.tcard:hover .more-btn, .tcard:focus-within .more-btn, .more-btn[aria-expanded="true"] { opacity: 1; }
+.more-btn[aria-expanded="true"] { background: var(--sel); color: var(--t1); }
+.card-menu { width: var(--sp-176); top: calc(100% + var(--sp-4)); right: auto; left: 0; padding: var(--sp-5); display: flex; flex-direction: column; gap: 0; }
+.card-menu .opt { height: var(--sp-30); padding: 0 var(--sp-9); gap: var(--sp-9); color: var(--t2); border-radius: var(--r-8); justify-content: flex-start; }
+.card-menu .opt:hover, .card-menu .opt:focus-visible, .card-menu .opt[aria-expanded="true"] { background: var(--sel); color: var(--t1); }
+.card-menu .opt .k { margin-left: auto; padding-left: var(--sp-12); }
+.card-menu .opt:disabled { color: var(--t3); background: none; cursor: default; }
+.card-menu .opt[aria-checked="true"] { background: none; color: var(--t3); font-weight: var(--fw-regular); }
+.card-menu .opt[aria-checked="true"] .k { font-family: var(--mono); font-size: var(--fs-10-5); }
+.cm-sep { height: var(--bw); margin: var(--sp-4) var(--sp-2); background: var(--line); }
+.cm-row { position: relative; }
+.card-sub { gap: 0; position: absolute; top: calc(-1 * var(--sp-5)); left: calc(100% + var(--sp-4)); right: auto; width: var(--sp-196); padding: var(--sp-5); display: flex; flex-direction: column; z-index: 6; }
+/* The hint under the board, for a keyboard user: shown while focus is on a card. */
+.board-hint { display: none; padding: 0 var(--sp-28); font-size: var(--fs-12-5); color: var(--t3); }
+.board:focus-within + .board-hint { display: block; }
+.board-hint kbd { font-family: var(--mono); font-size: var(--fs-10-5); background: var(--raise); border-radius: var(--r-5); padding: var(--sp-1) var(--sp-5); color: var(--t2); }
+@media (hover: none) { .more-btn { opacity: 1; } }

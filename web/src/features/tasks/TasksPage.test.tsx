@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../app/App";
 import { ClockProvider } from "../../app/clock";
+import { formatDue } from "../../lib/dates";
 import { TOAST_MS } from "../../app/ui";
 import { LocalStore } from "../../store/LocalStore";
 import { MemoryPersistence } from "../../store/persistence";
@@ -43,7 +44,7 @@ describe("Tasks page", () => {
     const { field } = await openTasks();
     await add(field, "dentist friday 3pm !high");
     const row = (await screen.findByRole("button", { name: "dentist" })).closest("li")!;
-    expect(within(row).getByText("Fri 15:00")).toBeInTheDocument();
+    expect(within(row).getByText("Fri 13 15:00")).toBeInTheDocument();
     expect(within(row).getByText("High")).toBeInTheDocument();
     expect(field).toHaveValue("");
   });
@@ -220,5 +221,41 @@ describe("quick add preview", () => {
     const fs = (await import(/* @vite-ignore */ nodeFs)) as { readFileSync(path: string, encoding: "utf8"): string };
     const rules = fs.readFileSync(`${(globalThis as { process?: { cwd(): string } }).process!.cwd()}/src/styles/app.css`, "utf8");
     expect(rules).toMatch(/\.view-options \{[^}]*width: var\(--sp-280\)/);
+  });
+
+  it("a due date in the next six days reads with its day number (Planner Designs v49 work-list: Mon 9)", async () => {
+    await openTasks();
+    expect(formatDue("2026-11-09", new Date(2026, 10, 7, 10, 0))).toBe("Mon 9");
+    expect(formatDue("2026-11-12T15:00", new Date(2026, 10, 7, 10, 0))).toBe("Thu 12 15:00");
+    expect(formatDue("2026-11-08", new Date(2026, 10, 7, 10, 0))).toBe("Tomorrow");
+    expect(formatDue("2026-11-14", new Date(2026, 10, 7, 10, 0))).toBe("14 Nov");
+  });
+
+  it("a group counts its open tasks: a finished one stays in the group but not in the number", async () => {
+    const { field } = await openTasks();
+    await add(field, "alpha today");
+    await add(field, "beta today");
+    await userEvent.click(await screen.findByRole("checkbox", { name: "Complete alpha" }));
+    const header = screen.getByText("Today (planned or due)").closest(".bh")!;
+    expect(header.querySelector("span")?.textContent).toBe("1");
+    expect(screen.getAllByRole("listitem").filter((li) => /alpha|beta/.test(li.textContent ?? ""))).toHaveLength(2);
+  });
+
+  it("the quick-add line is not pushed to the foot of the page", async () => {
+    const nodeFs = "node:fs";
+    const fs = (await import(/* @vite-ignore */ nodeFs)) as { readFileSync(path: string, encoding: "utf8"): string };
+    const css = fs.readFileSync(`${(globalThis as { process?: { cwd(): string } }).process!.cwd()}/src/styles/app.css`, "utf8");
+    const i = css.indexOf(".addbar {");
+    expect(css.slice(i, css.indexOf("}", i))).not.toContain("margin-top: auto");
+  });
+
+  it("within a day, a task with a time comes before one with only a date", async () => {
+    const { field } = await openTasks();
+    await add(field, "gamma today");
+    await add(field, "delta today 9am");
+    await screen.findByRole("button", { name: "delta" });
+    const titles = screen.getAllByRole("listitem").map((li) => li.textContent ?? "").filter((t) => /gamma|delta/.test(t));
+    expect(titles[0]).toContain("delta");
+    expect(titles[1]).toContain("gamma");
   });
 });

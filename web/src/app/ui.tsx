@@ -14,6 +14,8 @@ export interface ToastState {
   secondary?: { label: string; run: () => void };
   /** How long it stays, when not the usual ten seconds. */
   ms?: number;
+  /** What a screen reader hears when it differs from what is shown ("Moved “Title” to Blocked" for "Moved to Blocked"). */
+  spoken?: string;
 }
 
 export interface ToastOptions {
@@ -21,7 +23,8 @@ export interface ToastOptions {
   focusRowOnUndo?: string;
   secondary?: { label: string; run: () => void };
   /** How long the toast stays, when not the usual ten seconds. */
-  ms?: number;
+  ms?: number;  /** What a screen reader hears when it differs from what is shown ("Moved “Title” to Blocked" for "Moved to Blocked"). */
+  spoken?: string;
 }
 
 export interface EventKey {
@@ -81,7 +84,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<ToastState | null>(null);
 
   const showToast = useCallback((message: string, undo?: () => void, options?: ToastOptions) => {
-    setToast({ id: ++toastCounter, message, undo, focusUndo: options?.focusUndo, focusRowOnUndo: options?.focusRowOnUndo, secondary: options?.secondary, ms: options?.ms });
+    setToast({ id: ++toastCounter, message, undo, focusUndo: options?.focusUndo, focusRowOnUndo: options?.focusRowOnUndo, secondary: options?.secondary, ms: options?.ms, spoken: options?.spoken });
   }, []);
   const dismissToast = useCallback(() => setToast(null), []);
 
