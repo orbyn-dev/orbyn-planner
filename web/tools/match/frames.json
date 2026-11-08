@@ -371,7 +371,7 @@
       },
       {
         "fill": ".when input.field",
-        "value": "Fri 14:00–15:00"
+        "value": "Fri 14:00\u201315:00"
       }
     ]
   },
@@ -862,5 +862,377 @@
         "eval": "(() => { const s = window.__match; const t = s.getState().tasks.find((x) => x.title === 'Fix the sign-up email bug'); s.deleteTask(t.id); })()"
       }
     ]
+  },
+  "search": {
+    "kind": "desktop",
+    "design": "search",
+    "route": "/today",
+    "scenario": "search-data",
+    "steps": [
+      {
+        "role": "button",
+        "name": "Search or add"
+      },
+      {
+        "fill": "[role=\"dialog\"] input",
+        "value": "dentist friday 3pm"
+      }
+    ]
+  },
+  "p-search-none": {
+    "kind": "desktop",
+    "design": "p-search-none",
+    "route": "/today",
+    "scenario": "search-data",
+    "steps": [
+      {
+        "role": "button",
+        "name": "Search or add"
+      },
+      {
+        "fill": "[role=\"dialog\"] input",
+        "value": "plumber invoice"
+      }
+    ]
+  },
+  "notifications": {
+    "kind": "desktop",
+    "design": "notifications",
+    "route": "/notifications",
+    "scenario": "today"
+  },
+  "p-notif-grouped": {
+    "kind": "desktop",
+    "design": "p-notif-grouped",
+    "route": "/notifications",
+    "scenario": "today"
+  },
+  "p-notif-snooze": {
+    "kind": "desktop",
+    "design": "p-notif-snooze",
+    "route": "/notifications",
+    "scenario": "today"
+  },
+  "p-notif-empty": {
+    "kind": "desktop",
+    "design": "p-notif-empty",
+    "route": "/notifications",
+    "scenario": "today-empty"
+  },
+  "settings-account": {
+    "kind": "desktop",
+    "design": "settings-account",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Account\")"
+      }
+    ]
+  },
+  "settings": {
+    "kind": "desktop",
+    "design": "settings",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Planning\")"
+      }
+    ]
+  },
+  "settings-notifications": {
+    "kind": "desktop",
+    "design": "settings-notifications",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Notifications\")"
+      }
+    ],
+    "init": "Object.defineProperty(window,'Notification',{configurable:true,value:Object.assign(function(){},{permission:'granted',requestPermission:async()=>'granted'})})",
+    "prefs": {
+      "reminders": true
+    }
+  },
+  "p-set-notif-reminders-off": {
+    "kind": "desktop",
+    "design": "p-set-notif-reminders-off",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Notifications\")"
+      }
+    ],
+    "init": "Object.defineProperty(window,'Notification',{configurable:true,value:Object.assign(function(){},{permission:'default',requestPermission:async()=>'default'})})"
+  },
+  "p-set-notif-reminders-asking": {
+    "kind": "desktop",
+    "design": "p-set-notif-reminders-asking",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Notifications\")"
+      }
+    ],
+    "init": "Object.defineProperty(window,'Notification',{configurable:true,value:Object.assign(function(){},{permission:'default',requestPermission:()=>new Promise(()=>{})})})",
+    "prefs": {
+      "reminders": true
+    }
+  },
+  "p-set-notif-reminders-blocked": {
+    "kind": "desktop",
+    "design": "p-set-notif-reminders-blocked",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Notifications\")"
+      }
+    ],
+    "init": "Object.defineProperty(window,'Notification',{configurable:true,value:Object.assign(function(){},{permission:'denied',requestPermission:async()=>'denied'})})",
+    "prefs": {
+      "reminders": true
+    }
+  },
+  "p-set-notif-unsupported": {
+    "kind": "desktop",
+    "design": "p-set-notif-unsupported",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Notifications\")"
+      }
+    ],
+    "init": "delete window.Notification"
+  },
+  "connected-apps": {
+    "kind": "desktop",
+    "design": "connected-apps",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Connected apps\")"
+      }
+    ]
+  },
+  "settings-calendars": {
+    "kind": "desktop",
+    "design": "settings-calendars",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Calendars\")"
+      }
+    ]
+  },
+  "settings-privacy": {
+    "kind": "desktop",
+    "design": "settings-privacy",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Privacy\")"
+      }
+    ]
+  },
+  "p-export-dialog": {
+    "kind": "desktop",
+    "design": "p-export-dialog",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Privacy\")"
+      },
+      {
+        "role": "button",
+        "name": "Export\u2026"
+      }
+    ]
+  },
+  "event-panel": {
+    "kind": "desktop",
+    "design": "event-panel",
+    "route": "/calendar",
+    "scenario": "today-event",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Agenda"
+      },
+      {
+        "click": "button.link-btn:has-text(\"Book club\")"
+      }
+    ]
+  },
+  "p-event-invitees": {
+    "kind": "desktop",
+    "design": "p-event-invitees",
+    "route": "/calendar",
+    "scenario": "today-event",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Agenda"
+      },
+      {
+        "click": "button.link-btn:has-text(\"Book club\")"
+      }
+    ]
+  },
+  "p-event-conflict": {
+    "kind": "desktop",
+    "design": "p-event-conflict",
+    "route": "/calendar",
+    "scenario": "today-event",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Agenda"
+      },
+      {
+        "click": "button.link-btn:has-text(\"Book club\")"
+      }
+    ]
+  },
+  "p-event-video": {
+    "kind": "desktop",
+    "design": "p-event-video",
+    "route": "/calendar",
+    "scenario": "today-event",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Agenda"
+      },
+      {
+        "click": "button.link-btn:has-text(\"Book club\")"
+      }
+    ]
+  },
+  "p-event-recurring": {
+    "kind": "desktop",
+    "design": "p-event-recurring",
+    "route": "/calendar",
+    "scenario": "today-event",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Agenda"
+      },
+      {
+        "click": "button.link-btn:has-text(\"Book club\")"
+      },
+      {
+        "role": "button",
+        "name": "Save"
+      }
+    ]
+  },
+  "p-event-delete": {
+    "kind": "desktop",
+    "design": "p-event-delete",
+    "route": "/calendar",
+    "scenario": "today-event",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Agenda"
+      },
+      {
+        "click": "button.link-btn:has-text(\"Book club\")"
+      },
+      {
+        "role": "button",
+        "name": "Delete"
+      }
+    ]
+  },
+  "new-event": {
+    "kind": "desktop",
+    "design": "new-event",
+    "route": "/calendar",
+    "scenario": "week",
+    "steps": [
+      {
+        "role": "button",
+        "name": "New event"
+      }
+    ]
+  },
+  "landing": {
+    "kind": "desktop",
+    "design": "landing",
+    "account": "out",
+    "route": "/today",
+    "scenario": "today",
+    "fit": "app"
+  },
+  "p-signup-invite-default": {
+    "kind": "desktop",
+    "design": "p-signup-invite-default",
+    "account": "out",
+    "route": "/today",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button:text-is(\"Get started\")"
+      }
+    ],
+    "fit": "app"
+  },
+  "p-signup-invite-filled": {
+    "kind": "desktop",
+    "design": "p-signup-invite-filled",
+    "account": "out",
+    "route": "/today",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button:text-is(\"Get started\")"
+      },
+      {
+        "fill": "input",
+        "value": "ABCD-EFGH-JKLM"
+      }
+    ],
+    "fit": "app"
+  },
+  "sign-in": {
+    "kind": "desktop",
+    "design": "sign-in",
+    "account": "out",
+    "route": "/today",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button:text-is(\"Sign in\")"
+      }
+    ],
+    "fit": "app"
+  },
+  "recovery": {
+    "kind": "desktop",
+    "design": "recovery",
+    "account": "out",
+    "route": "/today",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button:text-is(\"Sign in\")"
+      },
+      {
+        "click": "button:has-text(\"Forgot your password?\")"
+      }
+    ],
+    "fit": "app"
   }
 }

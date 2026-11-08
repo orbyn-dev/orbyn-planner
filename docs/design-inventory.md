@@ -1,6 +1,6 @@
 # Design inventory: Planner against the designs
 
-- **Designs commit:** `0512b1f` (orbyn-designs `origin/main`), Planner Designs v50 and Account Designs v60; the third and fourth match passes read `artifacts/planner-designs.html` from it. Earlier rows were read from `06fa9fe`, `54e6694` and `718fa7b`.
+- **Designs commit:** `59546b4` (orbyn-designs `origin/main`), Planner Designs and Account Designs of 2026-11-09; the fifth match pass (Search, Notifications, Settings, event panels, sign-in screens) read both pages from it. Earlier rows were read from older commits.
 - **Page versions:** Planner Designs v50 and Account Designs v60, as given by the coordinator. The HTML files carry no version marker (the version lives on the artifact server), so these are taken from the brief and not verified here.
 - **Planner main checked:** first run on `50b5bc2a`; match passes on main at `3caa45a`, `0d76a40`, `de0fdae` and (fourth: Today, calendar, Tasks list, View options and the task panel) `d3ab552`, with #91 to #96 merged. #94 had not merged.
 - **Refresh method:** rows for work merged since the first run were updated from the code, the tests and each PR’s notes; they were not re-screenshotted, so none moves to *matched*. Frames built to v39 to v41 name the PR. Rows for work not yet merged (row popovers, the When line) are left as they were.
@@ -13,21 +13,21 @@
 
 | Page / area | Frames | matched | partial | not built | gated | in progress | not checked yet |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Planner Designs (all)** | **158** | **6** | **88** | **26** | **9** | **0** | **29** |
+| **Planner Designs (all)** | **160** | **6** | **99** | **26** | **12** | **0** | **17** |
 | Planner · Getting started | 9 | 1 | 8 | 0 | 0 | 0 | 0 |
-| Planner · Search | 2 | 0 | 0 | 0 | 0 | 0 | 2 |
+| Planner · Search | 2 | 0 | 2 | 0 | 0 | 0 | 0 |
 | Planner · Empty, loading and error states | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
 | Planner · Today | 14 | 5 | 8 | 0 | 1 | 0 | 0 |
-| Planner · Calendar | 26 | 0 | 17 | 3 | 0 | 0 | 6 |
+| Planner · Calendar | 26 | 0 | 19 | 2 | 3 | 0 | 2 |
 | Planner · Tasks | 30 | 0 | 21 | 8 | 1 | 0 | 0 |
 | Planner · Lists | 6 | 0 | 4 | 2 | 0 | 0 | 0 |
 | Planner · Sharing | 5 | 0 | 0 | 5 | 0 | 0 | 0 |
 | Planner · Completed and deleted | 1 | 0 | 1 | 0 | 0 | 0 | 0 |
 | Planner · Projects | 5 | 0 | 4 | 0 | 0 | 0 | 1 |
 | Planner · Booking | 8 | 0 | 0 | 8 | 0 | 0 | 0 |
-| Planner · Notifications | 4 | 0 | 0 | 0 | 2 | 0 | 2 |
-| Planner · Settings | 31 | 0 | 13 | 0 | 5 | 0 | 13 |
-| Planner · Account and auth | 8 | 0 | 6 | 0 | 0 | 0 | 2 |
+| Planner · Notifications | 4 | 0 | 2 | 0 | 2 | 0 | 0 |
+| Planner · Settings | 31 | 0 | 15 | 1 | 5 | 0 | 10 |
+| Planner · Account and auth | 10 | 0 | 9 | 0 | 0 | 0 | 1 |
 | Planner · Phone | 8 | 0 | 6 | 0 | 0 | 0 | 2 |
 | **Account Designs (all)** | **128** | **0** | **14** | **0** | **13** | **0** | **101** |
 | Account · Account site | 14 | 0 | 0 | 0 | 5 | 0 | 9 |
@@ -162,14 +162,14 @@ Deep pass (Today, calendar, tasks) was complete at the first run; the refresh ab
 | `calendar-day` Calendar · Day | `features/calendar/CalendarPage.tsx:47, features/calendar/TimeGrid.tsx:36` | partial | `calendar-day-{light,dark,dim}-side.png` (+ -1440) | toolbar range label "Sat 7 Nov" and the task order (12:00 first, done last) now agree; the grid starts at 10:00 where the frame starts at 7:00 (TimeGrid.tsx:67); "All day" also shows as a row in the grid (the frame only in the panel); event lines read "13:00 to 14:00" where the frame reads "13:00" for a one-hour event |
 | `calendar-agenda` Calendar · Agenda | `features/calendar/AgendaView.tsx:39` | partial | `calendar-agenda-{light,dark,dim}-side.png` (+ -1440) | range label and toolbar agree after #93; #98 (read from its description, not re-rendered since) removes "Room 3 · 1h": an event row says its place, or its length, never both; rows were about 1px shorter than the frame's, 3px by the third day; to re-check after the next Worker 1 PRs |
 | `calendar-month` Calendar · Month | `features/calendar/MonthView.tsx` | partial | `calendar-month-{light,dark,dim}-side.png` (+ -1440) | layout, counts, chips and colours agree in all three themes after #93; "Call with the builder" shows a 2px sliver of its calendar colour before the text where the frame shows no dot (the dot is squeezed by the long title in MonthView.tsx) |
-| `event-panel` Event panel | `features/calendar/EventPanel.tsx:16` | partial | `cmp-event-panel.png` | Calendar, Repeat and Reminder open row popovers (p-row-calendar); When opens the combined date-and-time popover (p-row-event-when); with the panel open the toolbar pills wrap onto several lines |
-| `new-event` New event | `features/calendar/NewEventDialog.tsx:13` | partial | `cmp-new-event.png` | "Invite people" is a row (#56); When is the one combined line with typing, a live preview, a quiet "Couldn’t read that" and the calendar popover (p-when-event, -typing, -unreadable); still: calendar is a select without the colour swatch |
+| `event-panel` Event panel | `features/calendar/EventPanel.tsx:16` | partial | `event-panel-{light,dark,dim}-side.png` (+ -1440) | ours has People as an empty "Add by email" input and no people list, no "Maya Chen · Going" or "alex@example.com · No reply" rows (sharing is Planned); the panel rows When, Calendar, Where, Repeat, Reminder agree in copy, the panel title is an input in ours (EventPanel.tsx); the Agenda behind it differs in row spacing |
+| `new-event` New event | `features/calendar/NewEventDialog.tsx:13` | partial | `new-event-{light,dark,dim}-side.png` (+ -1440) | the dialog opens over the week calendar, the frame draws it alone with the title, When, Calendar, Repeat, Reminder and Invite people; ours says "3 due" where the frame says 4 due (fixture); not compared further |
 | `calendar-manage` Calendars | `features/calendar/CalendarsDialog.tsx:9, features/calendar/CalendarList.tsx:86` | partial | `cmp-calendar-manage.png` | rows carry four colour swatches, Rename and a Shown toggle; design rows are name and "Shown" text; "Family · shared" needs sharing (not built); a failed subscription row exists (CalendarList.tsx:72) |
-| `p-event-invitees` Event panel · Invitees and replies | `features/calendar/EventPanel.tsx:16` | not checked yet | – | Event has `people` with responses (types.ts:112) |
-| `p-event-recurring` Event panel · Edit a repeating event | `features/calendar/ScopeDialog.tsx:22` | not checked yet | – |  |
-| `p-event-conflict` Event panel · Conflict | none found | not checked yet | – |  |
-| `p-event-video` Event panel · Video link | none found | not built | – | no video-link field on CalendarEvent (types.ts:103) |
-| `p-event-delete` Event panel · Delete | `features/calendar/EventPanel.tsx:16` | not checked yet | – |  |
+| `p-event-invitees` Event panel · Invitees and replies | `features/calendar/EventPanel.tsx:16` | gated | `p-event-invitees-{light,dark,dim}-side.png` (+ -1440) | invitee replies are Planned (sharing); the rest of the panel as `event-panel` |
+| `p-event-recurring` Event panel · Edit a repeating event | `features/calendar/ScopeDialog.tsx:22` | partial | `p-event-recurring-{light,dark,dim}-side.png` (+ -1440) | the frame's "Change a repeating event" dialog (Only this event / All events in the series) vs ours three choices (This event, This and following, All events) with a different title; not compared further (EventPanel.tsx, ScopeDialog.tsx) |
+| `p-event-conflict` Event panel · Conflict | none found | gated | `p-event-conflict-{light,dark,dim}-side.png` (+ -1440) | the overlap warning, "Maya is going to both" and the Move to 14:30 action are Planned |
+| `p-event-video` Event panel · Video link | none found | gated | `p-event-video-{light,dark,dim}-side.png` (+ -1440) | the video link is Planned (not built) |
+| `p-event-delete` Event panel · Delete | `features/calendar/EventPanel.tsx:16` | partial | `p-event-delete-{light,dark,dim}-side.png` (+ -1440) | ours titles the dialog "Delete" with three scope rows (This event, This and following, All events); the frame titles it "Delete “Book club”?" with two radio rows, the "kept for 30 days" note and a red "Delete event" button (ScopeDialog.tsx) |
 | `p-cal-loading` Calendar · Loading | none found | not built | – | CalendarPage never reads `ready`; no loading state |
 | `p-cal-sync-error` Calendar · Sync error, outside calendar | `features/calendar/CalendarList.tsx:72` | not checked yet | – | a subscription refresh error shows in the Calendars dialog only |
 | `p-cal-all-day` Calendar · All-day and multi-day | `features/calendar/TimeGrid.tsx` | partial | `p-cal-all-day-{light,dark,dim}-side.png` (+ -1440) | the "All day" row and the spanning bar agree in structure; the frame has its explanatory line under the title (not built) and a wider Sat column, so "Maya’s birthday" is cut off in ours; the grid scrolls to 10:00 where the frame shows 7:00; the panel says "No tasks due." where the frame lists none |
@@ -201,17 +201,17 @@ Deep pass (Today, calendar, tasks) was complete at the first run; the refresh ab
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `notifications` Notifications | `features/notifications/NotificationsPage.tsx:14` | not checked yet | – |  |
-| `p-notif-empty` Notifications · Empty | `features/notifications/NotificationsPage.tsx:14` | not checked yet | – |  |
-| `p-notif-grouped` Notifications · Grouped | none found | gated | – | frame note: Planned, needs sharing or connected apps |
-| `p-notif-snooze` Notifications · Snooze a reminder | none found | gated | – | frame note: Planned, needs sharing |
+| `notifications` Notifications | `features/notifications/NotificationsPage.tsx:14` | partial | `notifications-{light,dark,dim}-side.png` (+ -1440) | ours shows the empty state: the fixture has no fired reminder, and the frame's rows (shared-list changes, "Orbyn Engineering added…", "Jordan accepted…") are Planned; the header "4 unread" and "Mark all as read" and the reminder rows with "Open task" could not be compared (NotificationsPage.tsx) |
+| `p-notif-empty` Notifications · Empty | `features/notifications/NotificationsPage.tsx:14` | partial | `p-notif-empty-{light,dark,dim}-side.png` (+ -1440) | copy agrees; the frame centres the empty state horizontally and near the top (heading 150px from the top), ours left-aligns it 295px down (NotificationsPage.tsx:23, the shared `.empty`) |
+| `p-notif-grouped` Notifications · Grouped | none found | gated | `p-notif-grouped-{light,dark,dim}-side.png` (+ -1440) | grouped changes by Maya, Orbyn Engineering and Priya are Planned (sharing); the frame's "4 unread" header and Mark all as read are not compared (fixture has no reminders) |
+| `p-notif-snooze` Notifications · Snooze a reminder | none found | gated | `p-notif-snooze-{light,dark,dim}-side.png` (+ -1440) | snoozing needs the reminder rows and the shared-list changes, which are Planned; not compared |
 
 ### Search
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `search` Search or add | `features/search/SearchDialog.tsx:26` | not checked yet | – | dialog exists; copy and layout not compared |
-| `p-search-none` Search · No results | `features/search/SearchDialog.tsx:26` | not checked yet | – |  |
+| `search` Search or add | `features/search/SearchDialog.tsx:26` | partial | `search-{light,dark,dim}-side.png` (+ -1440) | the dialog's width, input and "Enter to add" agree; the frame searches the words left after the date ("Dentist") and lists Tasks, Calendar and Lists matches, ours searches the whole text ("dentist friday 3pm") and finds nothing (SearchDialog.tsx:49-60, :193); the add rows show the typed lower-case title ("dentist") where the frame writes "Dentist"; the frame draws the dialog on a blank page, ours over the dimmed planner; ours adds a "Keep as typed" checkbox the frame lacks (SearchDialog.tsx:200) |
+| `p-search-none` Search · No results | `features/search/SearchDialog.tsx:26` | partial | `p-search-none-{light,dark,dim}-side.png` (+ -1440) | as `search`: the "No results" copy and the two add rows agree; background and the extra checkbox differ |
 
 ### Empty, loading and error states
 
@@ -223,17 +223,17 @@ Deep pass (Today, calendar, tasks) was complete at the first run; the refresh ab
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `settings-account` Settings · Account and devices | `features/settings/SettingsPage.tsx:18, features/auth/AccountSettings.tsx:317` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh; Passkeys row is Planned |
+| `settings-account` Settings · Account and devices | `features/settings/SettingsPage.tsx:18, features/auth/AccountSettings.tsx:317` | partial | `settings-account-{light,dark,dim}-side.png` (+ -1440) | ours has a "Two-factor Off · Turn on…" row, a Sync card with "Sync now" and Sign out, Refresh and Add a device buttons; the frame has rows Password (Change) and Data protection (Standard · Change) and only "Add a device"; device rows read "A · this device / Added 7 Nov, 10:00" with a boxed Remove where the frame reads "MacBook Air · this device / Synced now" and a red inline "· Remove" (AccountSettings.tsx:250-290); the name is the kit's (Sam Arden vs Sam Rivera, fixture); a "Tags" category in the settings list that the frame does not have (SettingsPage.tsx:16) |
 | `add-device` Approve a new sign-in | `features/auth/PendingScreen.tsx:11` | not checked yet | – | the frame was not part of #46 and has not been compared |
-| `settings` Settings · Planning | `features/settings/SettingsPage.tsx:18` | not checked yet | – | the frame was not part of #46 and has not been compared |
-| `settings-notifications` Settings · Notifications | `features/settings/NotificationsSettings.tsx:21` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh: Reminders heading and status, quiet hours with an allow switch, Planned rows |
-| `p-set-notif-reminders-off` Settings · Notifications · Reminders off | `features/settings/NotificationsSettings.tsx:21` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
-| `p-set-notif-reminders-asking` Settings · Notifications · Asking for permission | `features/settings/NotificationsSettings.tsx:21` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
-| `p-set-notif-reminders-blocked` Settings · Notifications · Blocked in the browser | `features/settings/NotificationsSettings.tsx:21` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
-| `p-set-notif-unsupported` Settings · Notifications · No notification support | `features/settings/NotificationsSettings.tsx:21` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
-| `connected-apps` Settings · Connected apps | none found | not checked yet | – | the frame was not part of #46 and has not been compared |
-| `settings-calendars` Settings · Calendars | `features/calendar/CalendarList.tsx:86` | not checked yet | – | the frame was not part of #46 and has not been compared |
-| `settings-privacy` Settings · Data protection | `features/auth/ProtectionSettings.tsx:164` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh: Data protection page with radio group semantics, no device name beside a signed change |
+| `settings` Settings · Planning | `features/settings/SettingsPage.tsx:18` | partial | `settings-{light,dark,dim}-side.png` (+ -1440) | the frame is a list of values (Week starts on Monday, Working days Mon to Fri, Day starts 08:00; Defaults: New tasks go to Inbox, Default reminder, Show completed tasks For 1 day; Appearance: Theme System, Dark theme Dark · Dim); ours has segmented controls for Week starts on and Days in the week view, a Theme segment, and no Working days, Day starts, Defaults or Dark theme rows (SettingsPage.tsx:40-110); a "Tags" category in the settings list that the frame does not have (SettingsPage.tsx:16) |
+| `settings-notifications` Settings · Notifications | `features/settings/NotificationsSettings.tsx:21` | partial | `settings-notifications-{light,dark,dim}-side.png` (+ -1440) | copy, the "Allowed in this browser" pill, the Planned rows and the toggles agree; the quiet-hours time fields are boxed with a clock icon and taller in ours (the frame's are plain 22:00 / 07:00 boxes); a "Tags" category in the settings list that the frame does not have (SettingsPage.tsx:16) |
+| `p-set-notif-reminders-off` Settings · Notifications · Reminders off | `features/settings/NotificationsSettings.tsx:21` | partial | `p-set-notif-reminders-off-{light,dark,dim}-side.png` (+ -1440) | agrees apart from the quiet-hours fields and a "Tags" category in the settings list that the frame does not have (SettingsPage.tsx:16) |
+| `p-set-notif-reminders-asking` Settings · Notifications · Asking for permission | `features/settings/NotificationsSettings.tsx:21` | partial | `p-set-notif-reminders-asking-{light,dark,dim}-side.png` (+ -1440) | the frame adds "Allow notifications when your browser asks." and "Waiting for your browser", not in ours (NotificationsSettings.tsx); quiet-hours fields and a "Tags" category in the settings list that the frame does not have (SettingsPage.tsx:16) |
+| `p-set-notif-reminders-blocked` Settings · Notifications · Blocked in the browser | `features/settings/NotificationsSettings.tsx:21` | partial | `p-set-notif-reminders-blocked-{light,dark,dim}-side.png` (+ -1440) | agrees apart from the quiet-hours fields and a "Tags" category in the settings list that the frame does not have (SettingsPage.tsx:16) |
+| `p-set-notif-unsupported` Settings · Notifications · No notification support | `features/settings/NotificationsSettings.tsx:21` | partial | `p-set-notif-unsupported-{light,dark,dim}-side.png` (+ -1440) | agrees apart from the quiet-hours fields and a "Tags" category in the settings list that the frame does not have (SettingsPage.tsx:16) |
+| `connected-apps` Settings · Connected apps | none found | not built | `connected-apps-{light,dark,dim}-side.png` (+ -1440) | ours reads "Nothing to set here yet." (SettingsPage.tsx:124); the frame lists Orbyn Engineering's grants (lists it can use, busy times, threads, change and delete tasks) with See activity and Disconnect, and an "Other apps" note; a "Tags" category in the settings list that the frame does not have (SettingsPage.tsx:16) |
+| `settings-calendars` Settings · Calendars | `features/calendar/CalendarList.tsx:86` | partial | `settings-calendars-{light,dark,dim}-side.png` (+ -1440) | ours lists the planner's calendars with colour pickers, Rename and Shown, and Subscribe and New calendar buttons; the frame lists Subscribed calendars with a refresh state ("Couldn’t refresh · Retry", "Refreshed 1h ago"), a "Use in other calendar apps" card (CalDAV address, App password: Planned) and the Standard protection note (CalendarList.tsx, SettingsPage.tsx); a "Tags" category in the settings list that the frame does not have (SettingsPage.tsx:16) |
+| `settings-privacy` Settings · Data protection | `features/auth/ProtectionSettings.tsx:164` | partial | `settings-privacy-{light,dark,dim}-side.png` (+ -1440) | the kit's account has no protection level, so ours shows "Choose your protection level · Not set" where the frame shows "Standard protection · Verified" with a radio card; the Advanced card and "Your data" rows agree in copy; rows are boxed differently (the frame uses radio cards, ours a bordered row); a "Tags" category in the settings list that the frame does not have (SettingsPage.tsx:16) |
 | `advanced-on` Turn on Advanced protection | `features/auth/ProtectionSettings.tsx:164` | gated | – | frame note: Advanced is Planned |
 | `web-approve` Approve the web for an hour | none found | not checked yet | – | the frame was not part of #46 and has not been compared |
 | `p-set-account-loading` Settings · Account · Loading | `features/settings/SettingsPage.tsx:18` | not checked yet | – | the frame was not part of #46 and has not been compared |
@@ -248,7 +248,7 @@ Deep pass (Today, calendar, tasks) was complete at the first run; the refresh ab
 | `p-set-calendars-error` Settings · Calendars · Save error | `features/calendar/CalendarList.tsx:86` | not checked yet | – | the frame was not part of #46 and has not been compared |
 | `p-set-privacy-loading` Settings · Privacy · Loading | `features/auth/ProtectionSettings.tsx:164` | gated | – | frame note: not shown today (preferences are local); settings-copy also touches this file |
 | `p-set-privacy-error` Settings · Privacy · Save error | `features/auth/ProtectionSettings.tsx:164` | gated | – | frame note: not shown today (preferences are local); settings-copy also touches this file |
-| `p-export-dialog` Settings · Privacy · Export your data | `features/export/ExportSettings.tsx:15` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh: JSON default, format descriptions, settings stay on this device |
+| `p-export-dialog` Settings · Privacy · Export your data | `features/export/ExportSettings.tsx:15` | partial | `p-export-dialog-{light,dark,dim}-side.png` (+ -1440) | the dialog opens; compared by text only: the Export dialog's fields and buttons are in both; layout over the Privacy page not looked at closely |
 | `p-export-busy` Settings · Privacy · Exporting | `features/export/ExportSettings.tsx:15` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
 | `p-export-done` Settings · Privacy · Exported | `features/export/ExportSettings.tsx:15` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
 | `p-export-failed` Settings · Privacy · Export failed | `features/export/ExportSettings.tsx:15` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
@@ -259,14 +259,16 @@ Deep pass (Today, calendar, tasks) was complete at the first run; the refresh ab
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `landing` Landing | `features/auth/AuthScreens.tsx:20` | not checked yet | – | grep matches 4 of 6 lines |
+| `landing` Landing | `features/auth/AuthScreens.tsx:20` | partial | `landing-{light,dark,dim}-side.png` (+ -1440) | the copy differs: the frame has a "See how it works" link and ours has "Sign in", "Use without an account" and "Everything then stays on this device. You can sign in later." (AuthScreens.tsx:28-36); the design frame could not be cropped by the kit, so layout is not compared |
 | `sign-up` Sign up | `features/auth/AuthScreens.tsx:197` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh: dimmed Planned passkey button, "Continue with a password", sign-up note keeps the email code |
 | `verify` Verify your email | `features/auth/AuthScreens.tsx:46` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh: verify states |
 | `p-verify-ready` Verify your email · Send a new code | `features/auth/AuthScreens.tsx:46` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
 | `p-verify-throttled` Verify your email · Too many codes | `features/auth/AuthScreens.tsx:46` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
-| `sign-in` Sign in | `features/auth/AuthScreens.tsx:256` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh: Planned passkey button, "Continue with a password", "Forgot your password?" |
+| `sign-in` Sign in | `features/auth/AuthScreens.tsx:256` | partial | `sign-in-{light,dark,dim}-side.png` (+ -1440) | copy agrees; the frame shows sam@example.com and a masked password, ours empty fields (fixture); the design frame could not be cropped by the kit, so layout is not compared |
 | `p-sign-in-local` Sign in · from inside the planner | `features/auth/AuthScreens.tsx:256` | not checked yet | – |  |
-| `recovery` Recover your account | `features/auth/AuthScreens.tsx:398` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh: final recovery text |
+| `recovery` Recover your account | `features/auth/AuthScreens.tsx:398` | partial | `recovery-{light,dark,dim}-side.png` (+ -1440) | copy agrees; ours puts "Planned" and "Not available yet." on one line where the frame stacks them; the design frame could not be cropped by the kit, so layout is not compared |
+| `p-signup-invite-default` Sign up · Invite code (step 1 of 4) | `features/auth/AuthScreens.tsx` | partial | `p-signup-invite-default-{light,dark,dim}-side.png` (+ -1440) | copy agrees (Step 1 of 4, invite-only, XXXX-XXXX-XXXX-XXXX); the design frame could not be cropped by the kit, so layout is not compared |
+| `p-signup-invite-filled` Sign up · Invite code, filled | `features/auth/AuthScreens.tsx` | partial | `p-signup-invite-filled-{light,dark,dim}-side.png` (+ -1440) | as `p-signup-invite-default`; the filled code could not be compared |
 
 ### Phone
 

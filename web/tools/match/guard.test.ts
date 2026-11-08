@@ -25,9 +25,9 @@ describe("the match kit stays out of the app", () => {
   it("the kit imports no real engine code and calls no network API; its pretend account is in-process", () => {
     const files = Object.entries(kit).filter(([path]) => !isTest(path));
     expect(files.map(([p]) => p)).toEqual(expect.arrayContaining(["/tools/match/fixture.ts", "/tools/match/mount.tsx", "/tools/match/main.tsx", "/tools/match/account.ts", "/tools/match/noSocket.ts"]));
-    // The only engine-side modules the kit may import: the crypto registry, the engine's module as the sync tests load it, the
+    // The only engine-side modules the kit may import: the crypto registry, the in-memory key store, the in-process mock engine, the engine's module as the sync tests load it, the
     // service type, and the sync tests' mock-engine rig. Everything else (the real engine address, session, sockets) stays out.
-    const allowed = new Set(["../../src/api/authCrypto", "../../src/api/testing/realModule", "../../src/auth/services", "../../src/sync/testing/rig"]);
+    const allowed = new Set(["../../src/api/authCrypto", "../../src/api/keyStore", "../../src/api/testing/MockEngine", "../../src/api/testing/realModule", "../../src/auth/services", "../../src/sync/testing/rig"]);
     const offenders: string[] = [];
     for (const [path, code] of files) {
       const imports = [...code.matchAll(/from\s+["']([^"']+)["']/g)].map((m) => m[1]!);

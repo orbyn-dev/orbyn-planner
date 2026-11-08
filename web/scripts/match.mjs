@@ -204,10 +204,11 @@ async function ours(theme, size = SIZE[frame.kind], suffix = "") {
   const page = await context.newPage();
   await page.clock.setFixedTime(new Date(frame.now ?? PINNED_NOW));
   // A frame's own preferences (for example days shown), set before the page starts.
+  if (frame.init) await page.addInitScript(frame.init);
   if (frame.prefs) await page.addInitScript((prefs) => localStorage.setItem("orbyn-planner.prefs", JSON.stringify(prefs)), frame.prefs);
-  const query = new URLSearchParams({ scenario: frame.scenario, route: frame.route, theme, ...(frame.now ? { now: frame.now } : {}), ...(frame.account === false ? { account: "0" } : {}) });
+  const query = new URLSearchParams({ scenario: frame.scenario, route: frame.route, theme, ...(frame.now ? { now: frame.now } : {}), ...(frame.account === false ? { account: "0" } : frame.account === "out" ? { account: "out" } : {}) });
   await page.goto(`${origin}/tools/match/index.html?${query}`);
-  await page.waitForSelector(".app", { timeout: 20000 });
+  await page.waitForSelector(".app, .authcard, h1", { timeout: 20000 });
   if (frame.offline) await context.setOffline(true);
   for (const step of frame.steps ?? []) {
     if (step.role) await page.getByRole(step.role, { name: step.name }).first().click();
@@ -244,12 +245,14 @@ async function design(theme) {
     el.querySelector(".tb")?.setAttribute("style", "display:none");
   }, theme);
   await app.scrollIntoViewIfNeeded();
-  await page.waitForTimeout(250);
+  await page.waitForTimeout(frame.fit === "app" ? 1500 : 250); // the sign-in cards of the design fade in
   const box = await app.boundingBox();
   const size = SIZE[frame.kind];
   const top = frame.kind === "phone" ? 51 : 1; // the phone's status bar is device chrome; the desktop title bar is hidden
   const png = join(outDir, `${name.replace("@", "-")}-${theme}-design.png`);
-  await page.screenshot({ path: png, clip: { x: box.x + 1, y: box.y + top, width: size.width, height: size.height } });
+  // A frame that is not a window with a sidebar (the sign-in screens) is taken whole.
+  if (frame.fit === "app") await app.screenshot({ path: png });
+  else await page.screenshot({ path: png, clip: { x: box.x + 1, y: box.y + top, width: size.width, height: size.height } });
   const text = await app.evaluate((el) => el.innerText);
   const boxes = await app.evaluate((el, [ox, oy]) => {
     const out = [];
