@@ -197,4 +197,13 @@ describe("after Undo", () => {
     const row = await screen.findByRole("button", { name: "water plants" });
     await waitFor(() => expect(row).toHaveFocus());
   });
+
+  it("the rows run Due, List, Priority, Tags, Repeat, Reminder, then Status, and a project's rows come after Status (Planner Designs v49 task-panel)", async () => {
+    const { store, task } = await open();
+    const project = store.addProject({ name: "Spring launch", colour: "c1", goal: null });
+    await act(async () => store.updateTask(task.id, { projectId: project.id }));
+    const labels = () => Array.from(screen.getByRole("complementary", { name: "Task" }).querySelectorAll(".kv > span:first-child")).map((e) => e.textContent);
+    await screen.findByLabelText("Project");
+    expect(labels()).toEqual(["Due", "List", "Priority", "Tags", "Repeat", "Reminder", "Status", "Project"]);
+  });
 });

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useUi } from "../../app/ui";
-import { WEEKDAYS, dateOf, formatTime, parseDue } from "../../lib/dates";
+import { WEEKDAYS, dateOf, formatTime, isOverdue, parseDue, startOfDay } from "../../lib/dates";
 import { lastDayOf, touchesDay } from "../../lib/wall";
 import { usePlanner } from "../../store/context";
 import type { Occurrence } from "../../store/occurrences";
@@ -8,7 +8,7 @@ import type { CalendarEvent, Task } from "../../store/types";
 import { dueText, isOpen, needsAction, sortByDue } from "../tasks/selectors";
 import { TodayRow, useTaskActions } from "../tasks/TaskRow";
 import { HOUR_PX } from "../../styles/tokens";
-import { countOverlaps, isAllDayLike, layoutDay } from "./layout";
+import { isAllDayLike, layoutDay } from "./layout";
 
 const px = (minutes: number) => (minutes * HOUR_PX) / 60;
 
@@ -23,12 +23,21 @@ function range(occ: Occurrence): string {
   return occ.start === occ.end ? formatTime(a) : `${formatTime(a)} to ${formatTime(b)}`;
 }
 
+/** The line under a task in the side column: "1 day late" for an overdue one, otherwise its due text ("Today 12:00"). */
+function cardDue(task: Task, now: Date): string {
+  if (task.due !== null && !task.done && isOverdue(task.due, now)) {
+    const days = Math.round((startOfDay(now).getTime() - startOfDay(parseDue(task.due).date).getTime()) / 86_400_000);
+    if (days > 0) return `${days} ${days === 1 ? "day" : "days"} late`;
+  }
+  return dueText(task, now);
+}
+
 function TaskCard({ task, now }: { task: Task; now: Date }) {
   const { open } = useTaskActions(task);
   return (
     <li className="tcard" data-done={task.done}>
       <button type="button" className="tt link-btn" onClick={open}>{task.title}</button>
-      <span className="m" style={needsAction(task, now) ? { color: "var(--amber-text)" } : undefined}>{dueText(task, now)}</span>
+      <span className="m" style={needsAction(task, now) ? { color: "var(--amber-text)" } : undefined}>{cardDue(task, now)}</span>
     </li>
   );
 }
@@ -60,7 +69,6 @@ export function TimeGrid({ days, occurrences, today, now, mode }: { days: string
   const barIds = new Set(bars.map((b) => b.occ));
   const singles = allDay.filter((o) => !barIds.has(o));
   const dayWord = (d: string) => `${WEEKDAYS[dateOf(d).getDay()]!.slice(0, 3)} ${dateOf(d).getDate()}`;
-  const overlaps = useMemo(() => countOverlaps(byDay), [byDay]);
 
   useEffect(() => {
     const el = scroller.current;
@@ -195,7 +203,6 @@ export function TimeGrid({ days, occurrences, today, now, mode }: { days: string
           <>
             <div className="bh"><b>This week</b></div>
             <div className="kv"><span>Events</span><b>{occurrences.length}</b></div>
-            <div className="kv"><span>Overlaps</span><b style={overlaps > 0 ? { color: "var(--amber-text)" } : undefined}>{overlaps}</b></div>
             <div className="bh"><b>Due this week</b></div>
             {dueTasks.length === 0 ? (
               <p className="quiet">No tasks due.</p>

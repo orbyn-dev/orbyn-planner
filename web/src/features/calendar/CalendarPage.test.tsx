@@ -70,9 +70,51 @@ describe("Week view", () => {
 
     const side = screen.getByRole("complementary", { name: "This week" });
     expect(within(side).getByText("Events").nextSibling).toHaveTextContent("4");
-    expect(within(side).getByText("Overlaps").nextSibling).toHaveTextContent("1");
+    expect(within(side).queryByText("Overlaps")).toBeNull(); // the frame has Events only (Planner Designs v49 calendar-week)
     expect(within(side).getByText("Prepare the launch slides")).toBeInTheDocument();
     expect(within(side).queryByText("Book the dentist")).not.toBeInTheDocument();
+  });
+
+  it("Due this week lists the late tasks and today's, and says \"1 day late\" for a late one", async () => {
+    await open({
+      seed: (s) => {
+        s.addTask({ title: "Late one", due: "2026-11-05" });
+        s.addTask({ title: "Later", due: "2026-11-03" });
+        s.addTask({ title: "Today at noon", due: "2026-11-06T12:00" });
+      },
+    });
+    const side = within(screen.getByRole("complementary", { name: "This week" }));
+    expect(side.getByText("1 day late")).toBeInTheDocument();
+    expect(side.getByText("3 days late")).toBeInTheDocument();
+    expect(side.getByText("Today 12:00")).toBeInTheDocument();
+    expect(side.queryByText(/Overdue/)).toBeNull();
+    expect(side.getByText("Today at noon")).toBeInTheDocument();
+  });
+
+  it("the Day and Agenda toolbars have the range between the arrows, as Week does", async () => {
+    await open({ seed: seedWeek });
+    const range = () => document.querySelector(".ph .range")?.textContent;
+    expect(range()).toBe("2 – 8 Nov");
+    await userEvent.click(screen.getByRole("radio", { name: "Day" }));
+    expect(range()).toBe("Fri 6 Nov");
+    await userEvent.click(screen.getByRole("radio", { name: "Agenda" }));
+    expect(range()).toBe("Fri 6 – Thu 12 Nov");
+    await userEvent.click(screen.getByRole("radio", { name: "Month" }));
+    expect(range()).toBeUndefined();
+  });
+
+  it("Day lists the tasks of the day with a time first, by time, then the ones with only a date", async () => {
+    await open({
+      path: "/calendar",
+      seed: (s) => {
+        s.addTask({ title: "Date only", due: "2026-11-06" });
+        s.addTask({ title: "Evening", due: "2026-11-06T17:00" });
+        s.addTask({ title: "Noon", due: "2026-11-06T12:00" });
+      },
+    });
+    await userEvent.click(screen.getByRole("radio", { name: "Day" }));
+    const side = screen.getByRole("complementary", { name: "Tasks today" });
+    expect(Array.from(side.querySelectorAll(".row .what")).map((e) => e.textContent)).toEqual(["Noon", "Evening", "Date only"]);
   });
 
   it("shows an all-day row and the red current-time line in today's column only", async () => {
@@ -145,11 +187,48 @@ describe("Day, Month and Agenda", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Friday 6 November" })).toBeInTheDocument();
   });
 
+  it("Month shows the days before the first with their numbers, and leaves the days after the last empty", async () => {
+    await open({ seed: seedWeek });
+    await userEvent.click(screen.getByRole("radio", { name: "Month" }));
+    // November 2026 runs Sun 1 to Mon 30: the week of Mon 26 Oct leads in with numbers, and Tue 1 to Sun 6 Dec are blank.
+    expect(document.querySelector('[data-day="2026-10-26"] .n')?.textContent).toBe("26");
+    expect(document.querySelector('[data-day="2026-11-30"] .n')?.textContent).toBe("30");
+    expect(document.querySelector('[data-day="2026-12-01"]')).toBeNull();
+    const after = Array.from(document.querySelectorAll(".md.after"));
+    expect(after).toHaveLength(6);
+    for (const cell of after) {
+      expect(cell.textContent).toBe("");
+      expect(cell).toHaveAttribute("aria-hidden", "true");
+    }
+  });
+
+  it("Month's arrow keys stop at the last day of the month", async () => {
+    await open({ path: "/calendar?month=2026-11" });
+    await userEvent.click(screen.getByRole("radio", { name: "Month" }));
+    const last = document.querySelector('[data-day="2026-11-30"]') as HTMLElement;
+    last.focus();
+    await userEvent.keyboard("{ArrowRight}");
+    expect(document.activeElement).toBe(last);
+    expect(last.tabIndex).toBe(0); // the Tab stop did not move to a blank cell
+  });
+
   it("Month starts weeks on Sunday when asked", async () => {
     localStorage.setItem("orbyn-planner.prefs", JSON.stringify({ weekStart: "sun", weekDays: 5 }));
     await open();
     await userEvent.click(screen.getByRole("radio", { name: "Month" }));
     expect(screen.getAllByRole("columnheader").map((h) => h.textContent)[0]).toBe("Sun");
+  });
+
+  it("Agenda rows repeat every 52 px, with the first 12 px under its header", async () => {
+    const nodeFs = "node:fs";
+    const fs = (await import(/* @vite-ignore */ nodeFs)) as { readFileSync(path: string, encoding: "utf8"): string };
+    const css = fs.readFileSync(`${(globalThis as { process?: { cwd(): string } }).process!.cwd()}/src/styles/app.css`, "utf8");
+    const i = css.indexOf(".agenda-rows {");
+    expect(i).toBeGreaterThan(-1);
+    expect(css.slice(i, css.indexOf("}", i))).toMatch(/gap: var\(--sp-14\); margin-top: var\(--sp-12\)/);
+    await open({ seed: (s) => s.addEvent({ title: "Soon", start: "2026-11-06T09:00", end: "2026-11-06T10:00" }) });
+    await userEvent.click(screen.getByRole("radio", { name: "Agenda" }));
+    expect(document.querySelector("ul.agenda-rows")).not.toBeNull();
   });
 
   it("Agenda says when nothing is coming up", async () => {
