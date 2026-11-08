@@ -941,3 +941,7 @@ button.pillx { border: 0; }
 /* Lists (Planner Designs lists, p-lists-offline): rows 38 px apart; the offline notice is a banner above them. */
 .tr.list { min-height: var(--sp-38); }
 .offline-banner { padding: var(--sp-4) var(--sp-28) var(--sp-10); }
+
+/* Quiet hours (Planner Designs settings-notifications): the times are plain 64 x 28 px boxes, no picker icon. */
+.ctl .field[type="time"] { width: var(--sp-64); height: var(--sp-28); padding: 0 var(--sp-10); color: var(--t1); }
+.ctl .field[type="time"]::-webkit-calendar-picker-indicator { display: none; }

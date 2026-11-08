@@ -82,7 +82,7 @@ export function NotificationsSettings() {
   const field = (id: string, label: string, value: string, set: (v: string) => void) => (
     <>
       <label htmlFor={id} className="t3">{label}</label>
-      <input id={id} className="field" style={{ width: "auto" }} type="time" value={value} onChange={(e) => e.target.value && set(e.target.value)} />
+      <input id={id} className="field" type="time" value={value} onChange={(e) => e.target.value && set(e.target.value)} />
     </>
   );
 
@@ -100,7 +100,7 @@ export function NotificationsSettings() {
           <Label title="Remind me about tasks" note={note} hint={permission === "unsupported" ? "Try another browser to get reminders." : undefined} />
           <b className="ctl">
             {asking ? (
-              <span className="t3"><span className="spin" aria-hidden="true" /> Waiting for your browser</span>
+              <span className="t3 fine"><span className="spin" aria-hidden="true" /> Waiting for your browser</span>
             ) : permission === "granted" ? (
               <span className="st ok"><span className="sd" />Allowed in this browser</span>
             ) : permission === "default" ? (

@@ -1008,6 +1008,12 @@
     "steps": [
       {
         "click": "button.nav:has-text(\"Notifications\")"
+      },
+      {
+        "click": "button[role=\"switch\"][aria-label=\"Remind me about tasks\"]"
+      },
+      {
+        "wait": 300
       }
     ],
     "init": "Object.defineProperty(window,'Notification',{configurable:true,value:Object.assign(function(){},{permission:'default',requestPermission:()=>new Promise(()=>{})})})",

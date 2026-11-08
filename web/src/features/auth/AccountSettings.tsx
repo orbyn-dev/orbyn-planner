@@ -195,7 +195,7 @@ function EngineNotice() {
   );
 }
 
-function SignedInAccount() {
+function SignedInAccount({ onOpenPrivacy }: { onOpenPrivacy?: () => void }) {
   const auth = useAuth()!;
   const { session, services } = auth;
   const [devices, setDevices] = useState<Device[] | null>(null);
@@ -229,6 +229,21 @@ function SignedInAccount() {
     void load();
   }, [load]);
 
+  // The row "Data protection · Standard · Change" (settings-account): the level this device last verified, read from its own saved
+  // state (nothing is fetched, so it never moves what the Privacy card reports as changed), Standard until one is set.
+  const [level, setLevel] = useState<string | null>(null);
+  useEffect(() => {
+    if (!session) return;
+    let live = true;
+    services.engine.run(session, (engine) => engine.protection.level()).then(
+      (known) => live && setLevel(known.level === "advanced" ? "Advanced" : "Standard"),
+      () => live && setLevel("Standard"),
+    );
+    return () => {
+      live = false;
+    };
+  }, [services, session]);
+
   // A device this one does not verify can be approved: a new one, or one the server lists as trusted
   // that this device no longer trusts (stranded by a removal, or approved before the two-way code).
   const needsApproval = (d: Device) => session?.deviceState === "trusted" && !d.current && verified !== null && !verified.has(d.id);
@@ -239,7 +254,11 @@ function SignedInAccount() {
       <div className="card" style={{ gap: 0, padding: "0 var(--sp-14)" }}>
         <div className="kv" style={{ height: "var(--sp-44)", borderBottom: "var(--bw) solid var(--line)" }}><span>Name</span><b>{session?.name || "Not set"}</b></div>
         <div className="kv" style={{ height: "var(--sp-44)", borderBottom: "var(--bw) solid var(--line)" }}><span>Email</span><b>{session?.email}</b></div>
-        <div className="kv" style={{ height: "var(--sp-44)" }}><span>Passkeys <Planned /></span><b><NotAvailable /></b></div>
+        <div className="kv" style={{ height: "var(--sp-44)", borderBottom: "var(--bw) solid var(--line)" }}><span>Passkeys <Planned /></span><b><NotAvailable /></b></div>
+        <div className="kv" style={{ height: "var(--sp-44)", borderBottom: "var(--bw) solid var(--line)" }}>
+          <span>Data protection</span>
+          <b>{level ?? "Standard"} · <button type="button" className="link-btn" onClick={onOpenPrivacy} disabled={!onOpenPrivacy}>Change</button></b>
+        </div>
         <TwoFactorRow />
       </div>
 
@@ -316,10 +335,10 @@ function SignedInAccount() {
 }
 
 /** Settings · Account: who is signed in and which devices, or how to sign in. */
-export function AccountSettings() {
+export function AccountSettings({ onOpenPrivacy }: { onOpenPrivacy?: () => void } = {}) {
   const auth = useAuth();
   if (!auth) return <p className="quiet">Accounts aren’t part of this build.</p>;
-  if (auth.status === "signedIn") return <SignedInAccount />;
+  if (auth.status === "signedIn") return <SignedInAccount onOpenPrivacy={onOpenPrivacy} />;
   return (
     <>
       <div className="card" style={{ gap: "var(--sp-6)" }}>
