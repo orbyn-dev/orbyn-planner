@@ -203,7 +203,7 @@ async function ours(theme, size = SIZE[frame.kind], suffix = "") {
   await page.clock.setFixedTime(new Date(frame.now ?? PINNED_NOW));
   // A frame's own preferences (for example days shown), set before the page starts.
   if (frame.prefs) await page.addInitScript((prefs) => localStorage.setItem("orbyn-planner.prefs", JSON.stringify(prefs)), frame.prefs);
-  const query = new URLSearchParams({ scenario: frame.scenario, route: frame.route, theme, ...(frame.now ? { now: frame.now } : {}) });
+  const query = new URLSearchParams({ scenario: frame.scenario, route: frame.route, theme, ...(frame.now ? { now: frame.now } : {}), ...(frame.account === false ? { account: "0" } : {}) });
   await page.goto(`${origin}/tools/match/index.html?${query}`);
   await page.waitForSelector(".app", { timeout: 20000 });
   if (frame.offline) await context.setOffline(true);
@@ -217,7 +217,7 @@ async function ours(theme, size = SIZE[frame.kind], suffix = "") {
     else if (step.select) await page.locator(step.select).first().selectOption(step.value);
   }
   await page.evaluate(() => document.fonts.ready);
-  await page.waitForTimeout(1300); // the sync label holds its first state for a second (SyncLine.tsx)
+  await page.waitForTimeout(3200); // the pretend account's first sync pass and the sync label's one-second hold (SyncLine.tsx)
   const png = join(outDir, `${name.replace("@", "-")}-${theme}-ours${suffix}.png`);
   await page.screenshot({ path: png });
   const text = await page.evaluate(() => document.body.innerText);
