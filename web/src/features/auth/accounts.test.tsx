@@ -253,7 +253,7 @@ describe("sign up", () => {
     // Sign-up never says whether an address has an account: this one gets the same code step, and no code ever comes.
     expect(screen.getByRole("form", { name: "Check your inbox" })).toBeInTheDocument();
     expect(engine.latestEmailCode(SAM.email)).toBeUndefined();
-    await userEvent.type(screen.getByLabelText("Code"), "123456");
+    await userEvent.type(screen.getByLabelText("Code"), "ABCD2345");
     await userEvent.click(screen.getByRole("button", { name: "Verify" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("That code isn’t right. Use the code in the newest email.");
   });
@@ -1353,17 +1353,17 @@ describe("email verification at sign-up", () => {
     expect(within(form).getByText(/It works for 30 minutes\./)).toBeInTheDocument();
     // Planner Designs v29, verify: the title, the sentence, a ghost Resend the code and "Wrong address? Change email".
     expect(within(form).getByRole("heading", { name: "Check your inbox" })).toBeInTheDocument();
-    expect(within(form).getByText("We sent a 6-digit code to sam@example.com. It works for 30 minutes.")).toBeInTheDocument();
+    expect(within(form).getByText("Enter the 8-character code we emailed to sam@example.com. It works for 30 minutes.")).toBeInTheDocument();
     expect(form).toHaveTextContent("Wrong address? Change email");
     // No account and no session: nothing is stored.
     expect(auth.tokens.getSession()).toBeNull();
     expect(await keys.loadKeys()).toBeNull();
     expect(await keys.loadIdentity()).toBeNull();
 
-    await userEvent.type(screen.getByLabelText("Code"), "000000");
+    await userEvent.type(screen.getByLabelText("Code"), "ABCD2345");
     await userEvent.click(screen.getByRole("button", { name: "Verify" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("That code isn’t right. Use the code in the newest email.");
-    expect(screen.getByLabelText("Code").closest("form")!.querySelectorAll(".cbox.err")).toHaveLength(6); // red boxes
+    expect(screen.getByLabelText("Code").closest(".cfield")).toHaveClass("err"); // the field turns red
     expect(await keys.loadKeys()).toBeNull();
     expect(screen.getByText(/Send a new code in \d:\d\d/)).toBeInTheDocument(); // the countdown; a new code is always on its way
 
@@ -1418,17 +1418,32 @@ describe("email verification at sign-up", () => {
     expect(screen.getByLabelText("Code")).toBeEnabled();
   });
 
-  it("six boxes take a paste with spaces, and Verify waits for six digits", async () => {
+  it("one field takes the code grouped like K7QM-R4TW: any case, a paste with or without the hyphen or spaces, and Verify waits for eight characters", async () => {
     await toCodeStep();
     const verifyButton = screen.getByRole("button", { name: "Verify" });
+    const field = screen.getByLabelText("Code") as HTMLInputElement;
+    expect(field).toHaveAttribute("placeholder", "ABCD-EFGH");
+    expect(screen.getByRole("group", { name: "8-character code" })).toBeInTheDocument();
     expect(verifyButton).toBeDisabled();
-    await userEvent.click(screen.getByLabelText("Code"));
-    await userEvent.paste("482 91");
+    await userEvent.click(field);
+    await userEvent.paste("abc d2");
+    expect(field.value).toBe("ABCD-2"); // capitals, and the hyphen after four
     expect(verifyButton).toBeDisabled();
-    await userEvent.clear(screen.getByLabelText("Code"));
-    await userEvent.paste(`${engine.latestEmailCode(SAM.email)!.slice(0, 3)} ${engine.latestEmailCode(SAM.email)!.slice(3)}`);
+    await userEvent.clear(field);
+    const code = engine.latestEmailCode(SAM.email)!;
+    await userEvent.paste(`${code.slice(0, 4).toLowerCase()} ${code.slice(4).toLowerCase()}`);
+    expect(field.value).toBe(`${code.slice(0, 4)}-${code.slice(4)}`);
     expect(verifyButton).toBeEnabled();
-    expect(screen.getByLabelText("Code").closest("form")!.querySelectorAll(".cbox")).toHaveLength(6);
+    expect(screen.getByLabelText("Code").closest("form")!.querySelectorAll(".cbox")).toHaveLength(0); // no six boxes
+  });
+
+  it("a code typed in lower case, with the hyphen, signs up", async () => {
+    const { auth } = await toCodeStep();
+    const code = engine.latestEmailCode(SAM.email)!;
+    await userEvent.type(screen.getByLabelText("Code"), `${code.slice(0, 4)}-${code.slice(4)}`.toLowerCase());
+    await userEvent.click(screen.getByRole("button", { name: "Verify" }));
+    await todayShown();
+    expect(auth.tokens.getSession()?.deviceState).toBe("trusted");
   });
 
   it("the password is not kept in the page once the code is awaited", async () => {

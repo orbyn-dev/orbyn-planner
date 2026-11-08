@@ -110,8 +110,18 @@ export function createMockEngine(now: () => number = () => Date.now()) {
   const inviteUsable = (code: unknown) => invitesState.codes.get(normalInvite(code))?.used === false;
   /** The addresses a Start over link was asked for, oldest first. */
   const deleteUnusedAsked: string[] = [];
-  let codeCounter = 100000;
-  const nextCode = () => String(codeCounter++);
+  let codeCounter = 1_000_000;
+  /** An eight-character code of the engine's alphabet, made from a counter so a run reads the same every time (the engine's own is derived from a secret). */
+  const nextCode = () => {
+    const alphabet = "23456789ABCDEFGHJKMNPQRSTVWXYZ";
+    let n = codeCounter++;
+    let out = "";
+    for (let i = 0; i < 8; i++) {
+      out = alphabet[n % 30]! + out;
+      n = Math.floor(n / 30);
+    }
+    return out;
+  };
   const subscribers = new Set<(accountId: string, zone: string, token: string, author: string) => void>();
   /** Refuse the next calls to a path (or a path prefix) with this error: `refuseNext("/v1/sessions/login/start", 429, "too_many_attempts")`. */
   const refusals: { path: string; status: number; code: string; message: string; times: number }[] = [];
@@ -221,7 +231,7 @@ export function createMockEngine(now: () => number = () => Date.now()) {
         signups.delete(b.signup_id);
         return refuse();
       }
-      if (b.code !== pending.code) {
+      if (String(b.code ?? "").toUpperCase().replace(/[\s-]/g, "") !== pending.code) {
         if (++pending.wrong >= 5) signups.delete(b.signup_id);
         return refuse();
       }
