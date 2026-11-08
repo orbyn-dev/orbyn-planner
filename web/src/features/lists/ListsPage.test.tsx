@@ -131,6 +131,14 @@ describe("Lists states (Planner Designs p-lists-empty, p-lists-loading, p-lists-
     }
   });
 
+  it("a finished row fades but its tick box stays full (the frames draw a white box in dark)", async () => {
+    const nodeFs = "node:fs";
+    const fs = (await import(/* @vite-ignore */ nodeFs)) as { readFileSync(path: string, encoding: "utf8"): string };
+    const css = fs.readFileSync(`${(globalThis as { process?: { cwd(): string } }).process!.cwd()}/src/styles/app.css`, "utf8");
+    expect(css).not.toMatch(/\.tbl \.tr\.done \{ opacity/); // the whole row is not faded
+    expect(css).toMatch(/\.tbl \.tr\.done > :not\(:first-child\) \{ opacity: \.55; \}/);
+  });
+
   it("online, rows and the sub line say nothing about syncing", async () => {
     const store = await open("/lists");
     act(() => {
