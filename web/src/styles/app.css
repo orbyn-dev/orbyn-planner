@@ -885,7 +885,7 @@ button.pillx { border: 0; }
 /* The board card's "…" button and menu (Planner Designs v52 p-board-card-focus, p-board-card-menu, p-board-card-project). */
 .tcard { position: relative; }
 .tcard:focus-visible { outline: var(--bw-2) solid var(--t1); outline-offset: var(--sp-2); }
-.tcard:has(.card-more) .tt { padding-right: var(--sp-24); }
+/* The … button sits over the card's corner only while it shows (hover, focus), on an opaque chip: the title keeps the whole width, as the frames draw it (work-board). */
 .card-more { position: absolute; top: var(--sp-6); right: var(--sp-6); }
 .more-btn { display: flex; align-items: center; justify-content: center; width: var(--sp-22); height: var(--sp-22); padding: 0; border: 0; border-radius: var(--r-7); background: var(--raise); color: var(--t2); opacity: 0; transition: opacity var(--m-fast) var(--m-out); }
 .tcard:hover .more-btn, .tcard:focus-within .more-btn, .more-btn[aria-expanded="true"] { opacity: 1; }
