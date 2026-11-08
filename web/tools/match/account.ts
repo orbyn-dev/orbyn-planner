@@ -37,12 +37,13 @@ export function signedOutAccount(): { services: AuthServices; controls: MatchEng
   const engine = createMockEngine();
   const hold = new Set<string>();
   const offline = { value: false };
-  const fetchThrough: typeof fetch = async (input, init) => {
+  const through: typeof fetch = async (input, init) => {
     const path = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url, "http://engine.test").pathname;
     if (offline.value) throw new TypeError("Failed to fetch");
     if (hold.has(path)) return new Promise<Response>(() => undefined);
-    return engine.fetch(input, init);
+    const forward = engine.fetch;
+    return forward(input, init);
   };
-  const services = createAuthServices({ fetch: fetchThrough, baseUrl: "http://engine.test", keys: createMemoryKeyStore(), crypto: () => crypto, wrapSecret: async () => wrap.slice() });
+  const services = createAuthServices({ fetch: through, baseUrl: "http://engine.test", keys: createMemoryKeyStore(), crypto: () => crypto, wrapSecret: async () => wrap.slice() });
   return { services, controls: { engine, hold, offline } };
 }
