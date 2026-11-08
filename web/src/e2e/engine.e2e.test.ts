@@ -48,6 +48,9 @@ describe.skipIf(!engineUrl)("a real engine, the real module", () => {
     // Device A signs up and is the first, trusted device.
     const first = await signUpVerified(a.services, { name: "Sam", email, password });
     expect(first.deviceState).toBe("trusted");
+    // Sign-up signs no protection setting (an unused account stays unused); the account's first real upload does, here before D joins.
+    expect((await a.services.api.protectionChain(1)).links).toEqual([]);
+    expect(await signStandardProtection(a.services, first)).toBe(true);
 
     // Device D signs in with the same password and is pending.
     const second = await signIn(d.services, { email, password });
@@ -93,11 +96,8 @@ describe.skipIf(!engineUrl)("a real engine, the real module", () => {
     // The engine's saved state was written, sealed, after each action.
     expect(await d.keys.loadSnapshot()).not.toBeNull();
 
-    // The protection setting: sign-up signs nothing (an unused account stays unused); the account's first real upload does. Then the
-    // server holds Standard as sequence 1, A reads it back as verified, and D (approved by A, which vouched for it) reads the same,
+    // The protection setting: the server holds Standard as sequence 1, A reads it back as verified, and D (approved by A, which vouched for it) reads the same,
     // verified on D's own device.
-    expect((await a.services.api.protectionChain(1)).links).toEqual([]);
-    expect(await signStandardProtection(a.services, first)).toBe(true);
     const chain = await a.services.api.protectionChain(1);
     expect(chain.links.map((l) => [l.seq, l.level, l.signer_device_id])).toEqual([[1, "standard", first.deviceId]]);
     expect(await readProtection(a.services, first)).toMatchObject({ state: "verified", level: "standard", seq: 1, stopped: null, problem: null });
