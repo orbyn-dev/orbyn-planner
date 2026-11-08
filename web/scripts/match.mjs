@@ -1,6 +1,6 @@
 /* global document, getComputedStyle */
 // DEVELOPMENT ONLY: renders one planner screen and the design frame it should match, side by side. See docs/match-kit.md.
-//   node scripts/match.mjs <frame-id>... [--theme light|dark|dim|all] [--out <folder>] [--pr <name>]   (several frames share one server; "all" is every frame)
+//   node scripts/match.mjs <frame-id>... [--theme light|dark|dim|all] [--out <folder>] [--pr <name>] [--ours-only]   (several frames share one server; "all" is every frame)
 // Needs Playwright and a Chrome it can launch already on this machine (nothing is downloaded): see the doc.
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -35,7 +35,7 @@ function fail(message) {
 }
 
 function args() {
-  const out = { frames: [], theme: "all", out: null, pr: null, wide: false };
+  const out = { frames: [], theme: "all", out: null, pr: null, wide: false, oursOnly: false };
   const argv = process.argv.slice(2);
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
@@ -43,6 +43,7 @@ function args() {
     else if (a === "--out") out.out = argv[++i];
     else if (a === "--pr") out.pr = argv[++i];
     else if (a === "--wide") out.wide = true;
+    else if (a === "--ours-only") out.oursOnly = true;
     else if (a.startsWith("-")) fail(`unknown option ${a}`);
     else out.frames.push(a);
   }
@@ -122,7 +123,8 @@ const themes = options.theme === "all" ? THEMES : [options.theme];
 const outDir = resolve(options.out ?? join(repo, ".match", options.pr ?? branchName()));
 mkdirSync(outDir, { recursive: true });
 
-const html = designHtml().replace("<head>", `<head><meta charset="utf-8"><style>${FONT_CSS}</style>`);
+// --ours-only draws the planner alone: the design page is never read, so it can run where the designs are not (and must not be).
+const html = options.oursOnly ? "" : designHtml().replace("<head>", `<head><meta charset="utf-8"><style>${FONT_CSS}</style>`);
 const { chromium } = loadPlaywright();
 
 const server = await createServer({
@@ -329,6 +331,10 @@ try {
     try {
       for (const theme of themes) {
         const o = await ours(theme);
+        if (options.oursOnly) {
+          console.log(o.png);
+          continue;
+        }
         const d = await design(theme);
         const side = await sideBySide(o.png, d.png, theme);
         if (options.wide && frame.kind === "desktop") {
