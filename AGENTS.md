@@ -14,6 +14,16 @@ Read [docs/architecture.md](docs/architecture.md) before changing behaviour. Its
 cd web && npm run check && npm test && npm run build
 ```
 
+## Designs
+
+The UI follows the private repository `orbyn-dev/orbyn-designs`, the one source of truth: `artifacts/` holds the published designs, `artifacts.json` indexes them, and `briefs/` holds the design-match brief. Read it from a current clone (`git pull` first), never from a copy in a temp folder, and never edit `artifacts/` here.
+
+- Match the designs exactly, in Light, Dark and Dim, including copy and motion. Take every value from the design source.
+- A UI change cites the artifact version and frame ids it builds, or links the design pull request there.
+- Anything not designed or not in the plan goes to the Orbyn Product UI/UX Designer before it is built. Never invent it.
+- The repository is private, so a contributor without access gets the frames they need in their issue.
+- Public files never link the private plan or the design artifact pages.
+
 ## Delivery
 
 - Branch from `main` with a short purpose name: `feat/`, `fix/`, `docs/`, `chore/` or `refactor/`.
