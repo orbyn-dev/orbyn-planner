@@ -141,6 +141,52 @@ describe("Lists states (Planner Designs p-lists-empty, p-lists-loading, p-lists-
     expect(other).toHaveBeenCalledTimes(1);
   });
 
+  it("loading: the header and its actions stay, nothing shows for 400 ms, then Loading tasks and bars for the rows", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      window.history.replaceState(null, "", "/lists");
+      vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new Error("offline"))));
+      const store = new LocalStore({ persistence: new MemoryPersistence(), now: () => NOW });
+      await store.ready;
+      const notReady = { ...store.getState(), ready: false }; // one object: a new one each call would loop
+      const loading = Object.assign(Object.create(store) as LocalStore, { getState: () => notReady });
+      render(<ClockProvider value={() => NOW}><App store={loading} /></ClockProvider>);
+      expect(screen.getByRole("button", { name: "Add a task" })).toBeInTheDocument(); // the header stays
+      expect(document.querySelector(".skel")).toBeNull();
+      expect(screen.queryByText("Loading tasks")).toBeNull();
+      await act(async () => void (await vi.advanceTimersByTimeAsync(450)));
+      expect(screen.getByText("Loading tasks")).toHaveAttribute("role", "status");
+      expect(document.querySelectorAll(".tbl .skel").length).toBeGreaterThanOrEqual(8); // four rows, two bars each
+      expect(document.querySelector(".lists-loading .spin")).not.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("error: a list that is gone says so and offers Open another list and Try again, instead of quietly showing another list", async () => {
+    window.history.replaceState(null, "", "/lists");
+    vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new Error("offline"))));
+    const store = new LocalStore({ persistence: new MemoryPersistence(), now: () => NOW });
+    await store.ready;
+    const home = store.addList("Home", "c4");
+    // The planner as another device leaves it: the list the page was showing is no longer in it.
+    let gone: ReturnType<LocalStore["getState"]> | null = null;
+    const view = Object.assign(Object.create(store) as LocalStore, { getState: () => gone ?? store.getState() });
+    render(<ClockProvider value={() => NOW}><App store={view} /></ClockProvider>);
+    await userEvent.click(await screen.findByRole("button", { name: /^Home/ }));
+    expect(screen.getByRole("region", { name: "Home" })).toBeInTheDocument();
+    gone = { ...store.getState(), lists: store.getState().lists.filter((l) => l.id !== home.id) };
+    act(() => void store.addTask({ title: "a change, so the page reads the planner again" }));
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Couldn’t load this list");
+    expect(alert).toHaveClass("red-ring");
+    await userEvent.click(within(alert).getByRole("button", { name: "Try again" }));
+    expect(screen.getByRole("alert")).toBeInTheDocument(); // still gone: it says so again
+    await userEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: "Open another list" }));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("region", { name: "Inbox" })).toBeInTheDocument();
+  });
+
   it("the header is the dot and name, the open count, Add a task and a … menu; clicking the name renames, and done tasks are not counted", async () => {
     const store = await open("/lists");
     const home = store.addList("Home", "c4");
