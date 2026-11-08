@@ -3,6 +3,7 @@
 // Sync through the engine's real module against the mock record store: two paired devices, their stores
 // in memory, a server that versions records and refuses stale writes like the real one.
 import { describe, expect, it } from "vitest";
+import { emptySyncState } from "../api/keyStore";
 import { runCycle } from "./cycle";
 import { createSyncRig, type SyncRig, type TestDevice } from "./testing/rig";
 
@@ -339,5 +340,44 @@ describe("which zones' keys reached another device", () => {
     await sync(r, r.a);
     const state = (await r.a.keys.loadSyncState())!;
     expect(Object.keys(state.keysReached ?? {})).toEqual([]);
+  });
+});
+
+describe("an account nobody used stays unused on the server", () => {
+  // The engine calls an account unused (the Start over link may delete it) while it holds no zone and no signed protection setting.
+  const unused = (r: SyncRig) => {
+    const account = [...r.engine.accounts.values()][0]!;
+    return (account.records?.zones.size ?? 0) === 0 && (account.protection ?? []).length === 0;
+  };
+
+  it("the Inbox and the Personal calendar every device makes send nothing, and the first real action sends them with the first protection setting", async () => {
+    const r = await createSyncRig();
+    await r.a.keys.saveSyncState(emptySyncState()); // a new account: nothing has been sent from this device yet
+    expect(r.a.store.getState().outbox.length).toBeGreaterThan(0); // the defaults are waiting
+    const first = await sync(r, r.a);
+    expect(first.uploaded).toBe(0);
+    expect(unused(r)).toBe(true);
+    expect(r.engine.calls.filter((c) => c.path.startsWith("/v1/zones") && c.method !== "GET")).toEqual([]);
+
+    r.a.store.addTask({ title: "Buy milk" });
+    const second = await sync(r, r.a);
+    expect(second.uploaded).toBeGreaterThan(0);
+    expect(unused(r)).toBe(false);
+    const account = [...r.engine.accounts.values()][0]!;
+    const signed = () => r.engine.calls.filter((c) => c.path === "/v1/keychain/protection" && c.method === "POST").length;
+    expect(signed()).toBe(1); // signed once, with the first real upload
+    expect([...account.records!.zones.keys()]).toContain("list:inbox");
+    await sync(r, r.a);
+    expect(signed()).toBe(1);
+  });
+
+  it("two devices that sync before any action leave the account unused", async () => {
+    const r = await createSyncRig();
+    await r.a.keys.saveSyncState(emptySyncState());
+    await r.b.keys.saveSyncState(emptySyncState());
+    await sync(r, r.a);
+    await sync(r, r.b);
+    expect(unused(r)).toBe(true);
+    expect(r.engine.calls.filter((c) => c.path === "/v1/keychain/protection" && c.method === "POST")).toEqual([]);
   });
 });

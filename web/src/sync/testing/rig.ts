@@ -1,4 +1,4 @@
-import { createMemoryKeyStore, type KeyStore, type StoredSession } from "../../api/keyStore";
+import { createMemoryKeyStore, emptySyncState, type KeyStore, type StoredSession } from "../../api/keyStore";
 import { realAuthCrypto } from "../../api/testing/realModule";
 import { createMockEngine, type MockEngine } from "../../api/testing/MockEngine";
 import type { Device } from "../../generated/Device";
@@ -91,6 +91,8 @@ export async function createSyncRig(options: { third?: boolean } = {}): Promise<
     const session: StoredSession = { token: `tok-${n}`, accountId: ACCOUNT, deviceId: id, deviceState: "trusted", expiresAt: "2030-01-01T00:00:00Z", email: "s@example.com", name: "" };
     await services.tokens.set(session);
     await keys.saveIdentity({ accountId: ACCOUNT, deviceId: id, email: "s@example.com" });
+    // An account that has been in use: its first real action is behind it, so the Inbox and the rest upload like any record.
+    await keys.saveSyncState({ ...emptySyncState(), opened: true });
     const persistence = new MemoryPersistence();
     const store = new LocalStore({ persistence, now: () => new Date(clock.now), broadcast: false });
     await store.ready;

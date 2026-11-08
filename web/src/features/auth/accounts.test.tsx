@@ -12,7 +12,7 @@ import { createMemoryKeyStore, type KeyStore } from "../../api/keyStore";
 import { FakeAuthCrypto, fakeFreed } from "../../api/testing/FakeAuthCrypto";
 import { PROTECTION_GENESIS } from "../../api/testing/protectionFake";
 import { createMockEngine, MOCK_TOTP_CODE, type MockEngine } from "../../api/testing/MockEngine";
-import { confirmProtection, confirmTotp, enrolTotp, readProtection, scheduleDeletion, signIn, signOut, signUp } from "../../auth/flows";
+import { confirmProtection, confirmTotp, enrolTotp, readProtection, scheduleDeletion, signIn, signOut, signStandardProtection, signUp } from "../../auth/flows";
 import { signedUp } from "../../auth/testing/signedUp";
 import { createAuthServices, type AuthServices } from "../../auth/services";
 import { deviceName } from "../../auth/deviceName";
@@ -960,7 +960,7 @@ describe("keys the browser will not store", () => {
       await userEvent.click(within(onA.root).getByRole("link", { name: /Settings/ }));
       await userEvent.click(await within(onA.root).findByRole("button", { name: "Privacy" }));
       await within(onA.root).findByLabelText("Protection");
-      await within(onA.root).findByText(/Standard protection|Confirming|Choose your protection level/);
+      await within(onA.root).findAllByText(/Standard protection|Confirming|Choose your protection level/); // an unused account has none signed yet
 
       // A memory tab sends nothing at all to other tabs or windows. (The sync status channel is not reached here, since no engine address
       // is set in this test; `controller.test.ts` guards that one.)
@@ -1561,11 +1561,13 @@ describe("two-factor", () => {
 });
 
 describe("the protection level", () => {
-  async function privacy() {
+  /** `used`: the account's first real action is behind it, which is when the first device signs Standard (a sign-up alone signs nothing). */
+  async function privacy(used = true) {
     const auth = services();
     await mount(auth, "/settings");
     await fillSignUp();
     await screen.findByRole("navigation", { name: "Primary" });
+    if (used) await signStandardProtection(auth, auth.tokens.getSession()!);
     await userEvent.click(await screen.findByRole("button", { name: "Privacy" }));
     return auth;
   }
@@ -1595,17 +1597,16 @@ describe("the protection level", () => {
     expect(standard).toHaveAttribute("aria-checked", "true"); // arrow keys have nowhere to go: Advanced is not available
     expect(card).toHaveTextContent("Confirmed by your devices. Last change 7 Nov on");
     expect(card).toHaveTextContent("Advanced protectionAdvanced is Planned. When it ships: switching from Standard deletes Orbyn’s copy of your keys at once; server backups made before the switch may keep a copy until the keys are rotated, which is Planned. An account that starts on Advanced never had one."); // shown, and not available yet
-    expect(engine.accounts.get("sam@example.com")!.protection).toHaveLength(1); // signed once, at sign-up
+    expect(engine.accounts.get("sam@example.com")!.protection).toHaveLength(1); // signed once, with the first real upload
   });
 
-  it("says Not set when the first signing failed; Choose opens the confirm dialog and Confirm signs Standard", async () => {
-    engine.refuseNext("/v1/keychain/protection", 500, "internal", "Refused.", 1);
-    await privacy();
+  it("says Not set for an account nobody used yet; Choose opens the confirm dialog and Confirm signs Standard", async () => {
+    await privacy(false);
     const card = await screen.findByLabelText("Protection");
     expect(await within(card).findByText("Choose your protection level")).toBeInTheDocument();
     expect(card).toHaveTextContent("Not set");
     expect(card).toHaveTextContent("No device has set a protection level for this account yet. Until one does, your data uses Standard protection.");
-    expect(engine.accounts.get("sam@example.com")!.protection ?? []).toHaveLength(0); // nothing signed it on its own
+    expect(engine.accounts.get("sam@example.com")!.protection ?? []).toHaveLength(0); // nothing signed it on its own, and the account stays unused
     expect(screen.queryByRole("dialog")).toBeNull(); // it opens when the person chooses
 
     await userEvent.click(within(card).getByRole("button", { name: "Choose" }));
@@ -1651,8 +1652,7 @@ describe("the protection level", () => {
   });
 
   it("a conflict in Confirm reads the chain again: a setting this browser can't verify shows Can't confirm and is never signed again", async () => {
-    engine.refuseNext("/v1/keychain/protection", 500, "internal", "Refused.", 1);
-    await privacy();
+    await privacy(false);
     const card = await screen.findByLabelText("Protection");
     await userEvent.click(await within(card).findByRole("button", { name: "Choose" }));
     const dialog = screen.getByRole("dialog", { name: "Confirm your protection level" });

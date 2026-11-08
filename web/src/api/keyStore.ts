@@ -45,6 +45,12 @@ export interface SyncState {
   quarantined: Record<string, string[]>;
   /** ISO time of the last complete sync. */
   lastSyncedAt: string | null;
+  /**
+   * True once this account has had a real action sent (a task, an event, a list of its own): from then on the first protection setting
+   * is signed and everything is uploaded. Until then the Inbox and the Personal calendar that every device makes stay on the device,
+   * so an account that was never used stays unused on the server (the Start over link can still delete it).
+   */
+  opened?: boolean;
 }
 
 /** What only the engine's snapshot can vouch for. Dropping or replacing the snapshot makes it untrue. */
