@@ -152,7 +152,8 @@ function ProjectCard({ task, lanes, laneKey, index, of }: { task: Task; lanes: {
       store.updateTask(task.id, { sectionId: key === "none" ? null : key });
     });
     if (key === "done") ui.showToast("Marked done.", undo, { focusRowOnUndo: task.id, ms: 5_000, spoken: "Marked done" });
-    else ui.showToast(`Moved to ${target.label}`, undo, { focusRowOnUndo: task.id, spoken: `Moved “${task.title}” to ${target.label}` });
+    else if (task.done) ui.showToast(`Moved “${task.title}” to ${target.label}.`, undo, { focusRowOnUndo: task.id });
+    else ui.showToast(`Moved to ${target.label}.`, undo, { focusRowOnUndo: task.id, spoken: `Moved “${task.title}” to ${target.label}` });
   };
   return (
     <li

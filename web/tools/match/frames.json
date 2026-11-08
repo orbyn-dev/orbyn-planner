@@ -805,5 +805,19 @@
         "click": "[role=menuitem][data-sub=move]"
       }
     ]
+  },
+  "p-toast-phone": {
+    "design": "p-toast-phone",
+    "kind": "phone",
+    "route": "/today",
+    "scenario": "phone-today",
+    "steps": [
+      {
+        "click": "li.row .check, li.row input[type=checkbox]"
+      },
+      {
+        "wait": 300
+      }
+    ]
   }
 }

@@ -125,7 +125,7 @@ function Panel({ task }: { task: Task }) {
     flush();
     store.deleteTask(task.id);
     ui.closeTask();
-    ui.showToast("Task deleted", () => store.restoreTask(task.id), { focusUndo: true, focusRowOnUndo: task.id });
+    ui.showToast(`“${task.title}” deleted. Kept for 30 days.`, () => store.restoreTask(task.id), { focusUndo: true, focusRowOnUndo: task.id });
   };
 
   const panel = (
