@@ -24,14 +24,30 @@ import {
  */
 export const FAKE_AUTH_MARKER = "orbyn-fake-auth-crypto-DO-NOT-SHIP";
 
-/** A 32-byte tag of some parts, enough for a mock server to tell a right answer from a wrong one. */
+/**
+ * A 32-byte tag of some parts, for tests ONLY: enough for a mock server to tell a right answer from a wrong one, and for the stand-in sealing
+ * below to refuse another secret every time. It keeps four 32-bit lanes and mixes the high bits back down after every step. (An earlier one
+ * kept a single 32-bit state and read each output byte from its low byte, and the low byte of a multiplication depends only on the low
+ * bytes of what went in, so its tag had about 10 bits: a wrong secret opened a sealed blob about one time in a thousand.)
+ */
 export function fakeDigest(...parts: Uint8Array[]): Uint8Array {
   const input = concat(...parts);
+  const lane = new Uint32Array([0x9e3779b1, 0x85ebca6b, 0xc2b2ae35, 0x27d4eb2f]);
+  const mix = (l: number, v: number) => {
+    let h = Math.imul((lane[l]! ^ v) >>> 0, 0x01000193 + 2 * l) >>> 0;
+    h ^= h >>> 15;
+    h = Math.imul(h, 0x2c1b3c6d) >>> 0;
+    h ^= h >>> 12;
+    lane[l] = h;
+  };
+  for (const b of input) for (let l = 0; l < 4; l++) mix(l, b + 1 + l * 257 + lane[(l + 1) % 4]!);
+  // Mix the length in, then draw 32 bytes, each from a different lane and a different part of its state, with a cross-lane step between.
+  for (let l = 0; l < 4; l++) mix(l, input.length + 7 * l);
   const out = new Uint8Array(32);
-  let h = 2166136261;
-  for (let round = 0; round < 32; round++) {
-    for (const b of input) h = Math.imul(h ^ b ^ round, 16777619) >>> 0;
-    out[round] = h & 0xff;
+  for (let k = 0; k < 32; k++) {
+    const l = k % 4;
+    mix(l, lane[(l + 3) % 4]! + k);
+    out[k] = (lane[l]! >>> ((k >> 2) % 4) * 8) & 0xff;
   }
   return out;
 }
