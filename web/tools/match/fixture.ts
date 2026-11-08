@@ -43,6 +43,7 @@ export const SCENARIOS = [
   "task-panel-blocked",
   "search-data",
   "week-sync-error",
+  "lists-groceries",
 ] as const;
 export type Scenario = (typeof SCENARIOS)[number];
 
@@ -240,6 +241,18 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
       });
       store.addEvent({ title: "Launch stand-up", calendarId: w.work, start: `${day(9)}T09:00`, end: `${day(9)}T09:30` });
       store.addEvent({ title: "Swim", calendarId: w.personal, start: `${day(9)}T18:00`, end: `${day(9)}T19:00` });
+      return;
+    }
+    case "lists-groceries": {
+      // The Lists frame: Groceries selected with Oat milk and Coffee beans due today, Birthday candles tomorrow and Bread done; Work, Home, Errands beside it.
+      const groceries = store.addList("Groceries", "c2");
+      const home = store.addList("Home", "c3");
+      store.addTask({ title: "Oat milk", listId: groceries.id, due: day(7) });
+      store.addTask({ title: "Coffee beans", listId: groceries.id, due: day(7) });
+      store.addTask({ title: "Birthday candles", listId: groceries.id, due: day(8) });
+      store.setDone(store.addTask({ title: "Bread", listId: groceries.id }).id, true);
+      for (const t of ["Draft the agenda", "Book the venue"]) store.addTask({ title: t, listId: w.workList });
+      store.addTask({ title: "Fix the shelf", listId: home.id });
       return;
     }
     case "lists-empty": {

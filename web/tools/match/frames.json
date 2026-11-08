@@ -1797,5 +1797,34 @@
         "name": "Delete this account"
       }
     ]
+  },
+  "lists": {
+    "kind": "desktop",
+    "design": "lists",
+    "route": "/lists",
+    "scenario": "lists-groceries",
+    "steps": [
+      {
+        "click": "a:has-text(\"Groceries\"), button:has-text(\"Groceries\")"
+      }
+    ]
+  },
+  "p-lists-offline": {
+    "kind": "desktop",
+    "design": "p-lists-offline",
+    "route": "/lists",
+    "scenario": "lists-groceries",
+    "offline": true,
+    "steps": [
+      {
+        "click": "a:has-text(\"Groceries\"), button:has-text(\"Groceries\")"
+      },
+      {
+        "eval": "(() => { const s = window.__match; const g = s.getState().lists.find((l) => l.name === 'Groceries'); s.addTask({ title: 'Lemons', listId: g.id, due: '2026-11-07' }); })()"
+      },
+      {
+        "wait": 300
+      }
+    ]
   }
 }

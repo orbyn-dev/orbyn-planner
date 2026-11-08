@@ -47,7 +47,7 @@ export function TaskRow({ task, layout = "tasks", extra, unsynced = false }: { t
   const labels = tagLabels(tags);
   const list = lists.find((l) => l.id === task.listId);
   const due = (
-    <span className={needsAction(task, now) ? "due amber" : "due"}>{task.done && layout === "list" ? "Done" : dueText(task, now)}</span>
+    <span className={needsAction(task, now) ? "due amber" : "due"}>{task.done && layout === "list" ? "Done" : dueText(task, now, { tomorrowByDay: layout === "list" })}</span>
   );
   const tag = list && (
     <span className="tag">
