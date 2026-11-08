@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { MotionList } from "../../components/MotionList";
 import { useNow } from "../../app/clock";
 import { Link } from "../../app/router";
 import { useUi } from "../../app/ui";
 import { EmptyState } from "../../components/EmptyState";
-import { motionMs } from "../../styles/tokens";
+import { useSlow } from "../../lib/useSlow";
 import { useSyncStatus, withPersistence } from "../sync/SyncLine";
 import { useSyncController, useSyncState } from "../../sync/SyncProvider";
 import { QuickAddField } from "../tasks/TasksPage";
@@ -89,32 +89,20 @@ function ListHeader({ list, sub }: { list: TaskList; sub: string }) {
   );
 }
 
-/** True once `active` has lasted 400 ms: a quick load never flashes a skeleton. */
-function useSlow(active: boolean): boolean {
-  const [slow, setSlow] = useState(false);
-  useEffect(() => {
-    if (!active) return;
-    const timer = setTimeout(() => setSlow(true), motionMs("wait"));
-    return () => {
-      clearTimeout(timer);
-      setSlow(false);
-    };
-  }, [active]);
-  return active && slow;
-}
-
 /**
- * The list could not be read (Planner Designs p-lists-error): what failed, that the data is safe, and a retry. Like Today's error it is
- * shown only when the local store reports a read failure, which it does not yet, so nothing renders it today.
+ * The list could not be opened (Planner Designs p-lists-error): what failed, that the data is safe, and a way on. It shows when the list
+ * the page was asked for is not in the planner once the planner has been read (it may have been deleted on another device). Red only because it failed.
  */
 export function ListError({ name, onRetry, onOther }: { name: string; onRetry: () => void; onOther: () => void }) {
   return (
-    <div className="empty" role="alert">
-      <h2>Couldn’t load {name}</h2>
-      <p>The list is safe on your other devices. Check your connection and try again.</p>
-      <div className="acts">
-        <button type="button" className="ghost" onClick={onOther}>Open another list</button>
-        <button type="button" className="btn" onClick={onRetry}>Try again</button>
+    <div className="lists-error">
+      <div className="card red-ring" role="alert">
+        <span className="line"><span className="pv-red"><Icon name="alert" small /></span><b>Couldn’t load {name}</b></span>
+        <span className="t3">The list is safe on your other devices. Check your connection and try again.</span>
+        <span className="line">
+          <button type="button" className="ghost" onClick={onOther}>Open another list</button>
+          <button type="button" className="btn" onClick={onRetry}>Try again</button>
+        </span>
       </div>
     </div>
   );
@@ -155,6 +143,9 @@ export function ListsPage() {
   const offline = status.kind === "offline";
   const unsynced = new Set(offline ? waiting.map((w) => w.id) : []);
   const skeleton = useSlow(!ready);
+  const [, retry] = useState(0);
+  /** The page was asked for a list the planner does not have (it was deleted elsewhere): said so, not quietly swapped for the first list. */
+  const missing = ready && ui.listId !== null && !ordered.some((l) => l.id === ui.listId);
 
   const create = () => {
     const name = newName.trim();
@@ -214,18 +205,25 @@ export function ListsPage() {
       <div className="r" aria-label={selected?.name ?? "List"} role="region">
         {selected && <ListHeader list={selected} sub={[`${openCount(tasks, selected.id)} open`, offline && "offline"].filter(Boolean).join(" · ")} />}
         {offline && <p className="t3 offline-note">You’re offline. Everything here is saved on this device and will sync when you’re back.</p>}
-        {!ready ? (
-          <div className="tbl-wrap" role="status" aria-label="Loading tasks" aria-busy="true">
+        {missing ? (
+          <ListError name="this list" onRetry={() => retry((n) => n + 1)} onOther={() => ui.selectList(inbox?.id ?? ordered[0]?.id ?? "")} />
+        ) : !ready ? (
+          // Nothing for 400 ms; then the rows wait as bars under "Loading tasks", while the header and its actions stay (p-lists-loading).
+          <div className="tbl-wrap" aria-busy="true">
             {skeleton && (
-              <ul className="tbl">
-                {Array.from({ length: 4 }, (_, i) => (
-                  <li className="tr list" key={i} style={{ gridTemplateColumns: "var(--sp-22) minmax(0,1fr) var(--sp-110)" }}>
-                    <span /><span className="skel" /><span className="skel" />
-                  </li>
-                ))}
-              </ul>
+              <>
+                <span role="status" className="t3 lists-loading"><span className="spin" aria-hidden="true" />Loading tasks</span>
+                <ul className="tbl">
+                  {[220, 160, 260, 190].map((w) => (
+                    <li className="tr list" key={w} style={{ gridTemplateColumns: "var(--sp-22) minmax(0,1fr) var(--sp-110)" }}>
+                      <span className="check" aria-hidden="true" />
+                      <span className="skel" style={{ width: w }} />
+                      <span className="skel" style={{ width: "var(--sp-60)" }} />
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
-            <span className="t3">Loading tasks</span>
           </div>
         ) : shown.length === 0 ? (
           <EmptyState title={`No tasks in ${selected?.name ?? "this list"}`} body="Add the first one, or move a task here from another list.">
