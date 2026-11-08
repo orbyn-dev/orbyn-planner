@@ -685,7 +685,7 @@ button.pillx { border: 0; }
 .vo-link { color: var(--t1); text-decoration: none; border-top: var(--bw) solid var(--line); padding-top: var(--sp-10); }
 
 /* Row popovers in the task and event panels. */
-.inp.rowval { cursor: pointer; text-align: right; color: inherit; }
+.inp.rowval { cursor: pointer; text-align: right; color: inherit; font-size: var(--fs-13); }
 .inp.rowval:disabled { cursor: default; }
 .row-pop { top: calc(100% + var(--sp-4)); width: var(--sp-224); display: flex; flex-direction: column; gap: var(--sp-8); text-align: left; color: var(--t1); }
 .row-pop.wide { width: var(--sp-260); }
