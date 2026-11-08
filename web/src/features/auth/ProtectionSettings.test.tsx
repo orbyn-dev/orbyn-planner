@@ -30,6 +30,15 @@ beforeEach(() => {
 afterEach(cleanup);
 
 const card = () => screen.findByLabelText("Protection");
+/**
+ * The card's text once the read has come back and it says Verified. The card is on screen from the first render, before the report arrives,
+ * so reading its text as soon as it is found raced the read when the machine was busy.
+ */
+const verifiedText = async () => {
+  const el = await card();
+  await within(el).findByText("Verified");
+  return el.textContent!;
+};
 
 describe("the protection card", () => {
   it("a setting this device has not confirmed asks once; Not now is remembered, and Confirm signs that setting", async () => {
@@ -117,7 +126,7 @@ describe("who signed the last change", () => {
   const text = async (signer: ProtectionReport["signer"]) => {
     read.mockResolvedValue(report({ signer }));
     render(<ProtectionSettings />);
-    return (await card()).textContent!;
+    return verifiedText();
   };
 
   it("this device: Last change 3 Nov on this device., from the signed record, not from a name", async () => {
@@ -127,7 +136,7 @@ describe("who signed the last change", () => {
   it("this device signed the head, but the level verified now is another seq: no on this device", async () => {
     read.mockResolvedValue(report({ seq: 1, head: link(2, secs("2026-11-03T09:00:00Z")), signer: { id: "d1", listed: true, thisDevice: true } }));
     render(<ProtectionSettings />);
-    const text = (await card()).textContent!;
+    const text = await verifiedText();
     expect(text).toContain("Last change 3 Nov.");
     expect(text).not.toContain("on this device");
   });
@@ -136,6 +145,14 @@ describe("who signed the last change", () => {
     expect(await text({ id: "d2", listed: true, thisDevice: false })).toContain("Confirmed by your devices. Last change 3 Nov.Your planner");
     cleanup();
     expect(await text({ id: "d9", listed: false, thisDevice: false })).toContain("Confirmed by your devices. Last change 3 Nov.Your planner");
+  });
+
+  it("a slow read: the text is read after the report has come back, not from the card as it first appears", async () => {
+    read.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve(report({ signer: { id: "d2", listed: true, thisDevice: false } })), 150)));
+    render(<ProtectionSettings />);
+    const early = (await card()).textContent!; // what the old way of reading saw when the machine was busy
+    expect(early).not.toContain("Last change");
+    expect(await verifiedText()).toContain("Confirmed by your devices. Last change 3 Nov.Your planner");
   });
 
   it("never shows a device name the server sent: the report carries none, and so nothing names a device", async () => {
