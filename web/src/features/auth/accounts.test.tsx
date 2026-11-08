@@ -1,5 +1,6 @@
 import { deletedAccount } from "../../auth/deletedAccount";
 import { sessionToken } from "../../api/session";
+import { PLANNER_PAGE_URL } from "../../api/site";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StrictMode } from "react";
@@ -126,16 +127,33 @@ const todayShown = async () => {
   if (welcome) await userEvent.click(within(welcome).getByRole("button", { name: "Skip for now" }));
   return screen.findByRole("heading", { name: "Nothing planned today" });
 };
+/** From the landing page: Get started, then Use without an account, which lives on sign-up step 1 only. */
+const goLocalOnly = async () => {
+  await userEvent.click(await screen.findByRole("button", { name: "Get started" }));
+  await userEvent.click(await screen.findByRole("button", { name: "Use without an account" }));
+};
 const openAccount = async () => {
   await userEvent.click(await screen.findByRole("button", { name: "Account" }));
 };
 
 describe("the public pages", () => {
+  it("the landing page (Planner Designs v60 landing): See how it works is a plain link to the planner page in this tab, Get started, a quiet Sign in, and no Use without an account", async () => {
+    await mount(services());
+    const how = await screen.findByRole("link", { name: "See how it works" });
+    expect(how).toHaveAttribute("href", PLANNER_PAGE_URL);
+    expect(PLANNER_PAGE_URL).toBe("https://orbyn.dev/planner");
+    expect(how).not.toHaveAttribute("target");
+    expect(screen.getByRole("button", { name: "Get started" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Use without an account" })).toBeNull();
+    expect(screen.queryByText(/stays on this device/)).toBeNull();
+  });
+
   it("shows the landing page when signed out, and the planner works without an account", async () => {
     await mount(services());
     expect(await screen.findByRole("heading", { name: /Your tasks and calendar/ })).toBeInTheDocument();
     expect(screen.queryByRole("navigation", { name: "Primary" })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Use without an account" }));
+    await goLocalOnly();
     await todayShown();
     expect(localStorage.getItem("orbyn-planner.local-only")).toBe("1");
     expect(engine.calls).toEqual([]);
@@ -143,7 +161,7 @@ describe("the public pages", () => {
 
   it("remembers the choice to go on without an account", async () => {
     const first = await mount(services());
-    await userEvent.click(await screen.findByRole("button", { name: "Use without an account" }));
+    await goLocalOnly();
     await todayShown();
     first.unmount();
     await mount(services());
@@ -152,7 +170,7 @@ describe("the public pages", () => {
 
   it("Settings · Account offers sign-in when there is no account, and the sign-in screens open over the planner", async () => {
     await mount(services(), "/settings");
-    await userEvent.click(await screen.findByRole("button", { name: "Use without an account" }));
+    await goLocalOnly();
     await openAccount();
     expect(screen.getByText("This device only")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
@@ -197,8 +215,12 @@ describe("the public pages", () => {
     expect(up).toHaveTextContent("Continue with a passkey Planned Not available yet.");
     expect(screen.getByRole("button", { name: "Continue with a password" })).toBeInTheDocument();
     expect(screen.getByText("Your password never leaves this device. Orbyn checks it without ever seeing it. We email a code to confirm your address.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Use without an account" })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    // Step 2 ends at its button: Sign in and Use without an account are offered on step 1 only (Planner Designs v60 sign-up).
+    expect(screen.queryByRole("button", { name: "Use without an account" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Sign in" })).toBeNull();
+    cleanup();
+    await mount(services());
+    await userEvent.click(await screen.findByRole("button", { name: "Sign in" })); // the landing's quiet link
     const inn = screen.getByRole("button", { name: /^Sign in with a passkey/ });
     expect(inn).toBeDisabled();
     expect(inn).toHaveAttribute("aria-disabled", "true");
@@ -308,7 +330,7 @@ describe("sign in", () => {
 
   it("opened from inside the planner, sign-in's quiet link reads Back to the planner", async () => {
     await mount(services(), "/settings");
-    await userEvent.click(await screen.findByRole("button", { name: "Use without an account" }));
+    await goLocalOnly();
     await openAccount();
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
     expect(screen.getByRole("button", { name: "Back to the planner" })).toBeInTheDocument();
@@ -1155,7 +1177,7 @@ describe("removing a device and approving one again", () => {
     // C sees a passive notice over its planner.
     const notice = await screen.findByRole("status", { name: "Approval request" });
     expect(notice).toHaveTextContent("Another device asked to approve this one again");
-    expect(await device.findByRole("heading", { name: "Nothing planned today" })).toBeInTheDocument();
+    expect(await device.findByRole("heading", { name: "Nothing planned today" }, { timeout: 5000 })).toBeInTheDocument(); // slow under a loaded run
     expect(device.queryByRole("heading", { name: "Approve this device again" })).not.toBeInTheDocument();
     // Time passes: still nothing joined, no nonce sent, and the trusted device is still waiting for it.
     await new Promise((r) => setTimeout(r, 150));
@@ -2103,7 +2125,10 @@ describe("invite sign-up", () => {
     engine.refuseNext("/v1/invites/check", 429, "too_many_attempts");
     await userEvent.type(field(), CODE);
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Too many tries. Try again later.");
+    const limited = await screen.findByRole("alert");
+    expect(limited).toHaveTextContent("Too many tries. Try again later.");
+    expect(limited).toHaveClass("banner", "warn"); // amber with an icon (p-signup-invite-limited)
+    expect(limited.querySelector("svg")).not.toBeNull();
     expect(screen.getByRole("alert")).not.toHaveTextContent(/minute|hour|wait/i); // the engine gives no wait time
     expect(field()).toBeDisabled();
     expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
@@ -2118,7 +2143,10 @@ describe("invite sign-up", () => {
     await goToStep1(services(createMemoryKeyStore(), false, FAST_POLL, flaky));
     await userEvent.type(field(), CODE);
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Couldn’t check the code. Nothing was changed.");
+    const network = await screen.findByRole("alert");
+    expect(network).toHaveTextContent("Couldn’t check the code. Nothing was changed.");
+    expect(network).toHaveClass("banner", "warn"); // amber with an icon (p-signup-invite-network)
+    expect(network.querySelector("svg")).not.toBeNull();
     expect(field()).toHaveValue(CODE);
     down = false;
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
@@ -2159,6 +2187,8 @@ describe("invite sign-up", () => {
     await verifyEmail(SAM.email);
     const banner = await screen.findByRole("alert");
     expect(banner).toHaveTextContent("This invite code didn’t work. Check it and try again.");
+    expect(banner).toHaveClass("banner", "warn"); // amber with an icon (p-signup-invite-rejected-later)
+    expect(banner.querySelector("svg")).not.toBeNull();
     expect(screen.getByRole("heading", { name: "Check your inbox" })).toBeInTheDocument(); // the person stays on the step they were on
     expect(engine.accounts.size).toBe(0);
     await userEvent.click(within(banner).getByRole("button", { name: "Back to the form" }));

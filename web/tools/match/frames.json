@@ -1694,6 +1694,9 @@
     "fit": "app",
     "steps": [
       {
+        "click": "button:text-is(\"Get started\")"
+      },
+      {
         "click": "button:text-is(\"Use without an account\")"
       },
       {

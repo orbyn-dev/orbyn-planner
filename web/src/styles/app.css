@@ -548,6 +548,9 @@ button.pillx { border: 0; }
 .pv-cards { display: flex; flex-direction: column; gap: var(--sp-10); }
 .pv-red { color: var(--red); display: inline-flex; }
 .keys-card { width: var(--sp-440); gap: var(--sp-12); }
+/* The start-over page (Account Designs so-*): a 400 px card, left-aligned, compact buttons side by side. */
+.keys-card.start-over { width: var(--sp-400); gap: var(--sp-10); align-items: flex-start; }
+.keys-card.start-over .pv-stack { flex-direction: row; }
 .keys-title { margin: 0; font-weight: var(--fw-medium); font-size: var(--fs-18); color: var(--t1); line-height: inherit; }
 .pv-stack { display: flex; flex-direction: column; gap: var(--sp-8); }
 .pv-stack > * { justify-content: center; }
@@ -621,7 +624,7 @@ button.pillx { border: 0; }
 }
 
 /* A passkey button the designs draw but that does nothing yet: dimmed, with the Planned label. */
-.passkey-planned { display: inline-flex; gap: var(--sp-6); align-items: center; justify-content: center; flex-wrap: wrap; height: auto; min-height: var(--sp-32); cursor: not-allowed; }
+.passkey-planned { display: inline-flex; gap: var(--sp-6); align-items: center; justify-content: center; white-space: nowrap; height: auto; min-height: var(--sp-32); cursor: not-allowed; }
 
 .pv-choice { display: inline-flex; align-items: center; gap: var(--sp-8); font-weight: var(--fw-medium); }
 .planned-note { color: var(--planned-text); font-size: var(--fs-12); font-weight: var(--fw-regular); }
@@ -707,7 +710,6 @@ button.pillx { border: 0; }
 .stepbar .bars i.on { background: var(--t1); }
 .mono-code { font-family: var(--mono); }
 .field.err { box-shadow: inset 0 0 0 var(--bw) var(--red); }
-.invite .banner { background: var(--raise); }
 .authcard .st.ok { align-self: flex-start; }
 
 /* The Calendars popover on the Calendar toolbar (p-cal-calendars-popover). */
@@ -924,7 +926,7 @@ button.pillx { border: 0; }
 .cfield { display: flex; align-items: center; height: var(--sp-48); padding: 0 var(--sp-14); border: var(--bw) solid var(--line2); border-radius: var(--r-10); background: var(--main); }
 .cfield.on { border-color: var(--t2); box-shadow: 0 0 0 var(--sp-3) var(--sel); }
 .cfield.err { border-color: var(--red); }
-.cfield input { width: 100%; height: 100%; border: 0; padding: 0; background: transparent; color: var(--t1); font-family: var(--mono); font-size: var(--fs-20); letter-spacing: .12em; text-transform: uppercase; outline: none; }
+.cfield input { width: 100%; text-align: center; height: 100%; border: 0; padding: 0; background: transparent; color: var(--t1); font-family: var(--mono); font-size: var(--fs-20); letter-spacing: .12em; text-transform: uppercase; outline: none; }
 .cfield input::placeholder { color: var(--t3); letter-spacing: .12em; }
 .banner .end .ghost { white-space: nowrap; }
 
