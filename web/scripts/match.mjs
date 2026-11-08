@@ -211,6 +211,7 @@ async function ours(theme, size = SIZE[frame.kind], suffix = "") {
     if (step.role) await page.getByRole(step.role, { name: step.name }).first().click();
     else if (step.click) await page.locator(step.click).first().click();
     else if (step.fill) await page.locator(step.fill).first().fill(step.value);
+    else if (step.eval) await page.evaluate(step.eval);
     else if (step.wait) await page.waitForTimeout(step.wait);
     else if (step.focus) await page.locator(step.focus).first().focus();
     else if (step.press) await page.keyboard.press(step.press);
