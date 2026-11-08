@@ -20,7 +20,8 @@ const engine = process.env.VITE_ENGINE_URL?.trim();
 if (engine) {
   const url = new URL(engine);
   if (url.protocol !== "https:") throw new Error("VITE_ENGINE_URL must be an https:// address for a deployed build");
-  connect.push(url.origin);
+  // The live sync is a WebSocket on the same host: wss://<engine>/v1/sync.
+  connect.push(url.origin, url.origin.replace(/^https:/, "wss:"));
 }
 
 const csp = [
