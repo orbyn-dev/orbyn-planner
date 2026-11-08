@@ -1784,7 +1784,9 @@ describe("deleting the account", () => {
     await waitFor(() => expect(within(stale).getByRole("button", { name: "Cancel" })).toHaveFocus());
     expect(engine.accounts.get("sam@example.com")!.deletion).toBeUndefined();
     await userEvent.click(within(stale).getByRole("button", { name: "Sign in again" }));
-    await fillSignIn();
+    expect(await screen.findByLabelText("Email")).toHaveValue(SAM.email.toLowerCase()); // only the password is left to type
+    await userEvent.type(screen.getByLabelText("Password"), SAM.password);
+    await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
     expect(await screen.findByRole("dialog", { name: "Delete your Orbyn account" })).toBeInTheDocument(); // back, with the dialog open
   });
 });
