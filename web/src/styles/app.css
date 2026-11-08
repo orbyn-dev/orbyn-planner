@@ -889,3 +889,6 @@ button.pillx { border: 0; }
 .board:focus-within + .board-hint { display: block; }
 .board-hint kbd { font-family: var(--mono); font-size: var(--fs-10-5); background: var(--raise); border-radius: var(--r-5); padding: var(--sp-1) var(--sp-5); color: var(--t2); }
 @media (hover: none) { .more-btn { opacity: 1; } }
+/* A task finished today stays in place, struck through and faded; the Completed section's day labels are quiet (Planner Designs v51 work-list). */
+.tbl .tr.done { opacity: .55; }
+.bh.sub { color: var(--t3); }

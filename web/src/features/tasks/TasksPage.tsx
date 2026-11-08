@@ -7,7 +7,7 @@ import { Icon } from "../../components/Icon";
 import { formatDue } from "../../lib/dates";
 import { usePlanner, useStore } from "../../store/context";
 import { describeParse, parseQuickAdd } from "./quickAdd";
-import { DUE_FILTERS, activeTasks, isOpen, matchesDue, type DueFilter } from "./selectors";
+import { DUE_FILTERS, activeTasks, completedGroups, isLive, isOpen, matchesDue, type DueFilter } from "./selectors";
 import { FilterChip } from "./FilterChip";
 import { LANES, LANE_LABELS, laneOf, type Lane } from "../../store/taskStatus";
 import { focusCard } from "../../lib/focus";
@@ -127,11 +127,14 @@ export function TasksPage() {
   const liveTags = tags.filter((t) => t.deletedAt === null);
   const labels = tagLabels(tags);
 
+  // Off (the default): open tasks, and tasks finished today staying where they were. On: every completed task too.
   const shown = useMemo(
-    () => activeTasks(tasks, now).filter((t) => (options.showCompleted || !t.done) && matchesDue(t, due, now) && (priority === "any" || t.priority === priority) && (listId === "" || t.listId === listId) && (tagId === "" || t.tags.includes(tagId))),
+    () => (options.showCompleted ? tasks.filter(isLive) : activeTasks(tasks, now)).filter((t) => matchesDue(t, due, now) && (priority === "any" || t.priority === priority) && (listId === "" || t.listId === listId) && (tagId === "" || t.tags.includes(tagId))),
     [tasks, now, due, priority, listId, tagId, options.showCompleted],
   );
-  const groups = useMemo(() => groupFor(shown, lists, now, options), [shown, lists, now, options]);
+  // On, the list keeps the finished ones apart, under Completed, by the day they were finished.
+  const groups = useMemo(() => groupFor(options.showCompleted ? shown.filter((t) => !t.done) : shown, lists, now, options), [shown, lists, now, options]);
+  const completed = useMemo(() => (options.showCompleted ? completedGroups(shown, now) : []), [shown, now, options.showCompleted]);
   const lanes = useMemo(() => lanesFor(shown, options), [shown, options]);
   const move = useMoveTask();
   const [dragging, setDragging] = useState<string | null>(null);
@@ -213,6 +216,26 @@ export function TasksPage() {
               </MotionList>
             </section>
           ))}
+          {completed.length > 0 && (
+            <section aria-label="Completed">
+              <div className="bh" style={{ padding: "var(--sp-8) var(--sp-4) var(--sp-4)" }}>
+                <b>Completed</b>
+                <span>{completed.reduce((n, g) => n + g.tasks.length, 0)}</span>
+              </div>
+              {completed.map((g) => (
+                <div key={g.key} role="group" aria-label={g.label}>
+                  <div className="bh sub" style={{ padding: "var(--sp-4) var(--sp-4) var(--sp-2)" }}>
+                    <span>{g.label}</span>
+                  </div>
+                  <MotionList className="tbl">
+                    {g.tasks.map((t) => (
+                      <TaskRow key={t.id} task={t} />
+                    ))}
+                  </MotionList>
+                </div>
+              ))}
+            </section>
+          )}
         </div>
       ) : (
         <div className="board" style={{ gridTemplateColumns: `repeat(${lanes.length}, minmax(0, 1fr))` }}>
