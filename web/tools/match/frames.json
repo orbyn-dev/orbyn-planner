@@ -370,7 +370,7 @@
       },
       {
         "fill": ".when input.field",
-        "value": "Fri 14:00\u201315:00"
+        "value": "Fri 14:00–15:00"
       }
     ]
   },
@@ -708,35 +708,20 @@
     ]
   },
   "p-list-menu": {
-    "kind": "desktop",
     "design": "p-list-menu",
+    "kind": "desktop",
     "route": "/lists",
-    "scenario": "lists-empty",
+    "scenario": "tasks",
     "steps": [
-      {
-        "click": "a:has-text(\"Errands\"), button:has-text(\"Errands\")"
-      },
       {
         "role": "button",
         "name": "More"
       }
     ]
   },
-  "work-board": {
+  "p-board-card-focus": {
+    "design": "p-board-card-focus",
     "kind": "desktop",
-    "design": "work-board",
-    "route": "/tasks",
-    "scenario": "board",
-    "steps": [
-      {
-        "role": "radio",
-        "name": "Board"
-      }
-    ]
-  },
-  "p-board-drag": {
-    "kind": "desktop",
-    "design": "p-board-drag",
     "route": "/tasks",
     "scenario": "board",
     "steps": [
@@ -745,81 +730,76 @@
         "name": "Board"
       },
       {
-        "drag": {
-          "from": "Fix the sign-up email bug",
-          "over": "Blocked",
-          "drop": false
-        }
+        "focus": "li[aria-label^=\"Launch brief\"]"
+      },
+      {
+        "press": "Shift"
       }
     ]
   },
-  "p-board-from-done": {
+  "p-board-card-menu": {
+    "design": "p-board-card-menu",
     "kind": "desktop",
-    "design": "p-board-from-done",
     "route": "/tasks",
-    "scenario": "board-from-done",
+    "scenario": "board",
     "steps": [
       {
         "role": "radio",
         "name": "Board"
       },
       {
-        "drag": {
-          "from": "Reply to the school",
-          "over": "In progress",
-          "drop": true
-        }
-      }
-    ]
-  },
-  "project-board": {
-    "kind": "desktop",
-    "design": "project-board",
-    "route": "/projects",
-    "scenario": "project",
-    "steps": [
-      {
-        "click": "button.tag:has-text(\"Home renovation\")"
+        "click": "li[aria-label^=\"Launch brief\"] .more-btn"
       },
       {
-        "click": "button:text-is(\"Board\")"
+        "click": "[role=menuitem][data-sub=move]"
       }
     ]
   },
-  "project-board-no-sections": {
+  "p-board-card-moved": {
+    "design": "p-board-card-moved",
     "kind": "desktop",
-    "design": "project-board-no-sections",
-    "route": "/projects",
-    "scenario": "project-no-sections",
+    "route": "/tasks",
+    "scenario": "board-moved",
     "steps": [
       {
-        "click": "button.tag:has-text(\"Home renovation\")"
+        "role": "radio",
+        "name": "Board"
       },
       {
-        "click": "button:text-is(\"Board\")"
+        "focus": "li[aria-label^=\"Book a table\"]"
+      },
+      {
+        "press": "Alt+ArrowRight"
+      },
+      {
+        "wait": 200
+      },
+      {
+        "press": "Alt+ArrowRight"
+      },
+      {
+        "wait": 200
       }
     ]
   },
-  "lists": {
+  "p-board-card-project": {
+    "design": "p-board-card-project",
     "kind": "desktop",
-    "design": "lists",
-    "route": "/lists",
-    "scenario": "lists-groceries",
+    "route": "/projects",
+    "scenario": "project-board",
     "steps": [
       {
-        "click": "a:has-text(\"Groceries\"), button:has-text(\"Groceries\")"
-      }
-    ]
-  },
-  "p-lists-offline": {
-    "kind": "desktop",
-    "design": "p-lists-offline",
-    "route": "/lists",
-    "scenario": "lists-offline",
-    "offline": true,
-    "steps": [
+        "click": "a:has-text(\"Home renovation\"), button:has-text(\"Home renovation\")"
+      },
       {
-        "click": "a:has-text(\"Groceries\"), button:has-text(\"Groceries\")"
+        "role": "tab",
+        "name": "Board"
+      },
+      {
+        "click": "li[aria-label^=\"Choose kitchen tiles\"] .more-btn"
+      },
+      {
+        "click": "[role=menuitem][data-sub=move]"
       }
     ]
   }

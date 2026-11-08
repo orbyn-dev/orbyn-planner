@@ -101,9 +101,14 @@ describe("the export dialog", () => {
     (document.activeElement as HTMLElement).blur(); // what a browser does to a focused button that has become disabled
     await act(async () => fail(new Error("disk")));
     await waitFor(() => expect(within(screen.getByRole("dialog")).getByRole("button", { name: "Try again" })).toHaveFocus());
-    save.mockResolvedValueOnce(true);
+    // The second attempt is held open too, so the browser's "focus dropped from the disabled button" happens while it is still busy, not
+    // after it has finished (a resolved mock can finish before the blur, and then nothing is left to move focus).
+    let finish: (saved: boolean) => void = () => undefined;
+    save.mockReturnValueOnce(new Promise<boolean>((resolve) => (finish = resolve)));
     await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Try again" }));
+    expect(within(screen.getByRole("dialog")).queryByRole("button", { name: "Done" })).toBeNull(); // still busy
     (document.activeElement as HTMLElement).blur();
+    await act(async () => finish(true));
     await waitFor(() => expect(screen.getByRole("button", { name: "Done" })).toHaveFocus());
   });
 

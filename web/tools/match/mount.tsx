@@ -6,7 +6,7 @@ import { ClockProvider } from "../../src/app/clock";
 import { applyChoice, type Theme } from "../../src/app/theme";
 import { LocalStore } from "../../src/store/LocalStore";
 import { MemoryPersistence } from "../../src/store/persistence";
-import { PINNED_NOW, seed, seedPending, type Scenario } from "./fixture";
+import { PINNED_NOW, seed, type Scenario } from "./fixture";
 
 export interface MatchOptions {
   scenario: Scenario;
@@ -29,7 +29,6 @@ export async function seededStore(scenario: Scenario, pinned: string = PINNED_NO
   await store.ready;
   seed(store, scenario);
   await store.acknowledge(store.getState().outbox.map((e) => ({ type: e.type, id: e.id, idempotencyKey: e.idempotencyKey })));
-  seedPending(store, scenario);
   return store;
 }
 

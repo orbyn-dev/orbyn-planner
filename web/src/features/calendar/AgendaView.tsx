@@ -4,14 +4,18 @@ import { dateOf, formatTime, parseDue, shortDay } from "../../lib/dates";
 import { touchesDay } from "../../lib/wall";
 import { usePlanner } from "../../store/context";
 import type { Occurrence } from "../../store/occurrences";
+import { duration } from "./PhoneCalendar";
 import { colourOf } from "./TimeGrid";
 
 function length(o: Occurrence): string {
   const minutes = Math.round((parseDue(o.end).date.getTime() - parseDue(o.start).date.getTime()) / 60_000);
-  if (o.allDay || minutes <= 0) return "";
-  if (minutes < 60) return `${minutes} min`;
-  const h = Math.floor(minutes / 60);
-  return minutes % 60 ? `${h}h ${minutes % 60}m` : `${h}h`;
+  return o.allDay || minutes <= 0 ? "" : duration(minutes);
+}
+
+/** What an event row says after its title (Planner Designs: the place; with no place its length; never both; an all-day event says neither). */
+export function eventMeta(o: Occurrence): string {
+  if (o.allDay) return "";
+  return o.event.place || length(o);
 }
 
 export function AgendaView({ days, occurrences, today }: { days: string[]; occurrences: Occurrence[]; today: string }) {
@@ -33,7 +37,7 @@ export function AgendaView({ days, occurrences, today }: { days: string[]; occur
           </div>
           <ul className="agenda-rows">
             {g.items.map((o) => {
-              const meta = [o.event.place, length(o)].filter(Boolean);
+              const meta = eventMeta(o);
               return (
                 <li
                   className="row"
@@ -44,7 +48,7 @@ export function AgendaView({ days, occurrences, today }: { days: string[]; occur
                   <span className="time">{o.allDay ? "All day" : formatTime(parseDue(o.start).date)}</span>
                   <span className="sw" style={{ background: colourOf(calendars, o.event) }} aria-hidden="true" />
                   <button type="button" className="what link-btn" onClick={() => ui.openEvent(o.event.id, o.date)}>{o.event.title}</button>
-                  <span className="meta">{meta.join(" · ")}</span>
+                  <span className="meta">{meta}</span>
                 </li>
               );
             })}

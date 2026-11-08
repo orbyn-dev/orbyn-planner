@@ -10,3 +10,10 @@ export function focusRow(id: string): void {
     target.focus();
   }, 0);
 }
+
+/** Puts focus on a board card itself (it has a tab stop), once it is drawn in its new lane: a card moved with the keyboard keeps focus. */
+export function focusCard(id: string): void {
+  setTimeout(() => {
+    document.querySelector<HTMLElement>(`li[data-row-id="${CSS.escape(id)}"]`)?.focus();
+  }, 0);
+}

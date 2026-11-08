@@ -23,7 +23,8 @@ export function useMoveTask() {
       return;
     }
     const { undo } = undoableTasks(store, () => store.updateTask(task.id, moveTo(task, lane, stamp)));
-    if (from === "done") ui.showToast(`Moved “${task.title}” to ${LANE_LABELS[lane]}`, undo, { focusRowOnUndo: task.id });
-    else if (lane === "done") ui.showToast("Marked done.", undo, { focusRowOnUndo: task.id, ms: 5_000 });
+    // A quiet toast with Undo for every move; a screen reader hears which card went where (Planner Designs p-board-card-moved).
+    if (lane === "done") ui.showToast("Marked done.", undo, { focusRowOnUndo: task.id, ms: 5_000, spoken: "Marked done" });
+    else ui.showToast(`Moved to ${LANE_LABELS[lane]}`, undo, { focusRowOnUndo: task.id, spoken: `Moved “${task.title}” to ${LANE_LABELS[lane]}` });
   };
 }

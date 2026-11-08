@@ -28,9 +28,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe("the match fixture", () => {
   it.each(SCENARIOS)("seeds %s, settled, without touching the network", async (scenario) => {
     const store = await seededStore(scenario);
-    // Acknowledged: the screen shows a settled planner (the offline frames deliberately keep two changes waiting).
-    if (scenario === "lists-offline") expect(store.pendingChanges()).toBeGreaterThan(0);
-    else expect(store.pendingChanges()).toBe(0);
+    expect(store.pendingChanges()).toBe(0); // acknowledged: the screen shows a settled planner
     expect(store.getState().calendars.length).toBeGreaterThan(0);
     expect(calls).toEqual([]);
   });

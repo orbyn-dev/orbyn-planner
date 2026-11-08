@@ -25,6 +25,9 @@ export const SCENARIOS = [
   "today-event",
   "lists-empty",
   "first-run",
+  "board",
+  "board-moved",
+  "project-board",
   "today-long",
   "today-week-empty",
   "today-overnight",
@@ -35,12 +38,6 @@ export const SCENARIOS = [
   "task-panel",
   "task-panel-progress",
   "task-panel-blocked",
-  "board",
-  "board-from-done",
-  "project",
-  "project-no-sections",
-  "lists-groceries",
-  "lists-offline",
 ] as const;
 export type Scenario = (typeof SCENARIOS)[number];
 
@@ -139,7 +136,7 @@ function clearToday(store: PlannerStore): void {
 export function seed(store: PlannerStore, scenario: Scenario): void {
   // A first launch has nothing in it: the Inbox and the Personal calendar every planner starts with.
   if (scenario === "first-run") return;
-  const w = world(store, !["tasks", "board", "board-from-done", "lists-groceries", "lists-offline", "lists-empty", "project", "project-no-sections"].includes(scenario));
+  const w = world(store, scenario !== "tasks" && scenario !== "board" && scenario !== "board-moved" && scenario !== "project-board");
   switch (scenario) {
     case "today":
       todayData(store, w);
@@ -160,6 +157,8 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
       return;
     case "today-all-day": {
       todayData(store, w);
+      // Sun 8 holds the tiling alone in this frame, so the week list reads its title and "day 4 of 4".
+      for (const t of store.getState().tasks) if (t.title === "Birthday candles") store.deleteTask(t.id);
       const home = store.addCalendar("Home", "c3");
       store.addEvent({ title: "Home renovation: tiling", calendarId: home.id, allDay: true, start: day(5), end: day(8) });
       store.addEvent({ title: "Maya’s birthday", calendarId: w.family, allDay: true, start: day(7), end: day(7) });
@@ -327,52 +326,41 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
       return;
     }
     case "board":
-    case "board-from-done": {
-      const lists2 = { personal: store.addList("Personal", "c2"), reno: store.addList("Home renovation", "c3"), club: store.addList("Book club", "c3") };
-      const t = (title: string, due: string, listId: string, status: string | null) => {
-        const task = store.addTask({ title, due, listId });
-        if (status) store.updateTask(task.id, { status });
-        return task;
+    case "board-moved": {
+      // The Tasks board frames (p-board-card-*): four lanes, the card in focus In progress.
+      const work = store.getState().lists.find((l) => l.name === "Work")!;
+      const personal = store.addList("Personal", "c4");
+      const club = store.addList("Book club", "c3");
+      const reno = store.addList("Home renovation", "c3");
+      const add = (title: string, listId: string, due: string | null, status: "todo" | "in_progress" | "blocked") => {
+        const t = store.addTask({ title, listId, due });
+        if (status !== "todo") store.updateTask(t.id, { status });
+        return t;
       };
-      t("Prepare the launch slides", day(12), w.workList, null);
-      t("Renew library books", day(13), lists2.personal.id, null);
-      t("Launch brief", `${day(7)}T12:00`, w.workList, "in_progress");
-      t("Choose kitchen tiles", day(9), lists2.reno.id, "in_progress");
-      t("Book a table for the book club", day(7), lists2.club.id, "blocked");
-      if (scenario === "board") {
-        t("Fix the sign-up email bug", `${day(7)}T17:00`, w.workList, "in_progress");
-        store.setDone(t("Reply to the school", day(7), w.workList, null).id, true);
-      } else {
-        store.setDone(t("Reply to the school", day(7), lists2.personal.id, null).id, true);
-        store.setDone(t("Renew parking permit", day(6), w.errands, null).id, true);
+      add("Prepare the launch slides", work.id, day(12), "todo");
+      add("Renew library books", personal.id, day(13), "todo");
+      add("Launch brief", work.id, `${day(7)}T12:00`, "in_progress");
+      add("Choose kitchen tiles", reno.id, day(9), "in_progress");
+      if (scenario === "board") add("Book a table for the book club", club.id, null, "blocked");
+      else {
+        add("Book a table for the book club", club.id, null, "todo");
+        add("Fix the sign-up email bug", work.id, `${day(7)}T17:00`, "blocked");
       }
+      const done = store.addTask({ title: "Reply to the school", listId: w.workList });
+      store.setDone(done.id, true);
       return;
     }
-    case "project":
-    case "project-no-sections": {
-      const reno = store.addProject({ name: "Home renovation", colour: "c3", goal: "2027-01-30" });
-      const reno2 = store.addList("Home renovation", "c3");
-      const kitchen = scenario === "project" ? store.addSection(reno.id, "Kitchen") : null;
-      const bath = scenario === "project" ? store.addSection(reno.id, "Bathroom") : null;
-      const pt = (title: string, due: string | null, sectionId: string | null) =>
-        store.addTask({ title, due, listId: reno2.id, projectId: reno.id, sectionId });
-      pt("Choose kitchen tiles", day(9), kitchen?.id ?? null);
-      pt("Send the deposit to the builder", day(11), kitchen?.id ?? null);
-      const quotes = pt("Get three plumbing quotes", "2026-11-20", bath?.id ?? null);
-      if (scenario === "project-no-sections") store.updateTask(quotes.id, { status: "blocked" });
-      pt("Pick a shower screen", "2026-12-05", bath?.id ?? null);
-      store.setDone(pt("Measure the cabinets", null, kitchen?.id ?? null).id, true);
-      return;
-    }
-    case "lists-groceries":
-    case "lists-offline": {
-      const groceries = store.addList("Groceries", "c2");
-      store.addList("Home", "c3");
-      store.addList("Errands", "c4");
-      store.addTask({ title: "Oat milk", due: day(7), listId: groceries.id });
-      store.addTask({ title: "Coffee beans", due: day(7), listId: groceries.id });
-      store.addTask({ title: "Birthday candles", due: day(8), listId: groceries.id });
-      if (scenario === "lists-groceries") store.setDone(store.addTask({ title: "Bread", listId: groceries.id }).id, true);
+    case "project-board": {
+      // p-board-card-project: Home renovation with Kitchen and Bathroom lanes and a Done lane.
+      const project = store.addProject({ name: "Home renovation", colour: "c3", goal: `2027-01-30` });
+      const kitchen = store.addSection(project.id, "Kitchen");
+      const bath = store.addSection(project.id, "Bathroom");
+      const add = (title: string, due: string, sectionId: string) => store.addTask({ title, due, projectId: project.id, sectionId, listId: w.workList });
+      add("Choose kitchen tiles", day(9), kitchen.id);
+      add("Send the deposit to the builder", day(11), kitchen.id);
+      add("Get three plumbing quotes", "2026-11-20", bath.id);
+      add("Pick a shower screen", "2026-12-01", bath.id);
+      store.setDone(add("Measure the cabinets", day(3), kitchen.id).id, true);
       return;
     }
     case "tasks": {
@@ -403,12 +391,4 @@ export function sampleStrings(store: PlannerStore): string[] {
     ...Object.values(PEOPLE),
     FIXTURE_MARKER,
   ].filter((text) => text.length > 0);
-}
-
-/** Changes made after the store was settled: they stay waiting to sync, as the offline frames show. */
-export function seedPending(store: PlannerStore, scenario: Scenario): void {
-  if (scenario !== "lists-offline") return;
-  const groceries = store.getState().lists.find((l) => l.name === "Groceries")!;
-  store.addTask({ title: "Lemons", listId: groceries.id });
-  store.setDone(store.addTask({ title: "Bread", listId: groceries.id }).id, false);
 }

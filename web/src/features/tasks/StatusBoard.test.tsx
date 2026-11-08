@@ -60,7 +60,7 @@ const seed = (s: LocalStore) => {
 describe("the Tasks board lanes (task status)", () => {
   it("has the four lanes To do, In progress, Blocked and Done, and each card is in the lane its status names", async () => {
     await openBoard(seed);
-    const titles = (name: string) => within(lane(name)).getAllByRole("listitem").map((c) => within(c).getByRole("button", { name: /^(?!Move)/ }).textContent);
+    const titles = (name: string) => within(lane(name)).getAllByRole("listitem").map((c) => within(c).getByRole("button", { name: /^(?!Move|More)/ }).textContent);
     expect(document.querySelectorAll(".board .lane")).toHaveLength(4);
     expect(titles("To do")).toEqual(["Prepare the slides"]);
     expect(titles("In progress")).toEqual(["Launch brief"]);
@@ -75,7 +75,7 @@ describe("the Tasks board lanes (task status)", () => {
     drag(card, lane("In progress"));
     const task = store.getState().tasks.find((t) => t.title === "Prepare the slides")!;
     expect(task).toMatchObject({ status: "in_progress", done: false });
-    expect(screen.queryByText(/^Moved/)).toBeNull(); // no toast for a move between open lanes
+    expect(screen.getByText("Moved to In progress")).toBeInTheDocument(); // a quiet toast for every move, with Undo
     expect(within(lane("In progress")).getAllByRole("listitem")).toHaveLength(2);
   });
 
@@ -124,12 +124,13 @@ describe("the Tasks board lanes (task status)", () => {
     fireEvent.dragEnd(within(lane("To do")).getByRole("listitem"));
   });
 
-  it("Move to is the keyboard way, and a repeating task moved to Done goes to its next date in To do", async () => {
+  it("the … menu is the keyboard way, and a repeating task moved to Done goes to its next date in To do", async () => {
     const store = await openBoard((s) => {
       const bins = s.addTask({ title: "Bins", due: "2026-11-09", repeat: repeatEvery("weekly") });
       s.updateTask(bins.id, { status: "blocked" });
     });
-    await userEvent.click(within(lane("Blocked")).getByRole("button", { name: "Move Bins to" }));
+    await userEvent.click(within(lane("Blocked")).getByRole("button", { name: "More for Bins" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: /Move to/ }));
     await userEvent.click(screen.getByRole("menuitemradio", { name: "Done" }));
     expect(store.getState().tasks[0]).toMatchObject({ due: "2026-11-16", done: false, status: "todo" });
     expect(within(lane("To do")).getByRole("button", { name: "Bins" })).toBeInTheDocument();
@@ -163,3 +164,92 @@ describe("the project board (project-board-no-sections)", () => {
     expect(within(lane("Done")).getByText("Measure")).toBeInTheDocument();
   });
 });
+
+describe("the board card's … menu (Planner Designs v52 p-board-card-menu, p-board-card-focus, p-board-card-moved)", () => {
+  const card = (name: string) => screen.getByRole("listitem", { name: new RegExp(`^${name},`) });
+  const task = (store: LocalStore, title: string) => store.getState().tasks.find((t) => t.title === title)!;
+
+  it("a card is announced with its title, lane and place in the lane", async () => {
+    await openBoard(seed);
+    expect(card("Prepare the slides")).toHaveAccessibleName("Prepare the slides, in To do, 1 of 1");
+    expect(card("Launch brief")).toHaveAccessibleName("Launch brief, in In progress, 1 of 1");
+    expect(card("Reply to the school")).toHaveAccessibleName("Reply to the school, in Done, 1 of 1");
+  });
+
+  it("the … menu lists Open, Mark done and Move to, whose lanes are To do, In progress, Blocked and Done with the current one checked and disabled", async () => {
+    await openBoard(seed);
+    await userEvent.click(within(card("Launch brief")).getByRole("button", { name: "More for Launch brief" }));
+    expect(screen.getAllByRole("menuitem").map((m) => m.textContent)).toEqual(["Open", "Mark done", "Move to›"]);
+    await userEvent.click(screen.getByRole("menuitem", { name: /Move to/ }));
+    expect(screen.getAllByRole("menuitemradio").map((m) => m.textContent)).toEqual(["To do", "In progressCurrent", "Blocked", "Done"]);
+    const current = screen.getByRole("menuitemradio", { name: /^In progress/ });
+    expect(current).toBeChecked();
+    expect(current).toBeDisabled();
+    expect(screen.getByRole("menuitemradio", { name: "To do" })).toBeEnabled();
+  });
+
+  it("the keyboard path: Enter opens the menu, the arrows move, Enter picks a lane, and Escape closes with focus back on the button", async () => {
+    const store = await openBoard(seed);
+    const more = within(card("Launch brief")).getByRole("button", { name: "More for Launch brief" });
+    more.focus();
+    await userEvent.keyboard("{Enter}");
+    expect(screen.getByRole("menuitem", { name: "Open" })).toHaveFocus();
+    await userEvent.keyboard("{ArrowDown}{ArrowDown}");
+    expect(screen.getByRole("menuitem", { name: /Move to/ })).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    expect(screen.getByRole("menuitemradio", { name: "To do" })).toHaveFocus(); // the current lane is skipped
+    await userEvent.keyboard("{ArrowDown}{ArrowDown}{Enter}"); // To do, then Blocked, then Done
+    expect(task(store, "Launch brief")).toMatchObject({ done: true });
+    // Escape: a menu opened again closes and focus returns to the … button.
+    const again = within(card("Prepare the slides")).getByRole("button", { name: "More for Prepare the slides" });
+    again.focus();
+    await userEvent.keyboard("{Enter}");
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(again).toHaveFocus();
+  });
+
+  it("Alt+Right and Alt+Left on a focused card move it one lane, and stop at the ends", async () => {
+    const store = await openBoard(seed);
+    card("Prepare the slides").focus();
+    await userEvent.keyboard("{Alt>}{ArrowRight}{/Alt}");
+    expect(task(store, "Prepare the slides")).toMatchObject({ status: "in_progress" });
+    expect(card("Prepare the slides")).toHaveFocus(); // the moved card keeps focus (p-board-card-moved)
+    await userEvent.keyboard("{Alt>}{ArrowLeft}{/Alt}{Alt>}{ArrowLeft}{/Alt}");
+    expect(task(store, "Prepare the slides").status ?? "todo").toBe("todo");
+    expect(laneOfTitle("To do", "Prepare the slides")).toBe(true); // at the first lane Alt+Left does nothing
+  });
+
+  it("a move says so in a polite live region (Moved “title” to Blocked, or Marked done) and shows a quiet toast with Undo", async () => {
+    const store = await openBoard(seed);
+    await userEvent.click(within(card("Prepare the slides")).getByRole("button", { name: "More for Prepare the slides" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: /Move to/ }));
+    await userEvent.click(screen.getByRole("menuitemradio", { name: "Blocked" }));
+    const live = document.querySelector('[role="status"][aria-live="polite"]')!;
+    expect(live).toHaveTextContent("Moved “Prepare the slides” to Blocked");
+    expect(screen.getByText("Moved to Blocked")).toHaveAttribute("aria-hidden", "true");
+    expect(task(store, "Prepare the slides")).toMatchObject({ status: "blocked" });
+    await userEvent.click(within(card("Launch brief")).getByRole("button", { name: "More for Launch brief" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Mark done" }));
+    expect(live).toHaveTextContent("Marked done");
+  });
+
+  it("Undo puts the exact earlier state back", async () => {
+    const store = await openBoard(seed);
+    const before = JSON.stringify(task(store, "Launch brief"));
+    card("Launch brief").focus();
+    await userEvent.keyboard("{Alt>}{ArrowRight}{/Alt}"); // In progress to Blocked
+    expect(task(store, "Launch brief")).toMatchObject({ status: "blocked" });
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(JSON.stringify(task(store, "Launch brief"))).toBe(before);
+  });
+
+  it("the old Move to link is gone", async () => {
+    await openBoard(seed);
+    expect(screen.queryByRole("button", { name: /^Move .* to$/ })).toBeNull();
+  });
+});
+
+function laneOfTitle(laneName: string, title: string): boolean {
+  return within(screen.getByRole("region", { name: laneName })).queryByRole("button", { name: title }) !== null;
+}
