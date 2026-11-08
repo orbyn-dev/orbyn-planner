@@ -74,6 +74,26 @@ describe("Today page", () => {
     expect(screen.getByText("Saturday 7 November · 5 tasks")).toBeInTheDocument();
   });
 
+  it("the headers of the all-day, timed and overdue groups use the frame's top spacing (2, 10 and 12 px); Overdue is 16 px without an all-day group", async () => {
+    await openToday((s) => {
+      s.addEvent({ title: "Maya’s birthday", allDay: true, start: "2026-11-07", end: "2026-11-07" });
+      s.addEvent({ title: "Team planning", start: "2026-11-07T09:00", end: "2026-11-07T10:00" });
+      s.addTask({ title: "Late one", due: "2026-11-06" });
+    });
+    const top = (word: string) => (screen.getByText(word, { selector: "b" }).parentElement as HTMLElement).style.paddingTop;
+    expect(top("All day")).toBe("var(--sp-2)");
+    expect(top("Timed")).toBe("var(--sp-10)");
+    expect(top("Overdue")).toBe("var(--sp-12)");
+  });
+
+  it("Overdue keeps 16 px above it when there is no all-day group", async () => {
+    await openToday((s) => {
+      s.addEvent({ title: "Team planning", start: "2026-11-07T09:00", end: "2026-11-07T10:00" });
+      s.addTask({ title: "Late one", due: "2026-11-06" });
+    });
+    expect((screen.getByText("Overdue", { selector: "b" }).parentElement as HTMLElement).style.paddingTop).toBe("var(--sp-16)");
+  });
+
   it("puts all-day events in their own group above the timed ones, with the calendar's name and the day of a longer one", async () => {
     await openToday((s) => {
       s.addEvent({ title: "Maya’s birthday", allDay: true, start: "2026-11-07", end: "2026-11-07" });
