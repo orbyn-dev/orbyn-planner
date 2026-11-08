@@ -6,7 +6,7 @@ import { useUi } from "../../app/ui";
 import { useAuth } from "../../auth/AuthProvider";
 import { initialsOf } from "../../app/initials";
 import { PHONE_QUERY, useMediaQuery } from "../../components/useMediaQuery";
-import { motionMs } from "../../styles/tokens";
+import { useSlow } from "../../lib/useSlow";
 import { projectStats } from "../projects/stats";
 import { PageHeader } from "../../components/EmptyState";
 import { Icon } from "../../components/Icon";
@@ -14,6 +14,7 @@ import { MONTHS, WEEKDAYS, addDays, dateKey, formatTime, isDueToday, parseDue, s
 import { daysBetween, lastDayOf, touchesDay } from "../../lib/wall";
 import { usePlanner } from "../../store/context";
 import { expandEvents, type Occurrence } from "../../store/occurrences";
+import { eventMeta } from "../calendar/AgendaView";
 import { colourOf } from "../calendar/TimeGrid";
 import { groupToday } from "../tasks/selectors";
 import type { Task } from "../../store/types";
@@ -64,20 +65,6 @@ function useProgressive(total: number): number {
   return Math.min(shown, total);
 }
 
-/** True once `active` has lasted 400 ms: a quick load never flashes a skeleton. */
-function useSlow(active: boolean): boolean {
-  const [slow, setSlow] = useState(false);
-  useEffect(() => {
-    if (!active) return;
-    const timer = setTimeout(() => setSlow(true), motionMs("wait"));
-    return () => {
-      clearTimeout(timer);
-      setSlow(false);
-    };
-  }, [active]);
-  return active && slow;
-}
-
 /** Where a row stands in a list drawn in steps, for a screen reader; a list that fits in the first rows needs no such thing. */
 const place = (index: number, of: number) => (of > FIRST_ROWS ? { index, of } : undefined);
 
@@ -86,7 +73,7 @@ const clock = (iso: string) => formatTime(parseDue(iso).date);
 /** A timed event that began before today and ends after it fills the whole day, so it sits in the All day group like a multi-day event. */
 const coversDay = (o: Occurrence, day: string) => !o.allDay && o.start.slice(0, 10) < day && lastDayOf(o.start, o.end, false) > day;
 
-function EventRow({ occ, day, phone, at }: { occ: Occurrence; day: string; phone: boolean; at?: { index: number; of: number } }) {
+function EventRow({ occ, day, at }: { occ: Occurrence; day: string; at?: { index: number; of: number } }) {
   const { calendars } = usePlanner();
   const ui = useUi();
   const calendar = calendars.find((c) => c.id === occ.event.calendarId);
@@ -102,7 +89,8 @@ function EventRow({ occ, day, phone, at }: { occ: Occurrence; day: string; phone
   const dayWord = (d: string) => (daysBetween(day, d) === 1 ? "tomorrow" : daysBetween(day, d) === -1 ? "yesterday" : `${WEEKDAYS[parseDue(d).date.getDay()]!.slice(0, 3)} ${parseDue(d).date.getDate()} ${MONTHS[parseDue(d).date.getMonth()]!.slice(0, 3)}`);
   const covers = coversDay(occ, day);
   const time = occ.allDay || covers ? "All day" : startedEarlier ? `Until ${clock(occ.end)}` : clock(occ.start);
-  let meta = occ.allDay ? (calendar?.name ?? "") : ["Event", occ.event.place].filter(Boolean).join(" · ");
+  // The same rule as the Agenda (Planner Designs v54): the place, or without one the length, never both and no "Event" word; an all-day event names its calendar.
+  let meta = occ.allDay ? (calendar?.name ?? "") : eventMeta(occ);
   const range = (d: string) => `${WEEKDAYS[parseDue(d).date.getDay()]!.slice(0, 3)} ${parseDue(d).date.getDate()} ${MONTHS[parseDue(d).date.getMonth()]!.slice(0, 3)}`;
   if (covers) meta = `${range(occ.start.slice(0, 10))} – ${range(lastDayOf(occ.start, occ.end, false))}`;
   else if (startedEarlier) meta = `Started ${dayWord(occ.start.slice(0, 10))} ${clock(occ.start)}`;
@@ -111,7 +99,6 @@ function EventRow({ occ, day, phone, at }: { occ: Occurrence; day: string; phone
     const last = lastDayOf(occ.start, occ.end, false);
     meta = daysBetween(day, last) === 1 ? `Until ${clock(occ.end)} tomorrow` : `Until ${range(last)} ${clock(occ.end)}`;
   }
-  if (phone) meta = "";
   return (
     <li className="row" data-row-id={occ.event.id} {...(at ? { "aria-posinset": at.index + 1, "aria-setsize": at.of } : {})}>
       <span className="time">{time}</span>
@@ -258,7 +245,7 @@ export function TodayPage() {
   // Only while the device is offline do rows say their change has not left it (as the designs draw it).
   const unsynced = new Set(status.kind === "offline" ? waiting.map((w) => w.id) : []);
   const rows = (list: Entry[], of: number) =>
-    list.map((e, i) => (e.kind === "task" ? <TodayRow key={e.task.id} task={e.task} unsynced={unsynced.has(e.task.id)} at={place(i, of)} /> : <EventRow key={`${e.occ.event.id}-${e.occ.date}`} occ={e.occ} day={key} phone={phone} at={place(i, of)} />));
+    list.map((e, i) => (e.kind === "task" ? <TodayRow key={e.task.id} task={e.task} unsynced={unsynced.has(e.task.id)} at={place(i, of)} /> : <EventRow key={`${e.occ.event.id}-${e.occ.date}`} occ={e.occ} day={key} at={place(i, of)} />));
 
   const weekList = (
     <ul aria-label="The week at a glance">
@@ -351,7 +338,7 @@ export function TodayPage() {
               {allDay.length > 0 && (
                 <>
                   <div className="bh" style={{ paddingTop: "var(--sp-2)" }}><b>All day</b><span>{allDay.length}</span></div>
-                  <ul>{allDay.map((occ) => <EventRow key={`${occ.event.id}-${occ.date}`} occ={occ} day={key} phone={phone} />)}</ul>
+                  <ul>{allDay.map((occ) => <EventRow key={`${occ.event.id}-${occ.date}`} occ={occ} day={key} />)}</ul>
                   {entries.length > 0 && <div className="bh" style={{ paddingTop: "var(--sp-10)" }}><b>Timed</b><span></span></div>}
                 </>
               )}

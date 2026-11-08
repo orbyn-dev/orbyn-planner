@@ -32,7 +32,7 @@ button { cursor: pointer; }
 .app { height: 100dvh; display: grid; grid-template-columns: var(--sp-224) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); min-height: 0; }
 /* Live regions and other helpers stay out of the grid, so the sidebar and the
    sheet always fill the window. */
-.toast-live { position: fixed; inset: auto 0 0 auto; width: 0; height: 0; overflow: visible; pointer-events: none; }
+.toast-live { position: fixed; right: var(--sp-12); bottom: var(--sp-12); z-index: 50; width: var(--sp-340); max-width: calc(100vw - var(--sp-24)); display: flex; flex-direction: column; align-items: stretch; gap: var(--sp-8); pointer-events: none; }
 .toast-live > * { pointer-events: auto; }
 .side { display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-12) var(--sp-10) var(--sp-10); min-width: 0; }
 .side .primary { display: flex; flex-direction: column; gap: var(--sp-1); flex: 1; min-height: 0; }
@@ -335,11 +335,19 @@ textarea.field { height: auto; padding: var(--sp-8) var(--sp-12); resize: vertic
 .two { display: flex; gap: var(--sp-6); }
 .dialog-actions { display: flex; gap: var(--sp-6); justify-content: flex-end; margin-top: var(--sp-4); }
 [role="option"] { cursor: pointer; }
-.toast {
-  position: fixed; left: 50%; bottom: var(--sp-76); z-index: 50; transform: translateX(-50%); display: flex; align-items: center; gap: var(--sp-14);
-  padding: var(--sp-8) var(--sp-14); border-radius: var(--r-10); background: var(--btn); color: var(--btnt); font-size: var(--fs-12-5);
+/* The toast (Planner Designs v54): a card of the theme's surface, never an inverted one. It comes in with the fast token and goes in about 70 percent of it. */
+.toast { display: flex; align-items: center; gap: var(--sp-10); padding: var(--sp-8) var(--sp-8) var(--sp-8) var(--sp-12); border-radius: var(--r-12); background: var(--main); color: var(--t1); box-shadow: var(--sh-pop), 0 0 0 var(--bw) var(--line2); font-size: var(--fs-12-5); animation: m-toast-in var(--m-fast) var(--m-out); }
+.toast .ic { color: var(--t2); }
+.toast-text { flex: 1; min-width: 0; }
+.toast-action { margin-left: auto; }
+.toast[data-leaving="true"] { animation: m-toast-out calc(var(--m-fast) * .7) var(--m-out) forwards; }
+@keyframes m-toast-in { from { opacity: 0; transform: translateY(var(--sp-8)); } to { opacity: 1; transform: none; } }
+@keyframes m-toast-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(var(--sp-8)); } }
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation-name: m-fade; }
+  .toast[data-leaving="true"] { animation-name: m-toast-fade-out; }
 }
-.toast-action { padding: var(--sp-4); border: 0; background: none; color: inherit; font-weight: var(--fw-medium); text-decoration: underline; text-underline-offset: var(--sp-2); }
+@keyframes m-toast-fade-out { from { opacity: 1; } to { opacity: 0; } }
 .sync-wrap { position: relative; }
 .popover { position: absolute; right: 0; top: var(--sp-30); z-index: 5; width: var(--sp-340); gap: var(--sp-8); background: var(--main); box-shadow: var(--sh-pop); font-size: var(--fs-12-5); }
 button.pillx { border: 0; }
@@ -364,7 +372,7 @@ button.pillx { border: 0; }
   .tr.tasks { grid-template-columns: var(--sp-22) minmax(0, 1fr) auto !important; }
   .tr.tasks > :nth-child(3), .tr.tasks > :nth-child(5), .tr.completed > :nth-child(3) { display: none; }
   .tr.completed { grid-template-columns: var(--sp-22) minmax(0, 1fr) auto !important; }
-  .toast { bottom: var(--sp-90); }
+  .toast-live { left: var(--sp-16); right: var(--sp-16); width: auto; max-width: none; bottom: calc(var(--sp-90) + env(safe-area-inset-bottom)); }
   .popover { position: fixed; left: var(--sp-16); right: var(--sp-16); top: auto; width: auto; }
 }
 @media (pointer: coarse) {
@@ -372,7 +380,8 @@ button.pillx { border: 0; }
   .tr, .row, .icon-btn { min-height: var(--sp-48); }
   .icon-btn, .colour-btn { width: var(--sp-44); height: var(--sp-44); }
   .inp, .field { min-height: var(--sp-44); }
-  .tab2, .toast-action { min-height: var(--sp-44); }
+  .tab2 { min-height: var(--sp-44); }
+  .toast-action { min-height: var(--sp-32); }
 }
 .sr-only { position: absolute; width: var(--sp-1); height: var(--sp-1); padding: 0; margin: var(--sp-n1); overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .hint-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-12); min-height: var(--sp-22); }
@@ -892,3 +901,13 @@ button.pillx { border: 0; }
 /* A task finished today stays in place, struck through and faded; the Completed section's day labels are quiet (Planner Designs v51 work-list). */
 .tbl .tr.done { opacity: .55; }
 .bh.sub { color: var(--t3); }
+/* The Tags row (Planner Designs v51 task-panel-tags, p-row-tags): chips and a "+" in the row, and a popover of checkboxes. */
+.tags-btn { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--sp-6); }
+.tags-pop { width: var(--sp-230); display: flex; flex-direction: column; gap: var(--sp-4); }
+.tags-pop .field { height: var(--sp-30); font-size: var(--fs-12-5); }
+.tag-opt { height: var(--sp-30); padding: 0 var(--sp-9); gap: var(--sp-9); cursor: pointer; }
+.tag-opt:has(input:disabled) { color: var(--t3); cursor: default; }
+.tags-pop .opt .k { margin-left: auto; font-family: var(--mono); font-size: var(--fs-10-5); }
+/* The task panel when its task is not there (Planner Designs p-task-loading, p-task-error). */
+.task-panel .line, .card.red-ring .line { display: flex; align-items: center; gap: var(--sp-8); }
+.task-panel > .card.red-ring { gap: var(--sp-8); margin: var(--sp-16); }

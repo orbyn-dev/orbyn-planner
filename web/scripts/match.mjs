@@ -206,12 +206,13 @@ async function ours(theme, size = SIZE[frame.kind], suffix = "") {
   if (frame.prefs) await page.addInitScript((prefs) => localStorage.setItem("orbyn-planner.prefs", JSON.stringify(prefs)), frame.prefs);
   const query = new URLSearchParams({ scenario: frame.scenario, route: frame.route, theme, ...(frame.now ? { now: frame.now } : {}), ...(frame.account === false ? { account: "0" } : frame.account === "out" ? { account: "out" } : {}) });
   await page.goto(`${origin}/tools/match/index.html?${query}`);
-  await page.waitForSelector(".app", { timeout: 20000 });
+  await page.waitForSelector(".app, .authcard, h1", { timeout: 20000 });
   if (frame.offline) await context.setOffline(true);
   for (const step of frame.steps ?? []) {
     if (step.role) await page.getByRole(step.role, { name: step.name }).first().click();
     else if (step.click) await page.locator(step.click).first().click();
     else if (step.fill) await page.locator(step.fill).first().fill(step.value);
+    else if (step.eval) await page.evaluate(step.eval);
     else if (step.wait) await page.waitForTimeout(step.wait);
     else if (step.focus) await page.locator(step.focus).first().focus();
     else if (step.press) await page.keyboard.press(step.press);

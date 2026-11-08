@@ -75,7 +75,7 @@ describe("the Tasks board lanes (task status)", () => {
     drag(card, lane("In progress"));
     const task = store.getState().tasks.find((t) => t.title === "Prepare the slides")!;
     expect(task).toMatchObject({ status: "in_progress", done: false });
-    expect(screen.getByText("Moved to In progress")).toBeInTheDocument(); // a quiet toast for every move, with Undo
+    expect(screen.getByText("Moved to In progress.")).toBeInTheDocument(); // a quiet toast for every move, with Undo
     expect(within(lane("In progress")).getAllByRole("listitem")).toHaveLength(2);
   });
 
@@ -97,7 +97,7 @@ describe("the Tasks board lanes (task status)", () => {
     expect(before).toMatchObject({ status: "in_progress", done: true });
     drag(within(lane("Done")).getByRole("listitem"), lane("Blocked"));
     expect(task()).toMatchObject({ status: "blocked", done: false, completedAt: null });
-    expect(screen.getByText("Moved “Reply to the school” to Blocked")).toBeInTheDocument();
+    expect(screen.getByText("Moved “Reply to the school” to Blocked.")).toBeInTheDocument();
     // Undo puts status, done and the done time back, in one write.
     const update = vi.spyOn(store, "updateTask");
     await act(async () => userEvent.click(screen.getByRole("button", { name: "Undo" })));
@@ -227,7 +227,7 @@ describe("the board card's … menu (Planner Designs v52 p-board-card-menu, p-bo
     await userEvent.click(screen.getByRole("menuitemradio", { name: "Blocked" }));
     const live = document.querySelector('[role="status"][aria-live="polite"]')!;
     expect(live).toHaveTextContent("Moved “Prepare the slides” to Blocked");
-    expect(screen.getByText("Moved to Blocked")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByText("Moved to Blocked.")).toHaveAttribute("aria-hidden", "true");
     expect(task(store, "Prepare the slides")).toMatchObject({ status: "blocked" });
     await userEvent.click(within(card("Launch brief")).getByRole("button", { name: "More for Launch brief" }));
     await userEvent.click(screen.getByRole("menuitem", { name: "Mark done" }));

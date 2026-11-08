@@ -1,19 +1,26 @@
-import { useEffect, useRef, useState } from "react";
-import { TOAST_MS, useUi, type ToastState } from "../app/ui";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { TOAST_MS, TOAST_UNDO_MS, useUi, type ToastState } from "../app/ui";
 import { focusRow } from "../lib/focus";
+import { Icon } from "./Icon";
 
-/** One toast. Its timer waits while the pointer or focus is on it, so there is time to reach Undo. */
-function ToastBody({ toast, dismiss }: { toast: ToastState; dismiss: () => void }) {
+/**
+ * The one toast of the app (Planner Designs v54 p-toast-states, p-toast-phone): a card that follows the theme, with an icon, the text and an
+ * Undo ghost button. It stays four seconds, five with Undo, and the pointer or focus on it pauses the clock. An error never toasts: errors
+ * stay in a banner beside what failed.
+ */
+function ToastBody({ toast, dismissToast }: { toast: ToastState; dismissToast: (id: number) => void }) {
+  // Stable, so a render elsewhere never restarts the clock.
+  const dismiss = useCallback(() => dismissToast(toast.id), [dismissToast, toast.id]);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const undo = useRef<HTMLButtonElement>(null);
   const paused = hovered || focused;
 
   useEffect(() => {
-    if (paused) return;
-    const timer = setTimeout(dismiss, toast.ms ?? TOAST_MS);
+    if (paused || toast.leaving) return;
+    const timer = setTimeout(dismiss, toast.ms ?? (toast.undo ? TOAST_UNDO_MS : TOAST_MS));
     return () => clearTimeout(timer);
-  }, [paused, dismiss, toast.ms]);
+  }, [paused, dismiss, toast.ms, toast.undo, toast.leaving]);
 
   useEffect(() => {
     if (toast.focusUndo) undo.current?.focus();
@@ -22,24 +29,28 @@ function ToastBody({ toast, dismiss }: { toast: ToastState; dismiss: () => void 
   return (
     <div
       className="toast"
+      data-leaving={toast.leaving ? "true" : undefined}
+      aria-hidden={toast.leaving ? true : undefined}
+      inert={toast.leaving ? true : undefined}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
     >
+      <Icon name="check" small />
       {toast.spoken ? (
         <>
-          <span aria-hidden="true">{toast.message}</span>
+          <span aria-hidden="true" className="toast-text">{toast.message}</span>
           <span className="sr-only">{toast.spoken}</span>
         </>
       ) : (
-        <span>{toast.message}</span>
+        <span className="toast-text">{toast.message}</span>
       )}
       {toast.undo && (
         <button
           ref={undo}
           type="button"
-          className="toast-action"
+          className="ghost sm toast-action"
           onClick={() => {
             toast.undo?.();
             dismiss();
@@ -52,7 +63,7 @@ function ToastBody({ toast, dismiss }: { toast: ToastState; dismiss: () => void 
       {toast.secondary && (
         <button
           type="button"
-          className="toast-action"
+          className="ghost sm toast-action"
           onClick={() => {
             toast.secondary?.run();
             dismiss();
@@ -65,12 +76,23 @@ function ToastBody({ toast, dismiss }: { toast: ToastState; dismiss: () => void 
   );
 }
 
-/** The live region stays mounted, so a screen reader hears each new message as it appears. */
+/** The live region stays mounted, so a screen reader hears each new message as it appears. Escape dismisses the newest toast. */
 export function Toast() {
-  const { toast, dismissToast } = useUi();
+  const { toasts, dismissToast } = useUi();
+  const newest = toasts.filter((t) => !t.leaving).at(-1);
+  useEffect(() => {
+    if (!newest) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !e.defaultPrevented) dismissToast(newest.id);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [newest, dismissToast]);
   return (
     <div role="status" aria-live="polite" className="toast-live">
-      {toast && <ToastBody key={toast.id} toast={toast} dismiss={dismissToast} />}
+      {toasts.map((t) => (
+        <ToastBody key={t.id} toast={t} dismissToast={dismissToast} />
+      ))}
     </div>
   );
 }

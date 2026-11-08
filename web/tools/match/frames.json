@@ -806,6 +806,63 @@
       }
     ]
   },
+  "p-toast-phone": {
+    "design": "p-toast-phone",
+    "kind": "phone",
+    "route": "/today",
+    "scenario": "phone-today",
+    "steps": [
+      {
+        "click": "li.row .check, li.row input[type=checkbox]"
+      },
+      {
+        "wait": 300
+      }
+    ]
+  },
+  "task-panel-tags": {
+    "kind": "desktop",
+    "design": "task-panel-tags",
+    "route": "/tasks",
+    "scenario": "task-panel-tags",
+    "steps": [
+      {
+        "click": "button:has-text(\"Fix the sign-up email bug\")"
+      }
+    ]
+  },
+  "p-row-tags": {
+    "kind": "desktop",
+    "design": "p-row-tags",
+    "route": "/tasks",
+    "scenario": "task-panel-tags",
+    "steps": [
+      {
+        "click": "button:has-text(\"Fix the sign-up email bug\")"
+      },
+      {
+        "click": "button[aria-label^=\"Tags,\"]"
+      },
+      {
+        "fill": "input[aria-label=\"Search tags\"]",
+        "value": "er"
+      }
+    ]
+  },
+  "p-task-error": {
+    "kind": "desktop",
+    "design": "p-task-error",
+    "route": "/tasks",
+    "scenario": "task-panel",
+    "steps": [
+      {
+        "click": "button:has-text(\"Fix the sign-up email bug\")"
+      },
+      {
+        "eval": "(() => { const s = window.__match; const t = s.getState().tasks.find((x) => x.title === 'Fix the sign-up email bug'); s.deleteTask(t.id); })()"
+      }
+    ]
+  },
   "search": {
     "kind": "desktop",
     "design": "search",

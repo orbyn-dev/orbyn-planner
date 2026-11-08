@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../app/App";
 import { ClockProvider } from "../../app/clock";
-import { TOAST_MS } from "../../app/ui";
+import { TOAST_MS, TOAST_UNDO_MS } from "../../app/ui";
 import { LocalStore } from "../../store/LocalStore";
 import { MemoryPersistence } from "../../store/persistence";
 
@@ -113,31 +113,32 @@ describe("toast", () => {
     expect(region).toBeEmptyDOMElement();
     await userEvent.click(within(screen.getByRole("complementary", { name: "Task" })).getByRole("button", { name: "Delete" }));
     expect(screen.getByRole("status")).toBe(region);
-    expect(region).toHaveTextContent("Task deleted");
+    expect(region).toHaveTextContent("deleted. Kept for 30 days.");
   });
 
-  it("waits while the pointer is on it, and lasts ten seconds", async () => {
-    expect(TOAST_MS).toBe(10_000);
+  it("waits while the pointer is on it, and lasts five seconds with Undo", async () => {
+    expect(TOAST_MS).toBe(4_000); // without Undo
+    expect(TOAST_UNDO_MS).toBe(5_000); // with Undo
     await open();
     vi.useFakeTimers({ shouldAdvanceTime: true });
     await userEvent.click(within(screen.getByRole("complementary", { name: "Task" })).getByRole("button", { name: "Delete" }));
-    const toast = screen.getByText("Task deleted").closest(".toast")!;
+    const toast = screen.getByText(/deleted\. Kept for 30 days/).closest(".toast")!;
     await userEvent.hover(toast);
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(TOAST_MS + 5_000);
+      await vi.advanceTimersByTimeAsync(TOAST_UNDO_MS + 5_000);
     });
-    expect(screen.getByText("Task deleted")).toBeInTheDocument();
+    expect(screen.getByText(/deleted\. Kept for 30 days/)).toBeInTheDocument();
     await userEvent.unhover(toast);
     // Focus is on Undo too, and that also holds the toast.
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(TOAST_MS + 100);
+      await vi.advanceTimersByTimeAsync(TOAST_UNDO_MS + 300);
     });
-    expect(screen.getByText("Task deleted")).toBeInTheDocument();
+    expect(screen.getByText(/deleted\. Kept for 30 days/)).toBeInTheDocument();
     await userEvent.click(document.body);
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(TOAST_MS + 100);
+      await vi.advanceTimersByTimeAsync(TOAST_UNDO_MS + 300);
     });
-    await waitFor(() => expect(screen.queryByText("Task deleted")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText(/deleted\. Kept for 30 days/)).not.toBeInTheDocument());
   });
 });
 
@@ -198,12 +199,12 @@ describe("after Undo", () => {
     await waitFor(() => expect(row).toHaveFocus());
   });
 
-  it("the rows run Due, List, Priority, Tags, Repeat, Reminder, then Status, and a project's rows come after Status (Planner Designs v49 task-panel)", async () => {
+  it("the rows run Due, List, Tags, Priority, Repeat, Reminder, then Status, and a project's rows come after Status (Planner Designs v49 task-panel)", async () => {
     const { store, task } = await open();
     const project = store.addProject({ name: "Spring launch", colour: "c1", goal: null });
     await act(async () => store.updateTask(task.id, { projectId: project.id }));
     const labels = () => Array.from(screen.getByRole("complementary", { name: "Task" }).querySelectorAll(".kv > span:first-child")).map((e) => e.textContent);
     await screen.findByLabelText("Project");
-    expect(labels()).toEqual(["Due", "List", "Priority", "Tags", "Repeat", "Reminder", "Status", "Project"]);
+    expect(labels()).toEqual(["Due", "List", "Tags", "Priority", "Repeat", "Reminder", "Status", "Project"]);
   });
 });

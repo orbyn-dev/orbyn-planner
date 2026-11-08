@@ -116,6 +116,23 @@ describe("Today page", () => {
     expect(glance.getByText(/Sun 8/).closest("li")!.querySelector(".t3")).toBeNull();
   });
 
+  it("an event row says its place, or without one its length, never both and never the word Event; all-day says its calendar (Planner Designs v54)", async () => {
+    await openToday((s) => {
+      s.addEvent({ title: "With place", start: "2026-11-07T09:00", end: "2026-11-07T10:00", place: "Room 3" });
+      s.addEvent({ title: "An hour", start: "2026-11-07T11:00", end: "2026-11-07T12:00" });
+      s.addEvent({ title: "Half hour", start: "2026-11-07T13:00", end: "2026-11-07T13:30" });
+      s.addEvent({ title: "Long one", start: "2026-11-07T14:00", end: "2026-11-07T15:30" });
+      s.addEvent({ title: "Birthday", allDay: true, start: "2026-11-07", end: "2026-11-07", place: "Home" });
+    });
+    const meta = (title: string) => screen.getByRole("button", { name: new RegExp(title) }).closest("li")!.querySelector(".meta")!.textContent;
+    expect(meta("With place")).toBe("Room 3");
+    expect(meta("An hour")).toBe("1 h");
+    expect(meta("Half hour")).toBe("30 min");
+    expect(meta("Long one")).toBe("1 h 30 min");
+    expect(meta("Birthday")).toBe("Personal");
+    expect(document.body.textContent).not.toMatch(/\bEvent ·|Event$/m);
+  });
+
   it("puts all-day events in their own group above the timed ones, with the calendar's name and the day of a longer one", async () => {
     await openToday((s) => {
       s.addEvent({ title: "Maya’s birthday", allDay: true, start: "2026-11-07", end: "2026-11-07" });
@@ -127,7 +144,7 @@ describe("Today page", () => {
     expect(screen.getByText("All day", { selector: "b" }).nextElementSibling).toHaveTextContent("2");
     expect(screen.getByText("Timed", { selector: "b" })).toBeInTheDocument();
     const rows = Array.from(document.querySelectorAll(".row")).map((el) => el.textContent);
-    expect(rows).toEqual(["All dayTiling · day 2 of 3Personal", "All dayMaya’s birthdayPersonal", "09:00Team planningEvent · Room 3", "13:00LunchEvent"]);
+    expect(rows).toEqual(["All dayTiling · day 2 of 3Personal", "All dayMaya’s birthdayPersonal", "09:00Team planningRoom 3", "13:00Lunch1 h"]);
     const glance = within(screen.getByRole("list", { name: "The week at a glance" }));
     expect(glance.getByText("Dentist 15:00")).toBeInTheDocument(); // one event: its name and time
     expect(screen.getByText("Saturday 7 November · 4 events")).toBeInTheDocument();
@@ -257,8 +274,8 @@ describe("events across midnight", () => {
     });
     expect(times()).toEqual([
       ["Until 06:00", "Night shift", "Started yesterday 22:00"],
-      ["07:30", "Early swim", "Event"],
-      ["13:00", "Lunch", "Event"],
+      ["07:30", "Early swim", "1 h"],
+      ["13:00", "Lunch", "1 h"],
     ]);
     expect(stat("Today")).toBe("1"); // 10:00: the shift and the swim are over, lunch is to come
   });
@@ -276,7 +293,7 @@ describe("events across midnight", () => {
     expect(times()).toEqual([
       ["All day", "Conference: Lisbon", "Mon 9 Nov – Fri 13 Nov"],
       ["Until 06:00", "On-call: platform", "Started Sun 8 Nov 22:00"],
-      ["09:00", "Team planning", "Event · Room 3"],
+      ["09:00", "Team planning", "Room 3"],
       ["22:00", "Release freeze", "Until Fri 13 Nov 06:00"],
     ]);
   });
@@ -342,7 +359,7 @@ describe("Today while it loads, and on a phone", () => {
     }
   });
 
-  it("on a phone: the title is Today, the count is items, there are no stats, events have no meta, and Next 7 days is one collapsed row", async () => {
+  it("on a phone: the title is Today, the count is items, there are no stats, events say their place (Planner Designs v55), and Next 7 days is one collapsed row", async () => {
     vi.stubGlobal("matchMedia", (query: string) => ({ matches: true, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
     await openToday((s) => {
       s.addEvent({ title: "Lunch", start: "2026-11-07T13:00", end: "2026-11-07T14:00", place: "Cafe" });
@@ -351,7 +368,7 @@ describe("Today while it loads, and on a phone", () => {
     });
     expect(screen.getByRole("heading", { name: "Today" })).toBeInTheDocument();
     expect(screen.getByText("Saturday 7 November · 2 items")).toBeInTheDocument();
-    expect(document.querySelector(".row .meta")?.textContent).toBe("");
+    expect(document.querySelector(".row .meta")?.textContent).toBe("Cafe");
     const fold = screen.getByRole("button", { name: /^Next 7 days\s*1 item$/ });
     expect(fold).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByRole("list", { name: "The week at a glance" })).toBeNull();

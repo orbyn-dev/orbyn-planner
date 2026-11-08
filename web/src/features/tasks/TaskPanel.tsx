@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNow } from "../../app/clock";
 import { usePrefs } from "../../app/prefs";
 import { useUi } from "../../app/ui";
-import { Icon } from "../../components/Icon";
 import { Portal } from "../../components/Portal";
 import { PHONE_QUERY, useMediaQuery } from "../../components/useMediaQuery";
 import { useDialog } from "../../components/useDialog";
@@ -13,20 +12,20 @@ import { inOrder, keyBetween } from "../../store/order";
 import { CannotMoveSeries, type Scope } from "../../store/eventScope";
 import { allowedScopes, editTaskRepeat, undoableTasks, type RepeatEdit } from "../../store/taskRepeat";
 import { MAX_TAGS_PER_TASK } from "../../store/records";
-import { LIST_COLOURS, type ListColour, type Task } from "../../store/types";
+import { type ListColour, type Task } from "../../store/types";
 import { ScopeDialog } from "../calendar/ScopeDialog";
 import { DueRow, ListRow, PriorityRow, ReminderRow, RepeatRow, StatusRow } from "./RowPopovers";
-import { shownTags, TagChip, tagLabels } from "./TagChips";
+import { TagsRow } from "./TagsRow";
 import { needsAction } from "./selectors";
 import { useComplete } from "./useComplete";
+import { useSlow } from "../../lib/useSlow";
+import { Icon } from "../../components/Icon";
 
 const SAVE_DELAY_MS = 500;
 
 function Panel({ task }: { task: Task }) {
   const store = useStore();
   const { lists, projects, tags } = usePlanner();
-  const [newTag, setNewTag] = useState("");
-  const labels = tagLabels(tags);
   const ui = useUi();
   const now = useNow();
   const { prefs } = usePrefs();
@@ -125,7 +124,7 @@ function Panel({ task }: { task: Task }) {
     flush();
     store.deleteTask(task.id);
     ui.closeTask();
-    ui.showToast("Task deleted", () => store.restoreTask(task.id), { focusUndo: true, focusRowOnUndo: task.id });
+    ui.showToast(`“${task.title}” deleted. Kept for 30 days.`, () => store.restoreTask(task.id), { focusUndo: true, focusRowOnUndo: task.id });
   };
 
   const panel = (
@@ -165,47 +164,11 @@ function Panel({ task }: { task: Task }) {
 
       <DueRow due={task.due} now={now} weekStart={prefs.weekStart} style={needsAction(task, now) ? { color: "var(--amber-text)" } : undefined} onChange={setDue} />
       <ListRow lists={lists} value={task.listId} onChange={(listId) => store.updateTask(task.id, { listId })} onCreate={(name, colour) => store.addList(name, colour as ListColour).id} />
+      <TagsRow tags={tags} taskTags={task.tags} max={MAX_TAGS_PER_TASK} onToggle={(id, on) => store.setTaskTag(task.id, id, on)} onCreate={(name, colour) => {
+        // An existing tag of that name is used, not made twice.
+        return tags.find((t) => t.deletedAt === null && t.name.toLowerCase() === name.toLowerCase()) ?? store.addTag(name, colour);
+      }} />
       <PriorityRow value={task.priority} onChange={(priority) => store.updateTask(task.id, { priority })} />
-      <div className="kv">
-        <span id="task-tags-label">Tags</span>
-        <b className="ctl tagrow" role="group" aria-labelledby="task-tags-label">
-          {shownTags(task, tags).map((t) => (
-            <TagChip key={t.id} tag={t} label={labels.get(t.id)} onRemove={() => store.setTaskTag(task.id, t.id, false)} />
-          ))}
-          {task.tags.length >= MAX_TAGS_PER_TASK ? (
-            <span className="t3 small" role="note">{`A task can have ${MAX_TAGS_PER_TASK} tags at most.`}</span>
-          ) : (
-            <>
-            {tags.some((t) => t.deletedAt === null && !task.tags.includes(t.id)) && (
-              <select className="inp" aria-label="Add a tag" value="" onChange={(e) => e.target.value && store.setTaskTag(task.id, e.target.value, true)}>
-                <option value="">Add a tag</option>
-                {tags.filter((t) => t.deletedAt === null && !task.tags.includes(t.id)).map((t) => (
-                  <option key={t.id} value={t.id}>{labels.get(t.id) ?? t.name}</option>
-                ))}
-              </select>
-            )}
-            <input
-              className="inp"
-              aria-label="New tag"
-              placeholder="New tag"
-              value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key !== "Enter") return;
-                e.preventDefault();
-                const name = newTag.trim();
-                if (!name) return;
-                // An existing tag of that name is used, not made twice.
-                const same = tags.find((t) => t.deletedAt === null && t.name.toLowerCase() === name.toLowerCase());
-                const tag = same ?? store.addTag(name, LIST_COLOURS[tags.length % LIST_COLOURS.length]!);
-                store.setTaskTag(task.id, tag.id, true);
-                setNewTag("");
-              }}
-            />
-            </>
-          )}
-        </b>
-      </div>
       <RepeatRow rule={task.repeat?.repeat ?? null} start={dayValue || today} onChange={(rule) => edit({ repeat: rule })} />
       <ReminderRow value={task.reminder} onChange={(reminder) => store.updateTask(task.id, { reminder })} />
       <StatusRow task={task} onChange={(status) => store.updateTask(task.id, { status })} />
@@ -321,9 +284,51 @@ function Panel({ task }: { task: Task }) {
   return phone ? <Portal>{panel}</Portal> : panel;
 }
 
+/**
+ * What the panel shows when the task it was asked for is not there (Planner Designs v51 p-task-loading, p-task-error): while the planner is
+ * still being read, after 400 ms, a skeleton of its rows with "Loading this task"; once it has been read and the task is not in it (it may have
+ * been deleted on another device), why, with Close and Try again. Red only because it failed.
+ */
+export function TaskPanelState({ taskId, ready }: { taskId: string; ready: boolean }) {
+  const ui = useUi();
+  const slow = useSlow(!ready);
+  const [, again] = useState(0);
+  if (!ready) {
+    if (!slow) return null;
+    return (
+      <aside className="task-panel" role="complementary" aria-label="Task" aria-busy="true">
+        <div className="tp-head">
+          <span className="check" aria-hidden="true" />
+          <span className="skel" style={{ width: "var(--sp-220)", height: "var(--sp-16)" }} />
+        </div>
+        <span role="status" className="t3 line"><span className="spin" aria-hidden="true" />Loading this task</span>
+        {["Due", "List", "Priority", "Repeat", "Reminder"].map((label) => (
+          <div className="kv" key={label}>
+            <span>{label}</span>
+            <span className="skel" style={{ width: "var(--sp-90)" }} />
+          </div>
+        ))}
+      </aside>
+    );
+  }
+  return (
+    <aside className="task-panel" role="complementary" aria-label="Task" data-for={taskId}>
+      <div className="card red-ring" role="alert">
+        <span className="line"><span className="pv-red"><Icon name="alert" small /></span><b>Couldn’t open this task</b></span>
+        <span className="t3">It may have been deleted on another device, or your connection dropped. Your other tasks are fine.</span>
+        <span className="line">
+          <button type="button" className="ghost" onClick={ui.closeTask}>Close</button>
+          <button type="button" className="btn" onClick={() => again((n) => n + 1)}>Try again</button>
+        </span>
+      </div>
+    </aside>
+  );
+}
+
 export function TaskPanel() {
-  const { tasks } = usePlanner();
+  const { tasks, ready } = usePlanner();
   const { taskId } = useUi();
   const task = tasks.find((t) => t.id === taskId && t.deletedAt === null);
-  return task ? <Panel key={task.id} task={task} /> : null;
+  if (task) return <Panel key={task.id} task={task} />;
+  return taskId === null ? null : <TaskPanelState taskId={taskId} ready={ready} />;
 }
