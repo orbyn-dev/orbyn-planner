@@ -1826,5 +1826,17 @@
         "wait": 300
       }
     ]
+  },
+  "work-board": {
+    "kind": "desktop",
+    "design": "work-board",
+    "route": "/tasks",
+    "scenario": "board",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Board"
+      }
+    ]
   }
 }

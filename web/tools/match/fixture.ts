@@ -378,7 +378,9 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
       };
       add("Prepare the launch slides", work.id, day(12), "todo");
       add("Renew library books", personal.id, day(13), "todo");
-      add("Launch brief", work.id, `${day(7)}T12:00`, "in_progress");
+      const brief = add("Launch brief", work.id, `${day(7)}T12:00`, "in_progress");
+      // Three of five steps done: the card's bar reads 60 percent (work-board).
+      store.updateTask(brief.id, { checklist: ["a", "b", "c", "d", "e"].map((order, i) => ({ id: `s${i}`, title: `Step ${i + 1}`, done: i < 3, order })) });
       add("Choose kitchen tiles", reno.id, day(9), "in_progress");
       if (scenario === "board") add("Book a table for the book club", club.id, null, "blocked");
       else {

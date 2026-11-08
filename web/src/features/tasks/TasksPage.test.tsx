@@ -124,6 +124,20 @@ describe("Tasks page", () => {
     expect(screen.getByRole("button", { name: "plain" })).toBeInTheDocument();
   });
 
+  it("a board card with a checklist draws its progress bar (work-board), and one without draws none", async () => {
+    const { store } = await openTasks((s) => {
+      const brief = s.addTask({ title: "Launch brief" });
+      s.updateTask(brief.id, { checklist: ["a", "b", "c", "d", "e"].map((order, i) => ({ id: `s${i}`, title: `Step ${i + 1}`, done: i < 3, order })) });
+      s.addTask({ title: "Plain card" });
+    });
+    void store;
+    await userEvent.click(screen.getByRole("radio", { name: "Board" }));
+    const bar = screen.getByRole("progressbar", { name: "Launch brief: 3 of 5 steps" });
+    expect(bar).toHaveAttribute("aria-valuenow", "60");
+    expect(bar.querySelector("i")).toHaveStyle({ width: "60%" });
+    expect(screen.getAllByRole("progressbar")).toHaveLength(1);
+  });
+
   it("shows the board lanes", async () => {
     const { field } = await openTasks();
     await add(field, "card");
