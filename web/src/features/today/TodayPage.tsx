@@ -293,7 +293,7 @@ export function TodayPage() {
   return (
     <>
       <PageHeader title={title} sub={`${dayName} ${now.getDate()} ${MONTHS[now.getMonth()]} · ${status.kind === "offline" ? "offline" : summary}`}>
-        <SyncLine status={status} onRetry={retry} waiting={waiting} />
+        {!(phone && status.kind === "synced") && <SyncLine status={status} onRetry={retry} waiting={waiting} />}
         {phone && (
           <button type="button" className="avatar menu-btn" aria-label="Menu" aria-haspopup="dialog" onClick={ui.openMenu}>
             {initialsOf(auth?.session?.name, auth?.session?.email)}

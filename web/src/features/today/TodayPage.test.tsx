@@ -313,6 +313,9 @@ describe("Today while it loads, and on a phone", () => {
     const fold = screen.getByRole("button", { name: /^Next 7 days\s*1 item$/ });
     expect(fold).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByRole("list", { name: "The week at a glance" })).toBeNull();
+    // A planner that only lives on this device says so in the header; there is no Syncing flash.
+    expect(document.querySelector(".ph .pillx")).toHaveTextContent("On this device");
+    expect(document.querySelector(".ph .st.info")).toBeNull();
   });
 
   it("on a phone an overdue row has no meta, and a long list tells a screen reader where each row stands", async () => {

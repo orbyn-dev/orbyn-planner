@@ -234,8 +234,7 @@ export function useSyncStatus(pending = 0, sync: SyncState | null = null, syncNo
     else if (sync.phase === "syncing" || sync.lastSyncedAt === null) status = { kind: "syncing" };
     else status = { kind: "synced", devices: sync.devices };
   } else if (!online) status = { kind: "offline", waiting: pending };
-  else if (healthy === null) status = { kind: "syncing" };
-  else if (healthy) status = { kind: "local" };
+  else if (healthy === null || healthy) status = { kind: "local" }; // nothing is syncing: no "Syncing" flash for a planner that only lives here
   else status = { kind: "error" };
   return { status, retry };
 }
