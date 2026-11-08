@@ -18,4 +18,15 @@ describe("Today pitch (Planner Designs v49)", () => {
     expect(lists).toContain("display: flex");
     expect(lists).toContain("gap: var(--sp-2)");
   });
+
+  it("the groups of Today's list are one column with the same 2 px between rows and headers", () => {
+    const list = rule(".today-list {");
+    expect(list).toContain("flex-direction: column");
+    expect(list).toContain("gap: var(--sp-2)");
+  });
+
+  it("the empty state's heading sits 71 px under its header and the Add a task button is 6 px further down", () => {
+    expect(rule(".blk .empty {")).toContain("calc(var(--sp-20) + var(--sp-48) + var(--sp-3)) 0 var(--sp-20)");
+    expect(rule(".blk .empty .btn")).toContain("margin-top: var(--sp-6)");
+  });
 });
