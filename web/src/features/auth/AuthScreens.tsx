@@ -300,7 +300,8 @@ function SignUp({ go }: { go: (s: AuthScreen) => void }) {
 
 function SignIn({ go }: { go: (s: AuthScreen) => void }) {
   const auth = useAuth()!;
-  const [email, setEmail] = useState("");
+  // "Sign in again" (a fresh sign-in is needed while still signed in) starts with this account's email, so only the password is left.
+  const [email, setEmail] = useState(auth.session?.email ?? "");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
