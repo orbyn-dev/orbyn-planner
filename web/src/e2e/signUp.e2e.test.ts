@@ -12,7 +12,7 @@ import { codeSentTo, mailUrl } from "./testing/mailbox";
 const password = "correct horse battery staple";
 
 describe.skipIf(!engineUrl || !mailUrl)("sign-up with a code from the mailbox", () => {
-  it("makes no account until the code is right; a new code replaces the old; a taken address gets the same answer and no mail", async () => {
+  it("makes no account until the code is right; a resend mails the same code again; a taken address gets the same answer and no mail", async () => {
     const email = `e2e-verify-${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.com`;
     const a = await browser();
     const pending = await signUp(a.services, { name: "Sam", email, password });
@@ -25,16 +25,16 @@ describe.skipIf(!engineUrl || !mailUrl)("sign-up with a code from the mailbox", 
     expect(((await signIn(early.services, { email, password }).catch((e: unknown) => e)) as ApiFailure).code).toBe("login_failed");
 
     const first = await codeSentTo(email);
-    expect(first).toMatch(/^\d{6}$/);
-    const wrong = await pending.verify(first === "000000" ? "111111" : "000000").catch((e: unknown) => e);
+    expect(first).toMatch(/^[2-9A-HJKMNP-TV-Z]{8}$/);
+    const wrong = await pending.verify(first === "AAAAAAAA" ? "BBBBBBBB" : "AAAAAAAA").catch((e: unknown) => e);
     expect((wrong as ApiFailure).code).toBe("invalid_email_code");
     expect((wrong as ApiFailure).message).toBe("That code didn’t work.");
 
+    // A resend mails the same code again (the engine derives it, and mails at most once a minute per address), so the first still works.
     await pending.resend();
-    const second = await codeSentTo(email, [first]);
-    expect(second).not.toBe(first);
-    expect(((await pending.verify(first).catch((e: unknown) => e)) as ApiFailure).code).toBe("invalid_email_code"); // the old code stopped working
-    const session = await pending.verify(second);
+    // Any case, with or without the hyphen: the engine normalises.
+    const typed = `${first.slice(0, 4).toLowerCase()}-${first.slice(4).toLowerCase()}`;
+    const session = await pending.verify(typed);
     expect(session.deviceState).toBe("trusted");
     expect(await a.keys.loadKeys()).not.toBeNull(); // stored only now
     expect((await a.services.api.devices()).devices).toHaveLength(1);
@@ -43,7 +43,7 @@ describe.skipIf(!engineUrl || !mailUrl)("sign-up with a code from the mailbox", 
     const b = await browser();
     const decoy = await signUp(b.services, { name: "Other", email, password: "another long password" });
     expect(decoy.signupId).toMatch(/^[0-9a-f-]{36}$/);
-    const refused = await decoy.verify(second).catch((e: unknown) => e);
+    const refused = await decoy.verify(first).catch((e: unknown) => e);
     expect((refused as ApiFailure).code).toBe("invalid_email_code");
     expect(b.services.tokens.getSession()).toBeNull();
     decoy.cancel();
