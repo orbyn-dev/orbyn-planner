@@ -371,7 +371,7 @@
       },
       {
         "fill": ".when input.field",
-        "value": "Fri 14:00\u201315:00"
+        "value": "Fri 14:00–15:00"
       }
     ]
   },
@@ -817,6 +817,35 @@
       },
       {
         "wait": 300
+      }
+    ]
+  },
+  "task-panel-tags": {
+    "kind": "desktop",
+    "design": "task-panel-tags",
+    "route": "/tasks",
+    "scenario": "task-panel-tags",
+    "steps": [
+      {
+        "click": "button:has-text(\"Fix the sign-up email bug\")"
+      }
+    ]
+  },
+  "p-row-tags": {
+    "kind": "desktop",
+    "design": "p-row-tags",
+    "route": "/tasks",
+    "scenario": "task-panel-tags",
+    "steps": [
+      {
+        "click": "button:has-text(\"Fix the sign-up email bug\")"
+      },
+      {
+        "click": "button[aria-label^=\"Tags,\"]"
+      },
+      {
+        "fill": "input[aria-label=\"Search tags\"]",
+        "value": "er"
       }
     ]
   }

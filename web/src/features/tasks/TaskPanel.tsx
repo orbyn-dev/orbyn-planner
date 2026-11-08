@@ -13,10 +13,10 @@ import { inOrder, keyBetween } from "../../store/order";
 import { CannotMoveSeries, type Scope } from "../../store/eventScope";
 import { allowedScopes, editTaskRepeat, undoableTasks, type RepeatEdit } from "../../store/taskRepeat";
 import { MAX_TAGS_PER_TASK } from "../../store/records";
-import { LIST_COLOURS, type ListColour, type Task } from "../../store/types";
+import { type ListColour, type Task } from "../../store/types";
 import { ScopeDialog } from "../calendar/ScopeDialog";
 import { DueRow, ListRow, PriorityRow, ReminderRow, RepeatRow, StatusRow } from "./RowPopovers";
-import { shownTags, TagChip, tagLabels } from "./TagChips";
+import { TagsRow } from "./TagsRow";
 import { needsAction } from "./selectors";
 import { useComplete } from "./useComplete";
 
@@ -25,8 +25,6 @@ const SAVE_DELAY_MS = 500;
 function Panel({ task }: { task: Task }) {
   const store = useStore();
   const { lists, projects, tags } = usePlanner();
-  const [newTag, setNewTag] = useState("");
-  const labels = tagLabels(tags);
   const ui = useUi();
   const now = useNow();
   const { prefs } = usePrefs();
@@ -165,47 +163,11 @@ function Panel({ task }: { task: Task }) {
 
       <DueRow due={task.due} now={now} weekStart={prefs.weekStart} style={needsAction(task, now) ? { color: "var(--amber-text)" } : undefined} onChange={setDue} />
       <ListRow lists={lists} value={task.listId} onChange={(listId) => store.updateTask(task.id, { listId })} onCreate={(name, colour) => store.addList(name, colour as ListColour).id} />
+      <TagsRow tags={tags} taskTags={task.tags} max={MAX_TAGS_PER_TASK} onToggle={(id, on) => store.setTaskTag(task.id, id, on)} onCreate={(name, colour) => {
+        // An existing tag of that name is used, not made twice.
+        return tags.find((t) => t.deletedAt === null && t.name.toLowerCase() === name.toLowerCase()) ?? store.addTag(name, colour);
+      }} />
       <PriorityRow value={task.priority} onChange={(priority) => store.updateTask(task.id, { priority })} />
-      <div className="kv">
-        <span id="task-tags-label">Tags</span>
-        <b className="ctl tagrow" role="group" aria-labelledby="task-tags-label">
-          {shownTags(task, tags).map((t) => (
-            <TagChip key={t.id} tag={t} label={labels.get(t.id)} onRemove={() => store.setTaskTag(task.id, t.id, false)} />
-          ))}
-          {task.tags.length >= MAX_TAGS_PER_TASK ? (
-            <span className="t3 small" role="note">{`A task can have ${MAX_TAGS_PER_TASK} tags at most.`}</span>
-          ) : (
-            <>
-            {tags.some((t) => t.deletedAt === null && !task.tags.includes(t.id)) && (
-              <select className="inp" aria-label="Add a tag" value="" onChange={(e) => e.target.value && store.setTaskTag(task.id, e.target.value, true)}>
-                <option value="">Add a tag</option>
-                {tags.filter((t) => t.deletedAt === null && !task.tags.includes(t.id)).map((t) => (
-                  <option key={t.id} value={t.id}>{labels.get(t.id) ?? t.name}</option>
-                ))}
-              </select>
-            )}
-            <input
-              className="inp"
-              aria-label="New tag"
-              placeholder="New tag"
-              value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key !== "Enter") return;
-                e.preventDefault();
-                const name = newTag.trim();
-                if (!name) return;
-                // An existing tag of that name is used, not made twice.
-                const same = tags.find((t) => t.deletedAt === null && t.name.toLowerCase() === name.toLowerCase());
-                const tag = same ?? store.addTag(name, LIST_COLOURS[tags.length % LIST_COLOURS.length]!);
-                store.setTaskTag(task.id, tag.id, true);
-                setNewTag("");
-              }}
-            />
-            </>
-          )}
-        </b>
-      </div>
       <RepeatRow rule={task.repeat?.repeat ?? null} start={dayValue || today} onChange={(rule) => edit({ repeat: rule })} />
       <ReminderRow value={task.reminder} onChange={(reminder) => store.updateTask(task.id, { reminder })} />
       <StatusRow task={task} onChange={(status) => store.updateTask(task.id, { status })} />

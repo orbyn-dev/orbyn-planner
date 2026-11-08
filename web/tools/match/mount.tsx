@@ -27,7 +27,8 @@ export async function seededStore(scenario: Scenario, pinned: string = PINNED_NO
     persistence: new MemoryPersistence(),
     broadcast: false,
     now: () => new Date(pinned),
-    newId: () => `match-${String(++n).padStart(4, "0")}`,
+    // UUID-shaped, because tags are only kept for ids of that form.
+    newId: () => `00000000-0000-4000-8000-${String(++n).padStart(12, "0")}`,
     onReload: () => undefined,
   });
   await store.ready;

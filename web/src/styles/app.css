@@ -901,3 +901,10 @@ button.pillx { border: 0; }
 /* A task finished today stays in place, struck through and faded; the Completed section's day labels are quiet (Planner Designs v51 work-list). */
 .tbl .tr.done { opacity: .55; }
 .bh.sub { color: var(--t3); }
+/* The Tags row (Planner Designs v51 task-panel-tags, p-row-tags): chips and a "+" in the row, and a popover of checkboxes. */
+.tags-btn { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--sp-6); }
+.tags-pop { width: var(--sp-230); display: flex; flex-direction: column; gap: var(--sp-4); }
+.tags-pop .field { height: var(--sp-30); font-size: var(--fs-12-5); }
+.tag-opt { height: var(--sp-30); padding: 0 var(--sp-9); gap: var(--sp-9); cursor: pointer; }
+.tag-opt:has(input:disabled) { color: var(--t3); cursor: default; }
+.tags-pop .opt .k { margin-left: auto; font-family: var(--mono); font-size: var(--fs-10-5); }
