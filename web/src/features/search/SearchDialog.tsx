@@ -45,14 +45,20 @@ export function SearchDialog() {
 
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
-  const [keep, setKeep] = useState(false);
   const q = query.trim();
 
-  const parsed = useMemo(() => (keep ? { title: q, due: null, listId: null, priority: "none" as const, repeat: null } : parseQuickAdd(q, now, lists)), [q, keep, now, lists]);
+  // What was written in plain words: the date, list and priority come out, and the title is what is left. When something came out, the title
+  // starts with a capital ("dentist friday 3pm" adds "Dentist"); typed words with nothing in them stay as typed (Planner Designs `search`, `p-search-none`).
+  const parsed = useMemo(() => {
+    const p = parseQuickAdd(q, now, lists);
+    const read = p.due !== null || p.listId !== null || p.repeat !== null || p.priority !== "none";
+    return read ? { ...p, title: p.title.charAt(0).toUpperCase() + p.title.slice(1) } : p;
+  }, [q, now, lists]);
 
   const { sections, found } = useMemo(() => {
     if (!q) return { sections: [] as Section[], found: false };
-    const needle = q.toLowerCase();
+    // The search is for the words, not the date written after them: "dentist friday 3pm" looks for "dentist" (Planner Designs `search`).
+    const needle = (parsed.title.trim() || q).toLowerCase();
     const hit = (text: string) => text.toLowerCase().includes(needle);
     // Completed tasks count, and so do tasks deleted in the last 30 days (they are on the Completed and deleted page).
     const matchedTasks = tasks
@@ -194,12 +200,6 @@ export function SearchDialog() {
             <b>No results for “{q}”</b>
             <span className="t3">Nothing in tasks, events, lists or projects matches. Search covers completed tasks and the last 30 days of deleted ones.</span>
           </div>
-        )}
-        {flat.some((i) => i.kind === "add-task") && (
-          <label className="check-row search-hint">
-            <input type="checkbox" className="check" checked={keep} onChange={(e) => setKeep(e.target.checked)} />
-            Keep as typed
-          </label>
         )}
         {!q && <p className="t3 search-hint">Type to search, or add a task in plain words.</p>}
       </div>

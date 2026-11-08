@@ -20,19 +20,23 @@ export function NotificationsPage() {
     return (
       <>
         <PageHeader title="Notifications" sub="All caught up" />
-        <div className="empty">
-          <h4>You’re all caught up</h4>
-          <p>Reminders and changes to shared lists appear here.</p>
-          <button
-            type="button"
-            className="ghost"
-            onClick={() => {
-              setSettingsTarget("Notifications");
-              navigate("/settings");
-            }}
-          >
-            Notification settings
-          </button>
+        <div className="pad">
+          <div className="empty notif-empty">
+            <h4>You’re all caught up</h4>
+            <p>Reminders and changes to shared lists appear here.</p>
+            <div className="empty-actions">
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => {
+                  setSettingsTarget("Notifications");
+                  navigate("/settings");
+                }}
+              >
+                Notification settings
+              </button>
+            </div>
+          </div>
         </div>
       </>
     );

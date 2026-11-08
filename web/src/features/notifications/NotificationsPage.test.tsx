@@ -48,6 +48,17 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("Notifications", () => {
+  it("all caught up is centred near the top of the page, inside the page's padding (Planner Designs p-notif-empty)", async () => {
+    ui();
+    const empty = (await screen.findByText("You’re all caught up")).closest(".empty")!;
+    expect(empty).toHaveClass("notif-empty");
+    expect(empty.parentElement).toHaveClass("pad");
+    const nodeFs = "node:fs";
+    const fs = (await import(/* @vite-ignore */ nodeFs)) as { readFileSync(path: string, encoding: "utf8"): string };
+    const css = fs.readFileSync(`${(globalThis as { process?: { cwd(): string } }).process!.cwd()}/src/styles/app.css`, "utf8");
+    expect(css).toMatch(/\.notif-empty \{ align-items: center; justify-content: flex-start; text-align: center; padding-top: var\(--sp-80\); \}/);
+  });
+
   it("is calm when there is nothing, with a way to the notification settings", async () => {
     ui();
     expect(await screen.findByText("You’re all caught up")).toBeInTheDocument();
