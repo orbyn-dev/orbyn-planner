@@ -1,3 +1,4 @@
+import { Icon } from "../../components/Icon";
 import { useState, type FormEvent } from "react";
 import { ApiFailure } from "../../api/auth";
 import { useAuth } from "../../auth/AuthProvider";
@@ -60,8 +61,8 @@ export function InviteStep({ onAccepted, go }: { onAccepted: (invite: string) =>
     <form className="authcard invite" onSubmit={(e) => void submit(e)} aria-label="Sign up with an invite" noValidate>
       <StepBar step={1} label="Invite code" />
       <h1 className="auth-title">Orbyn is invite-only for now</h1>
-      {phase === "limited" && <div className="banner" role="alert">{LIMITED}</div>}
-      {phase === "network" && <div className="banner" role="alert">{NETWORK}</div>}
+      {phase === "limited" && <div className="banner warn" role="alert"><Icon name="clock" small />{LIMITED}</div>}
+      {phase === "network" && <div className="banner warn" role="alert"><Icon name="alert" small />{NETWORK}</div>}
       <div className="form" style={{ width: "auto" }}>
         <label htmlFor="su-invite">Invite code</label>
         <input

@@ -87,18 +87,18 @@ export function DeleteUnusedPage() {
   };
 
   const done = (title: string, text: string) => (
-    <div className="authcard keys-card" role="status" aria-label={title}>
-      <span className="pv-ok"><Icon name="check2" size={22} /></span>
+    <div className="authcard keys-card start-over" role="status" aria-label={title}>
+      <span className="pv-ok"><Icon name="ok" size={22} /></span>
       <h1 className="keys-title">{title}</h1>
       <span className="t2">{text}</span>
-      <div className="pv-stack"><a className="btn lg" href="/sign-up">Sign up again</a></div>
+      <div className="pv-stack"><a className="btn" href="/sign-up">Sign up again</a></div>
     </div>
   );
 
   return (
     <main className="public-page" id="content" tabIndex={-1}>
       {result === "busy" ? (
-        <div className="authcard keys-card" role="status" aria-label="Checking your link">
+        <div className="authcard keys-card start-over" role="status" aria-label="Checking your link">
           <span className="spin blue" aria-hidden="true" />
           <h1 className="keys-title">Checking your link</h1>
           <span className="t2">This takes a moment.</span>
@@ -108,22 +108,22 @@ export function DeleteUnusedPage() {
       ) : result === "not-released" ? (
         done("Account deleted", "The account was deleted. No invite code was released.")
       ) : result === "expired" ? (
-        <div className="authcard keys-card" role="status" aria-label="This link doesn’t work any more">
-          <span className="pv-red"><Icon name="alert" size={22} /></span>
+        <div className="authcard keys-card start-over" role="status" aria-label="This link doesn’t work any more">
+          <Icon name="info" size={22} />
           <h1 className="keys-title">This link doesn’t work any more</h1>
           <span className="t2">It may have been used already, or it may have expired after 24 hours. Go back to sign-up and choose Start over to get a new one.</span>
-          <div className="pv-stack"><a className="btn lg" href="/sign-up">Back to sign-up</a></div>
+          <div className="pv-stack"><a className="btn" href="/sign-up">Back to sign-up</a></div>
         </div>
       ) : result === "not-empty" ? (
-        <div className="authcard keys-card" role="status" aria-label="This account can’t be deleted this way">
-          <span className="pv-red"><Icon name="alert" size={22} /></span>
+        <div className="authcard keys-card start-over" role="status" aria-label="This account can’t be deleted this way">
+          <Icon name="info" size={22} />
           <h1 className="keys-title">This account can’t be deleted this way</h1>
           <span className="t2">Something has been stored in it, or a device now holds its keys. Nothing was deleted. To delete it, sign in and use Settings › Account › Delete account, or email {SUPPORT}.</span>
           <div className="pv-stack">
-            <a className="btn lg" href="/sign-in">Sign in</a>
+            <a className="btn" href="/sign-in">Sign in</a>
             <button
               type="button"
-              className="ghost lg"
+              className="ghost"
               onClick={() => {
                 void navigator.clipboard?.writeText(SUPPORT).then(() => setCopied(true), () => undefined);
               }}
@@ -134,26 +134,26 @@ export function DeleteUnusedPage() {
           </div>
         </div>
       ) : result === "limited" ? (
-        <div className="authcard keys-card" role="status" aria-label="Too many tries">
+        <div className="authcard keys-card start-over" role="status" aria-label="Too many tries">
           <Icon name="clock" size={22} />
           <h1 className="keys-title">Too many tries</h1>
           <span className="t2">Wait a while, then try again.</span>
         </div>
       ) : result === "error" ? (
-        <div className="authcard keys-card" role="alert" aria-label="Couldn’t delete the account">
+        <div className="authcard keys-card start-over" role="alert" aria-label="Couldn’t delete the account">
           <span className="pv-red"><Icon name="alert" size={22} /></span>
           <h1 className="keys-title">Couldn’t delete the account</h1>
           <span className="t2">Orbyn didn’t answer, so nothing changed. The account still exists.</span>
-          <div className="pv-stack"><button type="button" className="btn lg" onClick={() => void press()}>Try again</button></div>
+          <div className="pv-stack"><button type="button" className="btn" onClick={() => void press()}>Try again</button></div>
         </div>
       ) : (
-        <div className="authcard keys-card" role="group" aria-label="Delete this empty account?">
+        <div className="authcard keys-card start-over" role="group" aria-label="Delete this empty account?">
           <Icon name="info" size={22} />
           <h1 className="keys-title">Delete this empty account?</h1>
           <span className="t2">This account has nothing stored in it. Deleting it lets you sign up again. Only an empty account can be deleted this way. If you signed up with an invite code, deleting this account may release the code so you can use it again.</span>
           <div className="pv-stack">
-            <a className="ghost lg" href="/">Cancel</a>
-            <button type="button" className="danger lg" onClick={() => void press()}>Delete this account</button>
+            <a className="ghost" href="/">Cancel</a>
+            <button type="button" className="danger" onClick={() => void press()}>Delete this account</button>
           </div>
         </div>
       )}

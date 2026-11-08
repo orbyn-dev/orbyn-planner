@@ -4,7 +4,7 @@ import { NotAvailable, PasskeyButton, Planned } from "../../components/Planned";
 import { ApiFailure } from "../../api/auth";
 import { SignInUnavailable } from "../../api/authCrypto";
 import { BusyButton } from "../../components/BusyButton";
-import { appsAvailable, downloadUrl } from "../../api/site";
+import { PLANNER_PAGE_URL, appsAvailable, downloadUrl } from "../../api/site";
 import { Icon } from "../../components/Icon";
 import { deleteIntent } from "../../auth/deletionNotice";
 import { KeysForAnotherAccount, SecondFactorNeeded, signIn, signUp, type PendingSignUp } from "../../auth/flows";
@@ -22,7 +22,6 @@ export function describeError(error: unknown): string {
 }
 
 function Landing({ go }: { go: (s: AuthScreen) => void }) {
-  const auth = useAuth()!;
   return (
     <div className="public">
       <span className="t3">Orbyn Planner</span>
@@ -31,11 +30,10 @@ function Landing({ go }: { go: (s: AuthScreen) => void }) {
         Plan your day, keep lists, and share them with the people you live and work with. Simple enough for anyone, from a shopping list to a product launch.
       </p>
       <div className="public-actions">
+        <a className="ghost" href={PLANNER_PAGE_URL}>See how it works</a>
         <button type="button" className="btn" onClick={() => go("signup")}>Get started</button>
-        <button type="button" className="ghost" onClick={() => go("signin")}>Sign in</button>
       </div>
-      <button type="button" className="link-btn quiet-link" onClick={auth.useWithoutAccount}>Use without an account</button>
-      <span className="t3 small">Everything then stays on this device. You can sign in later.</span>
+      <button type="button" className="link-btn quiet-link small" onClick={() => go("signin")}>Sign in</button>
     </div>
   );
 }
@@ -136,9 +134,10 @@ function CheckEmail({ pending, onBack, onDone, onInviteRejected, onSignIn }: { p
       <StepBar step={3} label="Check your email" />
       <h1 className="auth-title">Check your inbox</h1>
       {inviteRejected && (
-        <div className="banner" role="alert">
-          {INVITE_REFUSED}
-          <span className="end"><button type="button" className="ghost" onClick={onInviteRejected}>Back to the form</button></span>
+        <div className="banner warn" role="alert">
+          <Icon name="alert" small />
+          <span>{INVITE_REFUSED}</span>
+          <span className="end"><button type="button" className="ghost sm" onClick={onInviteRejected}>Back to the form</button></span>
         </div>
       )}
       <p className="t3">Enter the 8-character code we emailed to {pending.email}. It works for 30 minutes.</p>
@@ -267,9 +266,10 @@ function SignUp({ go }: { go: (s: AuthScreen) => void }) {
       <span className="st ok"><i className="sd" />Invite accepted</span>
       <h1 className="auth-title">Create your account</h1>
       {rejected && (
-        <div className="banner" role="alert">
-          {INVITE_REFUSED}
-          <span className="end"><button type="button" className="ghost" onClick={backToCode}>Back to the form</button></span>
+        <div className="banner warn" role="alert">
+          <Icon name="alert" small />
+          <span>{INVITE_REFUSED}</span>
+          <span className="end"><button type="button" className="ghost sm" onClick={backToCode}>Back to the form</button></span>
         </div>
       )}
       <div className="form" style={{ width: "auto" }}>
@@ -286,12 +286,6 @@ function SignUp({ go }: { go: (s: AuthScreen) => void }) {
       <PasskeyButton label="Continue with a passkey" />
       <button type="submit" className="btn" disabled={busy || !email.trim() || password.length < 8}>
         {busy ? "Creating your account…" : "Continue with a password"}
-      </button>
-      <span className="t3 small">
-        Already have an account? <button type="button" className="link-btn" onClick={() => go("signin")}>Sign in</button>
-      </span>
-      <button type="button" className="link-btn quiet-link" onClick={auth.overlay ? auth.closeAuth : auth.useWithoutAccount}>
-        {auth.overlay ? "Back to the planner" : "Use without an account"}
       </button>
     </form>
     </>
