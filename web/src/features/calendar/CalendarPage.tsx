@@ -5,13 +5,17 @@ import { useUi } from "../../app/ui";
 import { PageHeader } from "../../components/EmptyState";
 import { Icon } from "../../components/Icon";
 import { PHONE_QUERY, useMediaQuery } from "../../components/useMediaQuery";
-import { addDays, dateKey, dateOf, isoWeek, MONTHS, WEEKDAYS, type WeekStart, weekStartOf } from "../../lib/dates";
-import { usePlanner } from "../../store/context";
+import { addDays, dateKey, dateOf, formatTime, isoWeek, MONTHS, WEEKDAYS, type WeekStart, weekStartOf } from "../../lib/dates";
+import { setSettingsTarget } from "../../app/settingsTarget";
+import { useRouter } from "../../app/router";
+import { useSlow } from "../../lib/useSlow";
+import { usePlanner, useStore } from "../../store/context";
 import { expandEvents } from "../../store/occurrences";
 import { AgendaView } from "./AgendaView";
 import { CalendarsMenu } from "./CalendarsMenu";
 import { MonthView } from "./MonthView";
 import { PhoneCalendar } from "./PhoneCalendar";
+import { refreshCalendar } from "./subscriptions";
 import { TimeGrid } from "./TimeGrid";
 
 export type View = "month" | "week" | "day" | "agenda";
@@ -62,6 +66,35 @@ function shift(view: View, anchor: string, direction: 1 | -1): string {
   return dateKey(addDays(a, 7 * direction));
 }
 
+/**
+ * A calendar from outside Orbyn that failed to sync keeps its last events and says when they're from (Planner Designs
+ * p-cal-sync-error): one banner per failed calendar, with Open settings and Try again.
+ */
+function CalendarSyncErrors() {
+  const { calendars } = usePlanner();
+  const store = useStore();
+  const router = useRouter();
+  const failed = calendars.filter((c) => c.kind.type === "subscribed" && c.kind.error);
+  if (failed.length === 0) return null;
+  return (
+    <div className="cal-banners">
+      {failed.map((c) => {
+        const at = c.kind.type === "subscribed" && c.kind.lastRefreshed ? formatTime(new Date(c.kind.lastRefreshed)) : null;
+        return (
+          <div key={c.id} className="banner err" role="alert">
+            <Icon name="alert" small />
+            <span>Couldn’t sync {c.name}, a calendar from outside Orbyn.{at ? ` Showing what it had at ${at}.` : ""}</span>
+            <span className="end">
+              <button type="button" className="ghost sm" onClick={() => { setSettingsTarget("Calendars"); router.navigate("/settings"); }}>Open settings</button>
+              <button type="button" className="btn sm" onClick={() => void refreshCalendar(store, c)}>Try again</button>
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function CalendarPage() {
   const phone = useMediaQuery(PHONE_QUERY);
   const now = useNow();
@@ -71,7 +104,8 @@ export function CalendarPage() {
 }
 
 function CalendarGrid() {
-  const { events, calendars } = usePlanner();
+  const { events, calendars, ready } = usePlanner();
+  const loading = useSlow(!ready);
   const now = useNow();
   const ui = useUi();
   const { prefs } = usePrefs();
@@ -136,6 +170,12 @@ function CalendarGrid() {
         </button>
       </PageHeader>
 
+      {loading && (
+        <div className="cal-loading">
+          <span role="status" className="t3 cal-loading-line"><span className="spin" aria-hidden="true" />{view === "week" ? "Loading this week’s events" : "Loading events"}</span>
+        </div>
+      )}
+      <CalendarSyncErrors />
       {view === "month" ? (
         <MonthView days={days} anchor={anchor} occurrences={occurrences} today={today} weekStart={prefs.weekStart} onDay={(d) => { setAnchor(d); setView("day"); }} />
       ) : view === "agenda" ? (

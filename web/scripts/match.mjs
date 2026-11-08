@@ -224,7 +224,7 @@ async function ours(theme, size = frame.fit === "app" ? { width: 1160, height: 6
   // A frame's own preferences (for example days shown), set before the page starts.
   if (frame.init) await page.addInitScript(frame.init);
   if (frame.prefs) await page.addInitScript((prefs) => localStorage.setItem("orbyn-planner.prefs", JSON.stringify(prefs)), frame.prefs);
-  const query = new URLSearchParams({ scenario: frame.scenario, route: frame.route, theme, ...(frame.now ? { now: frame.now } : {}), ...(frame.page ? { page: frame.page } : {}), ...(frame.account === false ? { account: "0" } : frame.account === "out" ? { account: "out" } : {}) });
+  const query = new URLSearchParams({ scenario: frame.scenario, route: frame.route, theme, ...(frame.now ? { now: frame.now } : {}), ...(frame.page ? { page: frame.page } : {}), ...(frame.loading ? { loading: "1" } : {}), ...(frame.account === false ? { account: "0" } : frame.account === "out" ? { account: "out" } : {}) });
   await page.goto(`${origin}/tools/match/index.html?${query}${frame.hash ? `#${frame.hash}` : ""}`);
   await page.waitForSelector(".app, .authcard, h1", { timeout: 20000 });
   if (frame.offline) await context.setOffline(true);
