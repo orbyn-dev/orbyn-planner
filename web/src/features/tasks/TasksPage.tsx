@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { MotionList } from "../../components/MotionList";
 import { useNow } from "../../app/clock";
 import { useUi } from "../../app/ui";
@@ -9,10 +9,10 @@ import { usePlanner, useStore } from "../../store/context";
 import { describeParse, parseQuickAdd } from "./quickAdd";
 import { DUE_FILTERS, activeTasks, isOpen, matchesDue, type DueFilter } from "./selectors";
 import { FilterChip } from "./FilterChip";
-import { OptionMenu } from "../../components/OptionMenu";
-import { usePopover } from "../../components/usePopover";
 import { LANES, LANE_LABELS, laneOf, type Lane } from "../../store/taskStatus";
+import { focusCard } from "../../lib/focus";
 import { useMoveTask } from "./useMoveTask";
+import { CardMenu, cardLabel, laneForKey } from "./CardMenu";
 import { ViewOptionsButton } from "./ViewOptionsButton";
 import { groupFor, lanesFor, loadViewOptions, saveViewOptions, type ViewOptions } from "./viewOptions";
 import { tagLabels } from "./TagChips";
@@ -69,22 +69,29 @@ export function QuickAddField({ listId, example = "Call Sam tomorrow 3pm #work !
   );
 }
 
-/** A card of the Tasks board: draggable to another lane, and "Move to" for the keyboard. */
-function BoardCard({ task, onDragging }: { task: Task; onDragging: (id: string | null) => void }) {
+/** A card of the Tasks board: draggable to another lane; the "…" menu and Alt+Left / Alt+Right move it for the keyboard (Planner Designs v52). */
+function BoardCard({ task, index, of, onDragging }: { task: Task; index: number; of: number; onDragging: (id: string | null) => void }) {
   const { lists } = usePlanner();
   const { open } = useTaskActions(task);
   const move = useMoveTask();
   const now = useNow();
   const list = lists.find((l) => l.id === task.listId);
-  const [menu, setMenu] = useState(false);
-  const anchor = useRef<HTMLButtonElement>(null);
-  const pop = usePopover(menu, () => setMenu(false), anchor);
   const here = laneOf(task);
+  const cardLanes = LANES.map((l) => ({ key: l, label: LANE_LABELS[l] }));
   return (
     <li
       className="tcard"
       data-row-id={task.id}
       data-done={task.done}
+      tabIndex={0}
+      aria-label={cardLabel(task.title, LANE_LABELS[here], index, of)}
+      onKeyDown={(e) => {
+        const to = laneForKey(e, cardLanes, here);
+        if (to === null) return;
+        e.preventDefault();
+        move(task, to as Lane);
+        focusCard(task.id);
+      }}
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData("text/plain", task.id);
@@ -98,19 +105,7 @@ function BoardCard({ task, onDragging }: { task: Task; onDragging: (id: string |
         {list && <Swatch colour={list.colour} />}
         {[list?.name, task.due && formatDue(task.due, now)].filter(Boolean).join(" · ")}
       </span>
-      <div className="sync-wrap">
-        <button ref={anchor} type="button" className="move-btn" aria-haspopup="menu" aria-expanded={menu} aria-label={`Move ${task.title} to`} onClick={() => setMenu(!menu)}>Move to</button>
-        {menu && (
-          <div ref={pop} className="card popover chip-menu" role="dialog" aria-label={`Move ${task.title} to`}>
-            <OptionMenu
-              label="Move to"
-              options={LANES.filter((l) => l !== here).map((l) => ({ value: l, label: LANE_LABELS[l] }))}
-              selected={undefined}
-              onPick={(l) => { setMenu(false); move(task, l); }}
-            />
-          </div>
-        )}
-      </div>
+      <CardMenu title={task.title} lanes={cardLanes} current={here} done={task.done} onOpen={open} onMarkDone={() => { move(task, "done"); focusCard(task.id); }} onMove={(l) => { move(task, l as Lane); focusCard(task.id); }} />
     </li>
   );
 }
@@ -242,14 +237,19 @@ export function TasksPage() {
             >
               <h2 className="lane-h">{label}<span>{cards.length}</span></h2>
               <ul className="cards">
-                {cards.map((t) => (
-                  <BoardCard key={t.id} task={t} onDragging={setDragging} />
+                {cards.map((t, i) => (
+                  <BoardCard key={t.id} task={t} index={i} of={cards.length} onDragging={setDragging} />
                 ))}
               </ul>
               {over === lane && dragging !== null && <p className="t3 drop-hint">Drop to move to {label}</p>}
             </section>
           ))}
         </div>
+      )}
+      {view === "board" && (
+        <p className="board-hint">
+        <kbd>Tab</kbd> reaches a card · <kbd>Enter</kbd> or <kbd>Space</kbd> on … opens the menu · <kbd>Alt+←</kbd> <kbd>Alt+→</kbd> move the card one lane.
+      </p>
       )}
 
       <QuickAddField />

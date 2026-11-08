@@ -866,3 +866,26 @@ button.pillx { border: 0; }
   .ph:has(.pillx.offline) .acts { order: -1; padding: 0 0 var(--sp-6); }
   .ph .acts .pillx.offline { width: 100%; box-sizing: border-box; }
 }
+/* The board card's "…" button and menu (Planner Designs v52 p-board-card-focus, p-board-card-menu, p-board-card-project). */
+.tcard { position: relative; }
+.tcard:focus-visible { outline: var(--bw-2) solid var(--t1); outline-offset: var(--sp-2); }
+.tcard:has(.card-more) .tt { padding-right: var(--sp-24); }
+.card-more { position: absolute; top: var(--sp-6); right: var(--sp-6); }
+.more-btn { display: flex; align-items: center; justify-content: center; width: var(--sp-22); height: var(--sp-22); padding: 0; border: 0; border-radius: var(--r-7); background: var(--raise); color: var(--t2); opacity: 0; transition: opacity var(--m-fast) var(--m-out); }
+.tcard:hover .more-btn, .tcard:focus-within .more-btn, .more-btn[aria-expanded="true"] { opacity: 1; }
+.more-btn[aria-expanded="true"] { background: var(--sel); color: var(--t1); }
+.card-menu { width: var(--sp-176); top: calc(100% + var(--sp-4)); right: auto; left: 0; padding: var(--sp-5); display: flex; flex-direction: column; gap: 0; }
+.card-menu .opt { height: var(--sp-30); padding: 0 var(--sp-9); gap: var(--sp-9); color: var(--t2); border-radius: var(--r-8); justify-content: flex-start; }
+.card-menu .opt:hover, .card-menu .opt:focus-visible, .card-menu .opt[aria-expanded="true"] { background: var(--sel); color: var(--t1); }
+.card-menu .opt .k { margin-left: auto; padding-left: var(--sp-12); }
+.card-menu .opt:disabled { color: var(--t3); background: none; cursor: default; }
+.card-menu .opt[aria-checked="true"] { background: none; color: var(--t3); font-weight: var(--fw-regular); }
+.card-menu .opt[aria-checked="true"] .k { font-family: var(--mono); font-size: var(--fs-10-5); }
+.cm-sep { height: var(--bw); margin: var(--sp-4) var(--sp-2); background: var(--line); }
+.cm-row { position: relative; }
+.card-sub { gap: 0; position: absolute; top: calc(-1 * var(--sp-5)); left: calc(100% + var(--sp-4)); right: auto; width: var(--sp-196); padding: var(--sp-5); display: flex; flex-direction: column; z-index: 6; }
+/* The hint under the board, for a keyboard user: shown while focus is on a card. */
+.board-hint { display: none; padding: 0 var(--sp-28); font-size: var(--fs-12-5); color: var(--t3); }
+.board:focus-within + .board-hint { display: block; }
+.board-hint kbd { font-family: var(--mono); font-size: var(--fs-10-5); background: var(--raise); border-radius: var(--r-5); padding: var(--sp-1) var(--sp-5); color: var(--t2); }
+@media (hover: none) { .more-btn { opacity: 1; } }

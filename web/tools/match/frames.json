@@ -370,7 +370,7 @@
       },
       {
         "fill": ".when input.field",
-        "value": "Fri 14:00\u201315:00"
+        "value": "Fri 14:00–15:00"
       }
     ]
   },
@@ -716,6 +716,90 @@
       {
         "role": "button",
         "name": "More"
+      }
+    ]
+  },
+  "p-board-card-focus": {
+    "design": "p-board-card-focus",
+    "kind": "desktop",
+    "route": "/tasks",
+    "scenario": "board",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Board"
+      },
+      {
+        "focus": "li[aria-label^=\"Launch brief\"]"
+      },
+      {
+        "press": "Shift"
+      }
+    ]
+  },
+  "p-board-card-menu": {
+    "design": "p-board-card-menu",
+    "kind": "desktop",
+    "route": "/tasks",
+    "scenario": "board",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Board"
+      },
+      {
+        "click": "li[aria-label^=\"Launch brief\"] .more-btn"
+      },
+      {
+        "click": "[role=menuitem][data-sub=move]"
+      }
+    ]
+  },
+  "p-board-card-moved": {
+    "design": "p-board-card-moved",
+    "kind": "desktop",
+    "route": "/tasks",
+    "scenario": "board-moved",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Board"
+      },
+      {
+        "focus": "li[aria-label^=\"Book a table\"]"
+      },
+      {
+        "press": "Alt+ArrowRight"
+      },
+      {
+        "wait": 200
+      },
+      {
+        "press": "Alt+ArrowRight"
+      },
+      {
+        "wait": 200
+      }
+    ]
+  },
+  "p-board-card-project": {
+    "design": "p-board-card-project",
+    "kind": "desktop",
+    "route": "/projects",
+    "scenario": "project-board",
+    "steps": [
+      {
+        "click": "a:has-text(\"Home renovation\"), button:has-text(\"Home renovation\")"
+      },
+      {
+        "role": "tab",
+        "name": "Board"
+      },
+      {
+        "click": "li[aria-label^=\"Choose kitchen tiles\"] .more-btn"
+      },
+      {
+        "click": "[role=menuitem][data-sub=move]"
       }
     ]
   }

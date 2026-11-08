@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { statusOf } from "../../store/taskStatus";
 import { useNow } from "../../app/clock";
 import { usePrefs } from "../../app/prefs";
@@ -11,6 +11,9 @@ import { usePlanner, useStore } from "../../store/context";
 import type { Project, Task } from "../../store/types";
 import { dueText, needsAction } from "../tasks/selectors";
 import { Swatch, useTaskActions } from "../tasks/TaskRow";
+import { CardMenu, cardLabel, laneForKey } from "../tasks/CardMenu";
+import { undoableTasks } from "../../store/taskRepeat";
+import { focusCard } from "../../lib/focus";
 import { ProjectDialog } from "./ProjectDialog";
 import { groupBySection, projectStats, tasksOf, type Lane } from "./stats";
 
@@ -130,55 +133,51 @@ function TasksTab({ project }: { project: Project }) {
   );
 }
 
-function MoveMenu({ task, project }: { task: Task; project: Project }) {
+/** A card of the project board: the "…" menu, the Alt+arrow keys and the screen reader label, over the same moves as "Move to". */
+function ProjectCard({ task, lanes, laneKey, index, of }: { task: Task; lanes: { key: string; label: string }[]; laneKey: string; index: number; of: number }) {
   const store = useStore();
-  const complete = useTaskActions(task).toggle;
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const away = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
-    document.addEventListener("mousedown", away);
-    return () => document.removeEventListener("mousedown", away);
-  }, [open]);
-
-  const targets = [
-    ...[...project.sections].sort((a, b) => (a.order < b.order ? -1 : 1)).map((s) => ({ key: s.id, label: s.name, sectionId: s.id as string | null, done: false })),
-    { key: "none", label: "No section", sectionId: null, done: false },
-    { key: "done", label: "Done", sectionId: task.sectionId, done: true },
-  ];
-  const move = (t: (typeof targets)[number]) => {
-    setOpen(false);
-    if (t.done) {
-      if (!task.done) complete(true);
-      return;
-    }
-    if (task.done) store.setDone(task.id, false);
-    store.updateTask(task.id, { sectionId: t.sectionId });
+  const ui = useUi();
+  const { openTask: open } = ui;
+  const now = useNow();
+  const lane = lanes.find((l) => l.key === laneKey)!;
+  const move = (key: string) => {
+    if (key === laneKey) return;
+    const target = lanes.find((l) => l.key === key)!;
+    const { undo } = undoableTasks(store, () => {
+      if (key === "done") {
+        store.setDone(task.id, true);
+        return;
+      }
+      if (task.done) store.setDone(task.id, false);
+      store.updateTask(task.id, { sectionId: key === "none" ? null : key });
+    });
+    if (key === "done") ui.showToast("Marked done.", undo, { focusRowOnUndo: task.id, ms: 5_000, spoken: "Marked done" });
+    else ui.showToast(`Moved to ${target.label}`, undo, { focusRowOnUndo: task.id, spoken: `Moved “${task.title}” to ${target.label}` });
   };
-
   return (
-    <div className="menu-wrap" ref={ref} onKeyDown={(e) => e.key === "Escape" && setOpen(false)}>
-      <button type="button" className="move-btn" aria-haspopup="menu" aria-expanded={open} aria-label={`Move ${task.title} to`} onClick={() => setOpen(!open)}>
-        Move to
-      </button>
-      {open && (
-        <div className="menu" role="menu" aria-label={`Move ${task.title} to`}>
-          {targets.map((t) => (
-            <button key={t.key} type="button" role="menuitem" autoFocus={t === targets[0]} onClick={() => move(t)}>
-              {t.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <li
+      className="tcard"
+      data-row-id={task.id}
+      data-done={task.done}
+      tabIndex={0}
+      aria-label={cardLabel(task.title, lane.label, index, of)}
+      onKeyDown={(e) => {
+        const to = laneForKey(e, lanes, laneKey);
+        if (to === null) return;
+        e.preventDefault();
+        move(to);
+        focusCard(task.id);
+      }}
+    >
+      <button type="button" className="tt link-btn" onClick={() => open(task.id)}>{task.title}{!task.done && statusOf(task) === "blocked" && <span className="t3"> · Blocked</span>}</button>
+      <span className="m" style={needsAction(task, now) ? { color: "var(--amber-text)" } : undefined}>{task.done ? "Done" : task.due ? formatDue(task.due, now) : ""}</span>
+      <CardMenu title={task.title} lanes={lanes} current={laneKey} done={task.done} onOpen={() => open(task.id)} onMarkDone={() => { move("done"); focusCard(task.id); }} onMove={(k) => { move(k); focusCard(task.id); }} />
+    </li>
   );
 }
 
 function BoardTab({ project }: { project: Project }) {
   const { tasks } = usePlanner();
-  const { openTask: open } = useUi();
-  const now = useNow();
   const lanes = groupBySection(project, tasks).map((l) => ({ ...l, tasks: l.tasks.filter((t) => !t.done) }));
   const visible = lanes.filter((l) => l.sectionId !== null || l.tasks.length > 0 || lanes.length === 1);
   const finished = tasksOf(tasks, project.id).filter((t) => t.done);
@@ -186,23 +185,25 @@ function BoardTab({ project }: { project: Project }) {
     ...visible.map((l) => ({ key: l.sectionId ?? "none", name: l.name, tasks: l.tasks })), // a project with no sections has one "Tasks" lane (the status lanes belong to the Tasks board)
     { key: "done", name: "Done", tasks: finished, done: true },
   ];
+  const laneChoices = all.map((l) => ({ key: l.key, label: l.name }));
   return (
+    <>
     <div className="board scroll" style={{ gridTemplateColumns: `repeat(${all.length}, minmax(var(--sp-200), 1fr))` }}>
       {all.map((lane) => (
         <section key={lane.key} className="lane" aria-label={lane.name}>
           <h2 className="lane-h">{lane.name}<span>{lane.tasks.length}</span></h2>
           <ul className="cards">
-            {lane.tasks.map((t) => (
-              <li className="tcard" key={t.id} data-row-id={t.id} data-done={t.done}>
-                <button type="button" className="tt link-btn" onClick={() => open(t.id)}>{t.title}{!t.done && statusOf(t) === "blocked" && <span className="t3"> · Blocked</span>}</button>
-                <span className="m" style={needsAction(t, now) ? { color: "var(--amber-text)" } : undefined}>{t.done ? "Done" : t.due ? formatDue(t.due, now) : ""}</span>
-                <MoveMenu task={t} project={project} />
-              </li>
+            {lane.tasks.map((t, i) => (
+              <ProjectCard key={t.id} task={t} lanes={laneChoices} laneKey={lane.key} index={i} of={lane.tasks.length} />
             ))}
           </ul>
         </section>
       ))}
     </div>
+    <p className="board-hint">
+      <kbd>Tab</kbd> reaches a card · <kbd>Enter</kbd> or <kbd>Space</kbd> on … opens the menu · <kbd>Alt+←</kbd> <kbd>Alt+→</kbd> move the card one lane.
+    </p>
+  </>
   );
 }
 
