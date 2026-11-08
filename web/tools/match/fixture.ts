@@ -264,8 +264,9 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
     }
     case "today-overnight": {
       todayData(store, w);
-      store.addEvent({ title: "Night shift: ward 4", calendarId: w.work, start: `${day(6)}T22:00`, end: `${day(7)}T06:00` });
-      store.addEvent({ title: "Night shift: ward 4", calendarId: w.work, start: `${day(7)}T22:00`, end: `${day(8)}T06:00` });
+      const night = store.addCalendar("Home", "c4").id;
+      store.addEvent({ title: "Night shift: ward 4", calendarId: night, start: `${day(6)}T22:00`, end: `${day(7)}T06:00` });
+      store.addEvent({ title: "Night shift: ward 4", calendarId: night, start: `${day(7)}T22:00`, end: `${day(8)}T06:00` });
       return;
     }
     case "today-overnight-long": {
@@ -284,7 +285,9 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
       ev("Lunch", 5, "13:00", "14:00", w.family);
       ev("Book club", 6, "15:00", "17:00", w.personal);
       ev("Book club", 7, "15:00", "17:00", w.personal);
-      ev("Swim", 11, "18:00", "19:00", w.work);
+      const home = store.addCalendar("Home", "c4");
+      store.addEvent({ title: "Swim", calendarId: home.id, start: `${day(11)}T18:00`, end: `${day(11)}T19:00` });
+      for (const d of [3, 5, 7]) ev("Work", d, "09:00", "10:00", w.work);
       store.addEvent({ title: "Lab report due", calendarId: w.work, allDay: true, start: day(12), end: day(12) });
       store.addEvent({ title: "Exam", calendarId: w.work, allDay: true, start: day(16), end: day(16) });
       return;
@@ -294,9 +297,9 @@ export function seed(store: PlannerStore, scenario: Scenario): void {
       store.addEvent({ title: "Lunch with Maya", calendarId: w.family, start: `${day(7)}T13:00`, end: `${day(7)}T14:00` });
       store.addEvent({ title: "Book club", calendarId: w.personal, start: `${day(7)}T15:00`, end: `${day(7)}T17:00`, place: "Library, level 2" });
       store.addEvent({ title: "Launch stand-up", calendarId: w.work, start: `${day(9)}T09:00`, end: `${day(9)}T09:30` });
-      store.addEvent({ title: "Swim", calendarId: w.personal, start: `${day(9)}T18:00`, end: `${day(9)}T19:00` });
+      store.addEvent({ title: "Swim", calendarId: store.addCalendar("Home", "c4").id, start: `${day(9)}T18:00`, end: `${day(9)}T19:00` });
       store.addEvent({ title: "Site visit with Jordan", calendarId: w.personal, start: `${day(10)}T10:00`, end: `${day(10)}T11:00`, place: "Home" });
-      store.addEvent({ title: "Spanish lesson", calendarId: w.personal, start: `${day(10)}T19:00`, end: `${day(10)}T20:00`, repeat: { frequency: "weekly", interval: 1, weekdays: [], end: { type: "never" } } });
+      store.addEvent({ title: "Spanish lesson", calendarId: w.family, start: `${day(10)}T19:00`, end: `${day(10)}T20:00`, repeat: { frequency: "weekly", interval: 1, weekdays: [], end: { type: "never" } } });
       return;
     }
     case "week-all-day": {

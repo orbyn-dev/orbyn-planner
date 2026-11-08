@@ -165,7 +165,8 @@
     "kind": "desktop",
     "design": "p-today-no-name",
     "route": "/today",
-    "scenario": "today"
+    "scenario": "today",
+    "account": false
   },
   "p-cal-week-weekdays": {
     "kind": "desktop",
@@ -370,7 +371,7 @@
       },
       {
         "fill": ".when input.field",
-        "value": "Fri 14:00–15:00"
+        "value": "Fri 14:00\u201315:00"
       }
     ]
   },
@@ -631,14 +632,16 @@
     "design": "p-today-syncing",
     "route": "/today",
     "scenario": "today",
-    "health": "hang"
+    "health": "hang",
+    "account": false
   },
   "p-today-sync-failed": {
     "kind": "desktop",
     "design": "p-today-sync-failed",
     "route": "/today",
     "scenario": "today",
-    "health": "fail"
+    "health": "fail",
+    "account": false
   },
   "calendar-month": {
     "kind": "desktop",
