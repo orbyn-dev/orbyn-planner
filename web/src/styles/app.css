@@ -627,7 +627,7 @@ button.pillx { border: 0; }
 .passkey-planned { display: inline-flex; gap: var(--sp-6); align-items: center; justify-content: center; white-space: nowrap; height: auto; min-height: var(--sp-32); cursor: not-allowed; }
 
 .pv-choice { display: inline-flex; align-items: center; gap: var(--sp-8); font-weight: var(--fw-medium); }
-.planned-note { color: var(--planned-text); font-size: var(--fs-12); font-weight: var(--fw-regular); }
+.planned-note { color: var(--planned-text); font-size: var(--fs-12); font-weight: var(--fw-regular); white-space: nowrap; }
 .planned-text { color: var(--planned-text); }
 .btn[aria-disabled="true"] { opacity: .6; cursor: not-allowed; }
 .warn-icon { color: var(--amber-text); display: inline-flex; flex: none; margin-top: var(--sp-1); }
