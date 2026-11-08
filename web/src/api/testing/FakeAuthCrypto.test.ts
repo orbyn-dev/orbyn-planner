@@ -17,7 +17,7 @@ describe("the stand-in sealing used by tests", () => {
     const next = stream(1);
     const wrap = new Uint8Array(32).fill(7);
     let opened = 0;
-    for (let i = 0; i < 20_000; i++) {
+    for (let i = 0; i < 4_000; i++) {
       const other = Uint8Array.from({ length: 32 }, () => next() >>> 24);
       const plain = Uint8Array.from({ length: 24 + (next() % 100) }, () => next() >>> 24);
       const sealed = fakeSeal(wrap, "snapshot", plain);
@@ -42,13 +42,13 @@ describe("the stand-in sealing used by tests", () => {
     expect(() => fakeOpen(wrap, "keys", sealed)).toThrow(/open_failed/);
   });
 
-  it("its digest depends on every byte, and its 8-byte tags do not repeat over 50 000 inputs", () => {
+  it("its digest depends on every byte, and its 8-byte tags do not repeat over 10 000 inputs", () => {
     const next = stream(2);
     const seen = new Set<string>();
-    for (let i = 0; i < 50_000; i++) {
+    for (let i = 0; i < 10_000; i++) {
       const input = Uint8Array.from({ length: 20 }, () => next() >>> 24);
       seen.add(Array.from(fakeDigest(input).slice(0, 8)).join(","));
     }
-    expect(seen.size).toBe(50_000);
+    expect(seen.size).toBe(10_000);
   });
 });

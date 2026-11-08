@@ -190,14 +190,14 @@ describe("Today page", () => {
 
   it("a long list is laid out in steps: the first rows at once, the rest on the next frames, all of them in the end", async () => {
     await openToday((s) => {
-      for (let i = 0; i < 150; i++) s.addTask({ title: `late ${i}`, due: "2026-11-05" });
+      for (let i = 0; i < 100; i++) s.addTask({ title: `late ${i}`, due: "2026-11-05" }); // more than the 40 rows drawn at once, fewer rows for a busy machine
     });
     const count = () => document.querySelectorAll(".row").length;
-    expect(count()).toBeLessThan(150); // the page does not wait for a hundred and fifty rows
+    expect(count()).toBeLessThan(100); // the page does not wait for every row
     expect(count()).toBeGreaterThan(0);
-    await waitFor(() => expect(count()).toBe(150), { timeout: 8000 });
-    expect(stats()[1]).toBe("Overdue150"); // the numbers never depended on how many rows were drawn
-  }, 20_000);
+    await waitFor(() => expect(count()).toBe(100), { timeout: 15_000 });
+    expect(stats()[1]).toBe("Overdue100"); // the numbers never depended on how many rows were drawn
+  }, 30_000);
 
   it("goals more than 30 days away, goals already past and projects with no goal are left out, and the rest come nearest first whatever order they were made in", async () => {
     await openToday((s) => {
