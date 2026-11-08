@@ -94,6 +94,14 @@ function findChrome() {
 }
 
 /** The design page's HTML from the designs repository's origin/main (never its working tree). */
+/** The Account Designs page, for the frames that live there (the start-over and deletion pages). Optional: without it those frames are not drawn. */
+function accountHtml() {
+  if (process.env.ORBYN_ACCOUNT_DESIGN_FILE) return readFileSync(process.env.ORBYN_ACCOUNT_DESIGN_FILE, "utf8");
+  const dir = process.env.ORBYN_DESIGNS_DIR;
+  if (!dir) return "";
+  return execFileSync("git", ["-C", dir, "show", "origin/main:artifacts/account-designs.html"], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+}
+
 function designHtml() {
   if (process.env.ORBYN_DESIGN_FILE) return readFileSync(process.env.ORBYN_DESIGN_FILE, "utf8");
   const dir = process.env.ORBYN_DESIGNS_DIR;
@@ -124,7 +132,9 @@ const outDir = resolve(options.out ?? join(repo, ".match", options.pr ?? branchN
 mkdirSync(outDir, { recursive: true });
 
 // --ours-only draws the planner alone: the design page is never read, so it can run where the designs are not (and must not be).
-const html = options.oursOnly ? "" : designHtml().replace("<head>", `<head><meta charset="utf-8"><style>${FONT_CSS}</style>`);
+const wrapHtml = (h) => h.replace("<head>", `<head><meta charset="utf-8"><style>${FONT_CSS}</style>`);
+const html = options.oursOnly ? "" : wrapHtml(designHtml());
+const accountPage = options.oursOnly ? "" : wrapHtml(accountHtml());
 const { chromium } = loadPlaywright();
 
 const server = await createServer({
@@ -136,6 +146,10 @@ const server = await createServer({
     {
       name: "match-design-page",
       configureServer(s) {
+        s.middlewares.use("/__match/account.html", (_req, res) => {
+          res.setHeader("content-type", "text/html; charset=utf-8");
+          res.end(accountPage);
+        });
         s.middlewares.use("/__match/design.html", (_req, res) => {
           res.setHeader("content-type", "text/html; charset=utf-8");
           res.end(html);
@@ -171,6 +185,10 @@ async function guardNetwork(context, label, strict = true) {
     if (url.pathname === `${STUB_ENGINE}/health`) {
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ status: "ok", version: "match", database: "ok" }) });
     }
+    if (frame.confirm && url.pathname === `${STUB_ENGINE}/v1/accounts/delete-unused/confirm`) {
+      // The start-over link's page asks the engine to delete an empty account: answered here, per frame.
+      return route.fulfill({ status: frame.confirm.status, contentType: "application/json", body: JSON.stringify(frame.confirm.body ?? {}) });
+    }
     if (url.pathname.startsWith(STUB_ENGINE)) {
       problems.push(`${label}: engine call ${url.pathname}`);
       return route.abort();
@@ -198,7 +216,7 @@ function textBoxes([originX, originY]) {
   return out;
 }
 
-async function ours(theme, size = SIZE[frame.kind], suffix = "") {
+async function ours(theme, size = frame.fit === "app" ? { width: 1160, height: 656 } : SIZE[frame.kind], suffix = "") {
   const context = await browser.newContext({ viewport: size, timezoneId: TIME_ZONE, locale: LOCALE, reducedMotion: "reduce", deviceScaleFactor: 1 });
   await guardNetwork(context, "ours");
   const page = await context.newPage();
@@ -206,8 +224,8 @@ async function ours(theme, size = SIZE[frame.kind], suffix = "") {
   // A frame's own preferences (for example days shown), set before the page starts.
   if (frame.init) await page.addInitScript(frame.init);
   if (frame.prefs) await page.addInitScript((prefs) => localStorage.setItem("orbyn-planner.prefs", JSON.stringify(prefs)), frame.prefs);
-  const query = new URLSearchParams({ scenario: frame.scenario, route: frame.route, theme, ...(frame.now ? { now: frame.now } : {}), ...(frame.account === false ? { account: "0" } : frame.account === "out" ? { account: "out" } : {}) });
-  await page.goto(`${origin}/tools/match/index.html?${query}`);
+  const query = new URLSearchParams({ scenario: frame.scenario, route: frame.route, theme, ...(frame.now ? { now: frame.now } : {}), ...(frame.page ? { page: frame.page } : {}), ...(frame.account === false ? { account: "0" } : frame.account === "out" ? { account: "out" } : {}) });
+  await page.goto(`${origin}/tools/match/index.html?${query}${frame.hash ? `#${frame.hash}` : ""}`);
   await page.waitForSelector(".app, .authcard, h1", { timeout: 20000 });
   if (frame.offline) await context.setOffline(true);
   for (const step of frame.steps ?? []) {
@@ -237,24 +255,23 @@ async function design(theme) {
   const context = await browser.newContext({ viewport: { width: 1300, height: 1500 }, locale: LOCALE, timezoneId: TIME_ZONE, deviceScaleFactor: 1 });
   await guardNetwork(context, "design", false);
   const page = await context.newPage();
-  await page.goto(`${origin}/__match/design.html`);
+  await page.goto(`${origin}/__match/${frame.designPage === "account" ? "account" : "design"}.html`);
   await page.evaluate(() => document.fonts.ready);
   const handle = await page.evaluateHandle(([id, index]) => document.querySelectorAll(`#${id} .app`)[index], [frame.design, frame.app ?? 0]);
   const app = handle.asElement();
   if (!app) fail(`the design has no frame "${frame.design}" (app ${frame.app ?? 0})`);
   await app.evaluate((el, t) => {
     el.dataset.th = t;
-    el.querySelector(".tb")?.setAttribute("style", "display:none");
+    el.querySelector(".tb")?.setAttribute("style", "visibility:hidden"); // kept in the layout: without a sidebar it is a grid row
   }, theme);
   await app.scrollIntoViewIfNeeded();
   await page.waitForTimeout(frame.fit === "app" ? 1500 : 250); // the sign-in cards of the design fade in
   const box = await app.boundingBox();
-  const size = SIZE[frame.kind];
-  const top = frame.kind === "phone" ? 51 : 1; // the phone's status bar is device chrome; the desktop title bar is hidden
+  const size = frame.fit === "app" ? { width: 1160, height: 656 } : SIZE[frame.kind];
+  const top = frame.fit === "app" ? 45 : frame.kind === "phone" ? 51 : 1; // the phone's status bar is device chrome; the desktop title bar is hidden
   const png = join(outDir, `${name.replace("@", "-")}-${theme}-design.png`);
   // A frame that is not a window with a sidebar (the sign-in screens) is taken whole.
-  if (frame.fit === "app") await app.screenshot({ path: png });
-  else await page.screenshot({ path: png, clip: { x: box.x + 1, y: box.y + top, width: size.width, height: size.height } });
+  await page.screenshot({ path: png, clip: { x: box.x + 1, y: box.y + top, width: size.width, height: size.height } });
   const text = await app.evaluate((el) => el.innerText);
   const boxes = await app.evaluate((el, [ox, oy]) => {
     const out = [];
