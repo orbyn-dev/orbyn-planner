@@ -1,7 +1,7 @@
 // @vitest-environment node
 //
 // The engine's real module, run in Node through the planner's adapter. Nothing here is faked: these
-// tests are what the fakes in src/api/testing have to agree with.
+// tests are what the fakes in src/testing have to agree with.
 import { beforeAll, describe, expect, it } from "vitest";
 import type { Device } from "../../generated/Device";
 import type { DeviceList } from "../../generated/DeviceList";

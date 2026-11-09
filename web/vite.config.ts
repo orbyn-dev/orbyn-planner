@@ -3,7 +3,7 @@ import type { Plugin } from "vite";
 import { defineConfig } from "vitest/config";
 
 /**
- * The engine's module is imported only when the build has an engine address (see src/api/realCrypto.ts).
+ * The engine's module is imported only when the build has an engine address (see src/data/account/realCrypto.ts).
  * Without one the import is dropped from the code, but Vite has already emitted the .wasm that the glue
  * file names; this removes it when no chunk refers to it, so such a build ships no WebAssembly.
  */
