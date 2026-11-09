@@ -1,10 +1,10 @@
 import { useRef, useState } from "react";
-import { useUi } from "../../app/ui";
-import { Portal } from "../../components/Portal";
-import { useDialog } from "../../components/useDialog";
-import { useStore } from "../../store/context";
-import { LIST_COLOURS, type ListColour, type Project } from "../../store/types";
-import { Swatch } from "../tasks/TaskRow";
+import { useUi } from "../../ui/product/UiProvider";
+import { Portal } from "../../ui/primitives/Portal";
+import { useDialog } from "../../ui/primitives/useDialog";
+import { useStore } from "../../state/store";
+import { LIST_COLOURS, type ListColour, type Project } from "../../core/planner/types";
+import { Swatch } from "../../ui/product/Swatch";
 
 const COLOUR_NAMES: Record<ListColour, string> = { c1: "Blue", c2: "Green", c3: "Purple", c4: "Orange" };
 

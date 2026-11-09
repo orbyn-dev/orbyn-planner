@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
-import { Link } from "../../app/router";
-import { Toggle } from "../../components/Toggle";
-import { usePopover } from "../../components/usePopover";
+import { Link } from "../../state/router";
+import { Toggle } from "../../ui/primitives/Toggle";
+import { usePopover } from "../../ui/primitives/usePopover";
 import type { ViewOptions } from "./viewOptions";
 
 type Choice<T extends string> = { id: T; label: string };

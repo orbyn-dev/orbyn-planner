@@ -1,11 +1,11 @@
-import { setSettingsTarget } from "../../app/settingsTarget";
-import { useRouter } from "../../app/router";
-import { useUi } from "../../app/ui";
-import { PageHeader } from "../../components/EmptyState";
-import { Icon } from "../../components/Icon";
-import { formatTime } from "../../lib/dates";
-import { levelName } from "../auth/ProtectionSettings";
-import { protectionId, useNotifications } from "./useNotifications";
+import { setSettingsTarget } from "../../state/settingsTarget";
+import { useRouter } from "../../state/router";
+import { useUi } from "../../ui/product/UiProvider";
+import { PageHeader } from "../../ui/primitives/EmptyState";
+import { Icon } from "../../ui/primitives/Icon";
+import { formatTime } from "../../core/planner/dates";
+import { levelName } from "../account";
+import { protectionId, useNotifications } from "../../state/notifications";
 
 /**
  * Notifications: one list. Unread is a small dot; a reminder that is due is the only amber. So far two kinds: reminders that came due,

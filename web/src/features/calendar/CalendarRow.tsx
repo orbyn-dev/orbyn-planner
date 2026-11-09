@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { OptionMenu, type MenuOption } from "../../components/OptionMenu";
-import { PopoverRow } from "../../components/PopoverRow";
-import type { PlannerCalendar } from "../../store/types";
+import { OptionMenu, type MenuOption } from "../../ui/primitives/OptionMenu";
+import { PopoverRow } from "../../ui/primitives/PopoverRow";
+import type { PlannerCalendar } from "../../core/planner/types";
 
 /** The event's calendar: a searchable list of the calendars with their colours (p-row-calendar). */
 export function CalendarRow({ calendars, value, disabled, onChange }: { calendars: readonly PlannerCalendar[]; value: string; disabled?: boolean; onChange: (id: string) => void }) {

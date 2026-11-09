@@ -5,8 +5,8 @@
 // device, and by the link in the email with no session at all. The engine's worker does the deletion itself (its own tests cover
 // that). Runs only when ORBYN_E2E_ENGINE and ORBYN_E2E_MAIL are set.
 import { describe, expect, it } from "vitest";
-import { ApiFailure } from "../api/auth";
-import { cancelDeletion, confirmTotp, enrolTotp, scheduleDeletion, SecondFactorNeeded, signIn } from "../auth/flows";
+import { ApiFailure } from "../core/account/errors";
+import { cancelDeletion, confirmTotp, enrolTotp, scheduleDeletion, SecondFactorNeeded, signIn } from "../state/services/flows";
 import { cancelTokenSentTo, signUpVerified } from "./testing/mailbox";
 import { browser, engineUrl, totpCode } from "./testing/support";
 

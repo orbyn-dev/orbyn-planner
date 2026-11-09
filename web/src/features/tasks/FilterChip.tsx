@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { OptionMenu, type MenuOption } from "../../components/OptionMenu";
-import { usePopover } from "../../components/usePopover";
+import { OptionMenu, type MenuOption } from "../../ui/primitives/OptionMenu";
+import { usePopover } from "../../ui/primitives/usePopover";
 
 /**
  * A filter chip as drawn on Tasks (Planner Designs v49 work-list): a plain pill with the current choice and no chevron; it opens a short

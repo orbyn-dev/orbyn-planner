@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../src/app/App";
-import { ClockProvider } from "../../src/app/clock";
+import { ClockProvider } from "../../src/state/clock";
 import { PINNED_NOW, SCENARIOS } from "./fixture";
 import { pretendAccount } from "./account";
 import { ACCOUNT } from "./fixture";

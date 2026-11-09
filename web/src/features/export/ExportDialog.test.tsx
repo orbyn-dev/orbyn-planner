@@ -1,10 +1,10 @@
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ClockProvider } from "../../app/clock";
-import { StoreProvider } from "../../store/context";
-import { LocalStore } from "../../store/LocalStore";
-import { MemoryPersistence } from "../../store/persistence";
+import { ClockProvider } from "../../state/clock";
+import { StoreProvider } from "../../state/store";
+import { LocalStore } from "../../data/local/LocalStore";
+import { MemoryPersistence } from "../../data/local/persistence";
 import { EXPORT_WARNING, ExportSettings } from "./ExportSettings";
 
 const save = vi.fn();

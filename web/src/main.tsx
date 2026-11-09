@@ -4,7 +4,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles/tokens.css";
 import "./styles/app.css";
-import { applyChoice, readStoredChoice, watchSystemTheme } from "./app/theme";
+import { applyChoice, readStoredChoice, watchSystemTheme } from "./ui/theme";
 import { applyTitlebar } from "./app/titlebar";
 
 applyChoice(readStoredChoice());
@@ -17,7 +17,7 @@ async function start() {
   // The link in the account-deletion email opens a page of its own, before the app: no sign-in, no planner, no stores, and the
   // engine's module is never started. Nothing below is even loaded for it.
   if (window.location.pathname === "/cancel-deletion") {
-    const { CancelDeletionPage } = await import("./features/auth/CancelDeletionPage");
+    const { CancelDeletionPage } = await import("./features/account/CancelDeletionPage");
     root.render(
       <StrictMode>
         <CancelDeletionPage />
@@ -27,7 +27,7 @@ async function start() {
   }
   // The Start over link opens a page of its own in the same way: it deletes an empty account, with no sign-in.
   if (window.location.pathname === "/delete-unused") {
-    const { DeleteUnusedPage } = await import("./features/auth/DeleteUnusedPage");
+    const { DeleteUnusedPage } = await import("./features/account/DeleteUnusedPage");
     root.render(
       <StrictMode>
         <DeleteUnusedPage />
@@ -35,7 +35,7 @@ async function start() {
     );
     return;
   }
-  const { bootApp } = await import("./bootApp");
+  const { bootApp } = await import("./app/bootApp");
   bootApp(root);
 }
 

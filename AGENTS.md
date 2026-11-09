@@ -5,6 +5,7 @@ Read [docs/architecture.md](docs/architecture.md) before changing behaviour. Its
 ## Layout
 
 - `web/`: the React app (Vite, TypeScript).
+- `web/src/`: app composition (`app/`), screens (`features/`), state and services (`state/`), pure rules (`core/`), adapters (`data/`), UI (`ui/`), generic helpers (`lib/`), tests (`testing/`, `e2e/`), generated types (`generated/`) and styles (`styles/`). Imports are one-way, and features meet only through `features/<name>/index.ts`; see [web/src/README.md](web/src/README.md). `npm run check` enforces both.
 - `web/src/generated/`: wire types generated from orbyn-engine's contracts. Do not edit by hand.
 - `docs/architecture.md`: the contract for the UI. Its rules change in the same commit as the code.
 

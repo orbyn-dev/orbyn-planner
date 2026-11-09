@@ -3,9 +3,9 @@ import { firstRunDoneForTests } from "../test-setup";
 import userEvent from "@testing-library/user-event";
 import html from "../../index.html?raw";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { PrefsProvider } from "./prefs";
-import { SettingsPage } from "../features/settings/SettingsPage";
-import { applyChoice, chooseTheme, DARK_KEY, readDarkTheme, readStoredChoice, THEME_KEY, watchSystemTheme } from "./theme";
+import { PrefsProvider } from "../state/prefs";
+import { SettingsPage } from "../features/settings";
+import { applyChoice, chooseTheme, DARK_KEY, readDarkTheme, readStoredChoice, THEME_KEY, watchSystemTheme } from "../ui/theme";
 
 function stubSystem(dark: boolean) {
   let listener: (() => void) | undefined;

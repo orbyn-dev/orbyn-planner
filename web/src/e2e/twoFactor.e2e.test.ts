@@ -3,8 +3,8 @@
 // Two-factor against a running engine with the real module: turn it on with this device's signature, sign in on other browsers
 // with a code and a recovery code, see a replayed code refused, and turn it off with no code. Runs only when ORBYN_E2E_ENGINE is set.
 import { describe, expect, it } from "vitest";
-import { ApiFailure } from "../api/auth";
-import { confirmTotp, disableTotp, enrolTotp, SecondFactorNeeded, signIn } from "../auth/flows";
+import { ApiFailure } from "../core/account/errors";
+import { confirmTotp, disableTotp, enrolTotp, SecondFactorNeeded, signIn } from "../state/services/flows";
 import { signUpVerified } from "./testing/mailbox";
 import { browser, engineUrl, totpCode } from "./testing/support";
 

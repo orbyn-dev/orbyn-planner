@@ -1,6 +1,6 @@
 import { act, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { UiProvider, useUi } from "./ui";
+import { UiProvider, useUi } from "../ui/product/UiProvider";
 
 afterEach(() => vi.useRealTimers());
 

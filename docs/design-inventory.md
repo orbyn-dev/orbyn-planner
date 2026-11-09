@@ -132,7 +132,7 @@ Deep pass (Today, calendar, tasks) was complete at the first run; the refresh ab
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `trash` Completed and deleted | `features/completed/CompletedPage.tsx:11` | partial | `cmp-trash.png` | dates read "5 Nov", design "Thu 5"; done titles are faded, design keeps full contrast |
+| `trash` Completed and deleted | `features/tasks/CompletedPage.tsx:11` | partial | `cmp-trash.png` | dates read "5 Nov", design "Thu 5"; done titles are faded, design keeps full contrast |
 
 ### Projects
 
@@ -224,8 +224,8 @@ Deep pass (Today, calendar, tasks) was complete at the first run; the refresh ab
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `settings-account` Settings · Account and devices | `features/settings/SettingsPage.tsx:18, features/auth/AccountSettings.tsx:317` | partial | `settings-account-{light,dark,dim}-side.png` (+ -1440) | ours has a "Data protection · Standard · Change" row as the frame (Change opens Privacy); no Password row (change password is after the beta); ours keeps a "Two-factor Off · Turn on…" row (built), a Sync card with "Sync now" and Sign out, Refresh and Add a device buttons; the frame has rows Password (Change) and Data protection (Standard · Change) and only "Add a device"; device rows read "A · this device / Added 7 Nov, 10:00" with a boxed Remove where the frame reads "MacBook Air · this device / Synced now" and a red inline "· Remove" (AccountSettings.tsx:250-290); the name is the kit's (Sam Arden vs Sam Rivera, fixture); a "Tags" category in the settings list that the frame does not have (SettingsPage.tsx:16) |
-| `add-device` Approve a new sign-in | `features/auth/PendingScreen.tsx:11` | not checked yet | – | the frame was not part of #46 and has not been compared |
+| `settings-account` Settings · Account and devices | `features/settings/SettingsPage.tsx:18, features/account/AccountSettings.tsx:317` | partial | `settings-account-{light,dark,dim}-side.png` (+ -1440) | ours has a "Data protection · Standard · Change" row as the frame (Change opens Privacy); no Password row (change password is after the beta); ours keeps a "Two-factor Off · Turn on…" row (built), a Sync card with "Sync now" and Sign out, Refresh and Add a device buttons; the frame has rows Password (Change) and Data protection (Standard · Change) and only "Add a device"; device rows read "A · this device / Added 7 Nov, 10:00" with a boxed Remove where the frame reads "MacBook Air · this device / Synced now" and a red inline "· Remove" (AccountSettings.tsx:250-290); the name is the kit's (Sam Arden vs Sam Rivera, fixture); a "Tags" category in the settings list that the frame does not have (SettingsPage.tsx:16) |
+| `add-device` Approve a new sign-in | `features/account/PendingScreen.tsx:11` | not checked yet | – | the frame was not part of #46 and has not been compared |
 | `settings` Settings · Planning | `features/settings/SettingsPage.tsx:18` | partial | `settings-{light,dark,dim}-side.png` (+ -1440) | v62: the beta Planning has Week starts on, Days in the week view (5 or 7), Theme (System, Light, Dark) and Dark theme (Dark, Dim), as segmented controls in the frame's rows; Working days, Day starts and the Defaults group are Planned in the frame and left out of the app on purpose; the Tags category stays |
 | `settings-notifications` Settings · Notifications | `features/settings/NotificationsSettings.tsx:21` | partial | `settings-notifications-{light,dark,dim}-side.png` (+ -1440) | copy, the "Allowed in this browser" pill, the Planned rows and the toggles agree; the quiet-hours times are plain 64 × 28 px boxes with no picker icon, as the frame; a "Tags" category in the settings list that the frame does not have (SettingsPage.tsx:16) |
 | `p-set-notif-reminders-off` Settings · Notifications · Reminders off | `features/settings/NotificationsSettings.tsx:21` | partial | `p-set-notif-reminders-off-{light,dark,dim}-side.png` (+ -1440) | agrees (quiet-hours fields now plain boxes) apart from a "Tags" category in the settings list that the frame does not have (SettingsPage.tsx:16) |
@@ -234,8 +234,8 @@ Deep pass (Today, calendar, tasks) was complete at the first run; the refresh ab
 | `p-set-notif-unsupported` Settings · Notifications · No notification support | `features/settings/NotificationsSettings.tsx:21` | partial | `p-set-notif-unsupported-{light,dark,dim}-side.png` (+ -1440) | agrees (quiet-hours fields now plain boxes) apart from a "Tags" category in the settings list that the frame does not have (SettingsPage.tsx:16) |
 | `connected-apps` Settings · Connected apps | none found | not built | `connected-apps-{light,dark,dim}-side.png` (+ -1440) | ours reads "Nothing to set here yet." (SettingsPage.tsx:124); the frame lists Orbyn Engineering's grants (lists it can use, busy times, threads, change and delete tasks) with See activity and Disconnect, and an "Other apps" note; a "Tags" category in the settings list that the frame does not have (SettingsPage.tsx:16) |
 | `settings-calendars` Settings · Calendars | `features/calendar/CalendarList.tsx:86` | partial | `settings-calendars-{light,dark,dim}-side.png` (+ -1440) | ours lists the planner's calendars with colour pickers, Rename and Shown, and Subscribe and New calendar buttons; the frame lists Subscribed calendars with a refresh state ("Couldn’t refresh · Retry", "Refreshed 1h ago"), a "Use in other calendar apps" card (CalDAV address, App password: Planned) and the Standard protection note (CalendarList.tsx, SettingsPage.tsx); a "Tags" category in the settings list that the frame does not have (SettingsPage.tsx:16) |
-| `settings-privacy` Settings · Data protection | `features/auth/ProtectionSettings.tsx:164` | partial | `settings-privacy-{light,dark,dim}-side.png` (+ -1440) | the kit's account has no protection level, so ours shows "Choose your protection level · Not set" where the frame shows "Standard protection · Verified" with a radio card; the Advanced card and "Your data" rows agree in copy; rows are boxed differently (the frame uses radio cards, ours a bordered row); a "Tags" category in the settings list that the frame does not have (SettingsPage.tsx:16) |
-| `advanced-on` Turn on Advanced protection | `features/auth/ProtectionSettings.tsx:164` | gated | – | frame note: Advanced is Planned |
+| `settings-privacy` Settings · Data protection | `features/account/ProtectionSettings.tsx:164` | partial | `settings-privacy-{light,dark,dim}-side.png` (+ -1440) | the kit's account has no protection level, so ours shows "Choose your protection level · Not set" where the frame shows "Standard protection · Verified" with a radio card; the Advanced card and "Your data" rows agree in copy; rows are boxed differently (the frame uses radio cards, ours a bordered row); a "Tags" category in the settings list that the frame does not have (SettingsPage.tsx:16) |
+| `advanced-on` Turn on Advanced protection | `features/account/ProtectionSettings.tsx:164` | gated | – | frame note: Advanced is Planned |
 | `web-approve` Approve the web for an hour | none found | not checked yet | – | the frame was not part of #46 and has not been compared |
 | `p-set-account-loading` Settings · Account · Loading | `features/settings/SettingsPage.tsx:18` | not checked yet | – | the frame was not part of #46 and has not been compared |
 | `p-set-account-error` Settings · Account · Save error | `features/settings/SettingsPage.tsx:18` | not checked yet | – | the frame was not part of #46 and has not been compared |
@@ -247,40 +247,40 @@ Deep pass (Today, calendar, tasks) was complete at the first run; the refresh ab
 | `p-set-connected-apps-error` Settings · Connected apps · Save error | none found | not checked yet | – | the frame was not part of #46 and has not been compared |
 | `p-set-calendars-loading` Settings · Calendars · Loading | `features/calendar/CalendarList.tsx:86` | not checked yet | – | the frame was not part of #46 and has not been compared |
 | `p-set-calendars-error` Settings · Calendars · Save error | `features/calendar/CalendarList.tsx:86` | not checked yet | – | the frame was not part of #46 and has not been compared |
-| `p-set-privacy-loading` Settings · Privacy · Loading | `features/auth/ProtectionSettings.tsx:164` | gated | – | frame note: not shown today (preferences are local); settings-copy also touches this file |
-| `p-set-privacy-error` Settings · Privacy · Save error | `features/auth/ProtectionSettings.tsx:164` | gated | – | frame note: not shown today (preferences are local); settings-copy also touches this file |
+| `p-set-privacy-loading` Settings · Privacy · Loading | `features/account/ProtectionSettings.tsx:164` | gated | – | frame note: not shown today (preferences are local); settings-copy also touches this file |
+| `p-set-privacy-error` Settings · Privacy · Save error | `features/account/ProtectionSettings.tsx:164` | gated | – | frame note: not shown today (preferences are local); settings-copy also touches this file |
 | `p-export-dialog` Settings · Privacy · Export your data | `features/export/ExportSettings.tsx:15` | partial | `p-export-dialog-{light,dark,dim}-side.png` (+ -1440) | the dialog opens; compared by text only: the Export dialog's fields and buttons are in both; layout over the Privacy page not looked at closely |
 | `p-export-busy` Settings · Privacy · Exporting | `features/export/ExportSettings.tsx:15` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
 | `p-export-done` Settings · Privacy · Exported | `features/export/ExportSettings.tsx:15` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
 | `p-export-failed` Settings · Privacy · Export failed | `features/export/ExportSettings.tsx:15` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
-| `p-set-privacy-verified-removed` Settings · Privacy · Verified, other device | `features/auth/ProtectionSettings.tsx:164` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
-| `p-set-privacy-verified-this-device` Settings · Privacy · Verified, signed on this device | `features/auth/ProtectionSettings.tsx:164` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
+| `p-set-privacy-verified-removed` Settings · Privacy · Verified, other device | `features/account/ProtectionSettings.tsx:164` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
+| `p-set-privacy-verified-this-device` Settings · Privacy · Verified, signed on this device | `features/account/ProtectionSettings.tsx:164` | partial | – | built to the v36 designs in #46; not re-compared by screenshot in this refresh |
 
 ### Account and auth
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `landing` Landing | `features/auth/AuthScreens.tsx:24-38` | partial | `landing-{light,dark,dim}-side.png` (+ -1440) | copy differs: the frame has “See how it works” and “Get started”; ours has “Get started”, “Sign in”, “Use without an account” and the line “Everything then stays on this device. You can sign in later.” (AuthScreens.tsx:32-38); the cropped frame now shows the same card position in all three themes |
-| `sign-up` Sign up | `features/auth/AuthScreens.tsx:265` | partial | `sign-up-{light,dark,dim}-side.png` (+ -1440) | step 2 (Invite accepted chip, Name, Email, Password, note, passkey, Continue) agrees in copy and order; ours adds “Already have an account? Sign in” and “Use without an account” under the button (AuthScreens.tsx:290-295), the frame ends at the button; the passkey row wraps “Not available yet.” onto a second line under the button text (`Planned.tsx:19`, `app.css:623` flex-wrap) where the frame keeps one line |
-| `p-signup-invite-default` Sign up · Invite code (step 1 of 4) | `features/auth/InviteStep.tsx:69` | partial | `p-signup-invite-default-{light,dark,dim}-side.png` (+ -1440) | copy and card structure agree (Step 1 of 4, invite-only, XXXX-XXXX-XXXX-XXXX); the focus ring is kit state |
-| `p-signup-invite-filled` Sign up · Invite code, filled | `features/auth/InviteStep.tsx:69` | partial | `p-signup-invite-filled-{light,dark,dim}-side.png` (+ -1440) | as `p-signup-invite-default`; the frame’s code is a sample, ours is fixture data |
-| `p-signup-invite-checking` Sign up · Invite code, checking | `features/auth/InviteStep.tsx:60` | partial | `p-signup-invite-checking-{light,dark,dim}-side.png` (+ -1440) | as `p-signup-invite-default`; “Checking…” agrees |
-| `p-signup-invite-error` Sign up · Invite code, refused | `features/auth/InviteStep.tsx:84` | partial | `p-signup-invite-error-{light,dark,dim}-side.png` (+ -1440) | copy agrees; the refused field’s border colour differs from the frame’s (InviteStep.tsx:69, `app.css:925`) |
-| `p-signup-invite-limited` Sign up · Invite code, too many tries | `features/auth/InviteStep.tsx:63` | partial | `p-signup-invite-limited-{light,dark,dim}-side.png` (+ -1440) | copy agrees; the banner is grey with no icon (InviteStep.tsx:63) where the frame draws amber with the alert icon (`app.css:510-511`) |
-| `p-signup-invite-network` Sign up · Invite code, network error | `features/auth/InviteStep.tsx:64` | partial | `p-signup-invite-network-{light,dark,dim}-side.png` (+ -1440) | as `p-signup-invite-limited` (InviteStep.tsx:64) |
-| `p-signup-invite-email` Sign up · Email and password (invite accepted) | `features/auth/AuthScreens.tsx:265` | partial | `p-signup-invite-email-{light,dark,dim}-side.png` (+ -1440) | as `sign-up` |
-| `p-signup-invite-phone` Sign up · Invite code on a phone | `features/auth/InviteStep.tsx` | not checked yet | – | no phone frame in the kit yet |
-| `p-signup-invite-rejected-later` Sign up · Invite refused at the email step | `features/auth/AuthScreens.tsx:139` | partial | `p-signup-invite-rejected-later-{light,dark,dim}-side.png` (+ -1440) | the banner is grey with no icon (`AuthScreens.tsx:139`, class `banner` without `warn`) where the frame draws it amber with the alert icon (`app.css:510-511`); the code text is left-aligned (`app.css:926` has no text-align) where the frame centres it; the code in ours is fixture data and Verify is enabled with it |
-| `p-signup-check-start` Sign up · Check your email, start | `features/auth/AuthScreens.tsx:135` | not checked yet | – | no kit frame yet; same screen as `verify` |
-| `p-signup-check-resend` Sign up · Check your email, resend | `features/auth/AuthScreens.tsx:175` | not checked yet | – | no kit frame yet |
-| `p-signup-check-failed` Sign up · Check your email, failed | `features/auth/AuthScreens.tsx:346` | not checked yet | – | no kit frame yet |
-| `p-signup-check-too-many` Sign up · Check your email, too many | `features/auth/AuthScreens.tsx:169` | not checked yet | – | no kit frame yet; `p-verify-throttled` is the same state |
-| `verify` Verify your email | `features/auth/AuthScreens.tsx:135` | partial | `verify-{light,dark,dim}-side.png` (+ -1440) | copy, step bar, “Send a new code in 1:00” and “Wrong address? Change email” agree; the code text is left-aligned (`app.css:926` has no text-align) where the frame centres it; the empty, typing, wrong and resend states are not separate frames (only `verify`, `p-verify-ready` and `p-verify-throttled` exist), typing and wrong are not rendered |
-| `p-verify-ready` Verify your email · Send a new code | `features/auth/AuthScreens.tsx:175` | partial | `p-verify-ready-{light,dark,dim}-side.png` (+ -1440) | “Send a new code” link agrees; the code text is left-aligned (`app.css:926` has no text-align) where the frame centres it |
-| `p-verify-throttled` Verify your email · Too many codes | `features/auth/AuthScreens.tsx:169` | partial | `p-verify-throttled-{light,dark,dim}-side.png` (+ -1440) | amber banner, copy and muted resend line agree; the code text is left-aligned (`app.css:926` has no text-align) where the frame centres it |
-| `sign-in` Sign in | `features/auth/AuthScreens.tsx:420` | partial | `sign-in-{light,dark,dim}-side.png` (+ -1440) | copy and order agree (Email, Password, Sign in, passkey, links, Use without an account); the passkey row wraps “Not available yet.” onto a second line under the button text (`Planned.tsx:19`, `app.css:623` flex-wrap) where the frame keeps one line; the password field has the focus ring (the kit focuses it) |
-| `p-sign-in-local` Sign in · from inside the planner | `features/auth/AuthScreens.tsx:420` | partial | `p-sign-in-local-{light,dark,dim}-side.png` (+ -1440) | as `sign-in` with “Back to the planner” in place of “Use without an account” (agrees); the passkey row wraps “Not available yet.” onto a second line under the button text (`Planned.tsx:19`, `app.css:623` flex-wrap) where the frame keeps one line |
-| `recovery` Recover your account | `features/auth/AuthScreens.tsx:453` | partial | `recovery-{light,dark,dim}-side.png` (+ -1440) | copy and the four options agree; intentional difference pending the Designer: at 420 px the label, pill and “Not available yet.” do not fit one line, so ours drops the whole note under the label, while the frame squeezes it into a narrow right column (looks accidental; recovery is Planned in the beta) (AuthScreens.tsx:458-471, `app.css:626`) |
+| `landing` Landing | `features/account/AuthScreens.tsx:24-38` | partial | `landing-{light,dark,dim}-side.png` (+ -1440) | copy differs: the frame has “See how it works” and “Get started”; ours has “Get started”, “Sign in”, “Use without an account” and the line “Everything then stays on this device. You can sign in later.” (AuthScreens.tsx:32-38); the cropped frame now shows the same card position in all three themes |
+| `sign-up` Sign up | `features/account/AuthScreens.tsx:265` | partial | `sign-up-{light,dark,dim}-side.png` (+ -1440) | step 2 (Invite accepted chip, Name, Email, Password, note, passkey, Continue) agrees in copy and order; ours adds “Already have an account? Sign in” and “Use without an account” under the button (AuthScreens.tsx:290-295), the frame ends at the button; the passkey row wraps “Not available yet.” onto a second line under the button text (`Planned.tsx:19`, `app.css:623` flex-wrap) where the frame keeps one line |
+| `p-signup-invite-default` Sign up · Invite code (step 1 of 4) | `features/account/InviteStep.tsx:69` | partial | `p-signup-invite-default-{light,dark,dim}-side.png` (+ -1440) | copy and card structure agree (Step 1 of 4, invite-only, XXXX-XXXX-XXXX-XXXX); the focus ring is kit state |
+| `p-signup-invite-filled` Sign up · Invite code, filled | `features/account/InviteStep.tsx:69` | partial | `p-signup-invite-filled-{light,dark,dim}-side.png` (+ -1440) | as `p-signup-invite-default`; the frame’s code is a sample, ours is fixture data |
+| `p-signup-invite-checking` Sign up · Invite code, checking | `features/account/InviteStep.tsx:60` | partial | `p-signup-invite-checking-{light,dark,dim}-side.png` (+ -1440) | as `p-signup-invite-default`; “Checking…” agrees |
+| `p-signup-invite-error` Sign up · Invite code, refused | `features/account/InviteStep.tsx:84` | partial | `p-signup-invite-error-{light,dark,dim}-side.png` (+ -1440) | copy agrees; the refused field’s border colour differs from the frame’s (InviteStep.tsx:69, `app.css:925`) |
+| `p-signup-invite-limited` Sign up · Invite code, too many tries | `features/account/InviteStep.tsx:63` | partial | `p-signup-invite-limited-{light,dark,dim}-side.png` (+ -1440) | copy agrees; the banner is grey with no icon (InviteStep.tsx:63) where the frame draws amber with the alert icon (`app.css:510-511`) |
+| `p-signup-invite-network` Sign up · Invite code, network error | `features/account/InviteStep.tsx:64` | partial | `p-signup-invite-network-{light,dark,dim}-side.png` (+ -1440) | as `p-signup-invite-limited` (InviteStep.tsx:64) |
+| `p-signup-invite-email` Sign up · Email and password (invite accepted) | `features/account/AuthScreens.tsx:265` | partial | `p-signup-invite-email-{light,dark,dim}-side.png` (+ -1440) | as `sign-up` |
+| `p-signup-invite-phone` Sign up · Invite code on a phone | `features/account/InviteStep.tsx` | not checked yet | – | no phone frame in the kit yet |
+| `p-signup-invite-rejected-later` Sign up · Invite refused at the email step | `features/account/AuthScreens.tsx:139` | partial | `p-signup-invite-rejected-later-{light,dark,dim}-side.png` (+ -1440) | the banner is grey with no icon (`AuthScreens.tsx:139`, class `banner` without `warn`) where the frame draws it amber with the alert icon (`app.css:510-511`); the code text is left-aligned (`app.css:926` has no text-align) where the frame centres it; the code in ours is fixture data and Verify is enabled with it |
+| `p-signup-check-start` Sign up · Check your email, start | `features/account/AuthScreens.tsx:135` | not checked yet | – | no kit frame yet; same screen as `verify` |
+| `p-signup-check-resend` Sign up · Check your email, resend | `features/account/AuthScreens.tsx:175` | not checked yet | – | no kit frame yet |
+| `p-signup-check-failed` Sign up · Check your email, failed | `features/account/AuthScreens.tsx:346` | not checked yet | – | no kit frame yet |
+| `p-signup-check-too-many` Sign up · Check your email, too many | `features/account/AuthScreens.tsx:169` | not checked yet | – | no kit frame yet; `p-verify-throttled` is the same state |
+| `verify` Verify your email | `features/account/AuthScreens.tsx:135` | partial | `verify-{light,dark,dim}-side.png` (+ -1440) | copy, step bar, “Send a new code in 1:00” and “Wrong address? Change email” agree; the code text is left-aligned (`app.css:926` has no text-align) where the frame centres it; the empty, typing, wrong and resend states are not separate frames (only `verify`, `p-verify-ready` and `p-verify-throttled` exist), typing and wrong are not rendered |
+| `p-verify-ready` Verify your email · Send a new code | `features/account/AuthScreens.tsx:175` | partial | `p-verify-ready-{light,dark,dim}-side.png` (+ -1440) | “Send a new code” link agrees; the code text is left-aligned (`app.css:926` has no text-align) where the frame centres it |
+| `p-verify-throttled` Verify your email · Too many codes | `features/account/AuthScreens.tsx:169` | partial | `p-verify-throttled-{light,dark,dim}-side.png` (+ -1440) | amber banner, copy and muted resend line agree; the code text is left-aligned (`app.css:926` has no text-align) where the frame centres it |
+| `sign-in` Sign in | `features/account/AuthScreens.tsx:420` | partial | `sign-in-{light,dark,dim}-side.png` (+ -1440) | copy and order agree (Email, Password, Sign in, passkey, links, Use without an account); the passkey row wraps “Not available yet.” onto a second line under the button text (`Planned.tsx:19`, `app.css:623` flex-wrap) where the frame keeps one line; the password field has the focus ring (the kit focuses it) |
+| `p-sign-in-local` Sign in · from inside the planner | `features/account/AuthScreens.tsx:420` | partial | `p-sign-in-local-{light,dark,dim}-side.png` (+ -1440) | as `sign-in` with “Back to the planner” in place of “Use without an account” (agrees); the passkey row wraps “Not available yet.” onto a second line under the button text (`Planned.tsx:19`, `app.css:623` flex-wrap) where the frame keeps one line |
+| `recovery` Recover your account | `features/account/AuthScreens.tsx:453` | partial | `recovery-{light,dark,dim}-side.png` (+ -1440) | copy and the four options agree; intentional difference pending the Designer: at 420 px the label, pill and “Not available yet.” do not fit one line, so ours drops the whole note under the label, while the frame squeezes it into a narrow right column (looks accidental; recovery is Planned in the beta) (AuthScreens.tsx:458-471, `app.css:626`) |
 
 ### Phone
 
@@ -320,52 +320,52 @@ Deep pass (Today, calendar, tasks) was complete at the first run; the refresh ab
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `del-entry` Delete account in Settings | `features/auth/DeleteAccount.tsx:227, features/auth/AccountSettings.tsx:317` | not checked yet | – |  |
-| `del-entry-planner` Delete account in Planner settings | `features/auth/DeleteAccount.tsx:227, features/auth/AccountSettings.tsx:317` | not checked yet | – |  |
-| `del-dialog` Confirm deletion | `features/auth/DeleteAccount.tsx:41` | not checked yet | – |  |
-| `del-dialog-ready` Confirm deletion, code entered | `features/auth/DeleteAccount.tsx:41` | not checked yet | – |  |
-| `del-dialog-recovery` Confirm with a recovery code | `features/auth/DeleteAccount.tsx:41` | not checked yet | – |  |
-| `del-dialog-stale` Sign-in too old | `features/auth/DeleteAccount.tsx:41` | not checked yet | – |  |
-| `del-dialog-untrusted` Not a trusted device | `features/auth/DeleteAccount.tsx:41` | not checked yet | – |  |
-| `del-scheduled` Deletion scheduled | `features/auth/DeletionBanner.tsx:78` | not checked yet | – |  |
-| `del-banner` Banner during the 7 days | `features/auth/DeletionBanner.tsx:78` | not checked yet | – |  |
-| `del-banner-tomorrow` Banner the day before | `features/auth/DeletionBanner.tsx:78` | not checked yet | – |  |
-| `del-banner-today` Banner on the last day | `features/auth/DeletionBanner.tsx:78` | not checked yet | – |  |
-| `del-row-grace` Settings during the 7 days | `features/auth/DeleteAccount.tsx:227, features/auth/AccountSettings.tsx:317` | not checked yet | – |  |
-| `del-frozen` Paused actions: protection | `features/auth/ProtectionSettings.tsx:164` | not checked yet | – |  |
-| `del-frozen-devices` Paused actions: devices | `features/auth/DeleteAccount.tsx:227, features/auth/AccountSettings.tsx:317` | not checked yet | – |  |
-| `del-cancelled` Deletion cancelled in the app | `features/auth/DeletionBanner.tsx:78` | not checked yet | – |  |
-| `del-mail` Cancel from the email link | `features/auth/CancelDeletionPage.tsx:50` | not checked yet | – |  |
+| `del-entry` Delete account in Settings | `features/account/DeleteAccount.tsx:227, features/account/AccountSettings.tsx:317` | not checked yet | – |  |
+| `del-entry-planner` Delete account in Planner settings | `features/account/DeleteAccount.tsx:227, features/account/AccountSettings.tsx:317` | not checked yet | – |  |
+| `del-dialog` Confirm deletion | `features/account/DeleteAccount.tsx:41` | not checked yet | – |  |
+| `del-dialog-ready` Confirm deletion, code entered | `features/account/DeleteAccount.tsx:41` | not checked yet | – |  |
+| `del-dialog-recovery` Confirm with a recovery code | `features/account/DeleteAccount.tsx:41` | not checked yet | – |  |
+| `del-dialog-stale` Sign-in too old | `features/account/DeleteAccount.tsx:41` | not checked yet | – |  |
+| `del-dialog-untrusted` Not a trusted device | `features/account/DeleteAccount.tsx:41` | not checked yet | – |  |
+| `del-scheduled` Deletion scheduled | `features/account/DeletionBanner.tsx:78` | not checked yet | – |  |
+| `del-banner` Banner during the 7 days | `features/account/DeletionBanner.tsx:78` | not checked yet | – |  |
+| `del-banner-tomorrow` Banner the day before | `features/account/DeletionBanner.tsx:78` | not checked yet | – |  |
+| `del-banner-today` Banner on the last day | `features/account/DeletionBanner.tsx:78` | not checked yet | – |  |
+| `del-row-grace` Settings during the 7 days | `features/account/DeleteAccount.tsx:227, features/account/AccountSettings.tsx:317` | not checked yet | – |  |
+| `del-frozen` Paused actions: protection | `features/account/ProtectionSettings.tsx:164` | not checked yet | – |  |
+| `del-frozen-devices` Paused actions: devices | `features/account/DeleteAccount.tsx:227, features/account/AccountSettings.tsx:317` | not checked yet | – |  |
+| `del-cancelled` Deletion cancelled in the app | `features/account/DeletionBanner.tsx:78` | not checked yet | – |  |
+| `del-mail` Cancel from the email link | `features/account/CancelDeletionPage.tsx:50` | not checked yet | – |  |
 | `del-choose` The account was deleted: export or remove (Mac app) | desktop app (desktop/), not web/src | not checked yet | – |  |
 | `del-exported` After exporting (Mac app) | desktop app (desktop/), not web/src | not checked yet | – |  |
-| `del-dialog-wrong` Wrong two-factor code | `features/auth/DeleteAccount.tsx:41` | not checked yet | – |  |
-| `del-dialog-recovery-wrong` Wrong recovery code | `features/auth/DeleteAccount.tsx:41` | not checked yet | – |  |
-| `del-dialog-busy` Deleting… | `features/auth/DeleteAccount.tsx:41` | not checked yet | – |  |
-| `del-dialog-check-failed` Couldn’t check two-factor | `features/auth/DeleteAccount.tsx:41` | not checked yet | – |  |
-| `del-cancel-busy` Cancelling… (banner and settings row) | `features/auth/DeleteAccount.tsx:227, features/auth/AccountSettings.tsx:317` | not checked yet | – |  |
-| `del-cancel-error` Couldn’t cancel deletion (banner and settings row) | `features/auth/DeleteAccount.tsx:227, features/auth/AccountSettings.tsx:317` | not checked yet | – |  |
+| `del-dialog-wrong` Wrong two-factor code | `features/account/DeleteAccount.tsx:41` | not checked yet | – |  |
+| `del-dialog-recovery-wrong` Wrong recovery code | `features/account/DeleteAccount.tsx:41` | not checked yet | – |  |
+| `del-dialog-busy` Deleting… | `features/account/DeleteAccount.tsx:41` | not checked yet | – |  |
+| `del-dialog-check-failed` Couldn’t check two-factor | `features/account/DeleteAccount.tsx:41` | not checked yet | – |  |
+| `del-cancel-busy` Cancelling… (banner and settings row) | `features/account/DeleteAccount.tsx:227, features/account/AccountSettings.tsx:317` | not checked yet | – |  |
+| `del-cancel-error` Couldn’t cancel deletion (banner and settings row) | `features/account/DeleteAccount.tsx:227, features/account/AccountSettings.tsx:317` | not checked yet | – |  |
 | `del-removing` Removing this device’s copy (Mac app, after Remove it now) | desktop app (desktop/), not web/src | not checked yet | – |  |
 | `del-final` Opening an app after deletion (Mac app) | desktop app (desktop/), not web/src | not checked yet | – |  |
-| `del-choose-web` The account was deleted: export or remove (web) | `features/auth/DeletedAccount.tsx:41` | not checked yet | – |  |
-| `del-exported-web` After exporting (web) | `features/auth/DeletedAccount.tsx:41` | not checked yet | – |  |
-| `del-export-failed` Export failed (web) | `features/auth/DeletedAccount.tsx:41` | not checked yet | – |  |
-| `del-remove-failed` Remove failed (web) | `features/auth/DeletedAccount.tsx:41` | not checked yet | – |  |
-| `del-exporting-web` Exporting… (web) | `features/auth/DeletedAccount.tsx:41` | not checked yet | – |  |
-| `del-removing-busy-web` Removing… on the button (web) | `features/auth/DeletedAccount.tsx:41` | not checked yet | – |  |
+| `del-choose-web` The account was deleted: export or remove (web) | `features/account/DeletedAccount.tsx:41` | not checked yet | – |  |
+| `del-exported-web` After exporting (web) | `features/account/DeletedAccount.tsx:41` | not checked yet | – |  |
+| `del-export-failed` Export failed (web) | `features/account/DeletedAccount.tsx:41` | not checked yet | – |  |
+| `del-remove-failed` Remove failed (web) | `features/account/DeletedAccount.tsx:41` | not checked yet | – |  |
+| `del-exporting-web` Exporting… (web) | `features/account/DeletedAccount.tsx:41` | not checked yet | – |  |
+| `del-removing-busy-web` Removing… on the button (web) | `features/account/DeletedAccount.tsx:41` | not checked yet | – |  |
 | `del-exporting` Exporting… (Mac app) | desktop app (desktop/), not web/src | not checked yet | – |  |
 | `del-removing-busy` Removing… on the button (Mac app) | desktop app (desktop/), not web/src | not checked yet | – |  |
-| `del-checking-web` Checking your account… (web) | `features/auth/DeletedAccount.tsx:41` | not checked yet | – |  |
-| `del-removing-web` Removing this browser’s copy (web) | `features/auth/DeletedAccount.tsx:41` | not checked yet | – |  |
-| `del-final-web` Opening the web app after deletion | `features/auth/DeletedAccount.tsx:41` | not checked yet | – |  |
-| `del-final-nothing` Nothing to remove (web) | `features/auth/DeletedAccount.tsx:41` | not checked yet | – |  |
-| `del-removal-phone` The deleted-account flow on a phone | `features/auth/DeletedAccount.tsx:41` | not checked yet | – |  |
-| `del-phone` Delete account on a phone | `features/auth/DeleteAccount.tsx:41` | not checked yet | – |  |
+| `del-checking-web` Checking your account… (web) | `features/account/DeletedAccount.tsx:41` | not checked yet | – |  |
+| `del-removing-web` Removing this browser’s copy (web) | `features/account/DeletedAccount.tsx:41` | not checked yet | – |  |
+| `del-final-web` Opening the web app after deletion | `features/account/DeletedAccount.tsx:41` | not checked yet | – |  |
+| `del-final-nothing` Nothing to remove (web) | `features/account/DeletedAccount.tsx:41` | not checked yet | – |  |
+| `del-removal-phone` The deleted-account flow on a phone | `features/account/DeletedAccount.tsx:41` | not checked yet | – |  |
+| `del-phone` Delete account on a phone | `features/account/DeleteAccount.tsx:41` | not checked yet | – |  |
 
 ### Protection
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `pv-standard-planned` Standard protection, Planned (today) | `features/auth/ProtectionSettings.tsx:164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-standard-planned` Standard protection, Planned (today) | `features/account/ProtectionSettings.tsx:164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
 | `pv-standard-offer` Turn on Standard protection? (After slice 8; not built) | none found | gated | – | title says "After slice 8; not built" |
 | `pv-standard-offer-planner` Standard offer in Planner Settings (After slice 8; not built) | none found | gated | – | title says "After slice 8; not built" |
 | `pv-standard-offer-untrusted` Standard offer on a device that isn’t trusted (After slice 8; not built) | none found | gated | – | title says "After slice 8; not built" |
@@ -374,49 +374,49 @@ Deep pass (Today, calendar, tasks) was complete at the first run; the refresh ab
 | `pv-standard-offer-failed` Couldn’t turn on Standard (After slice 8; not built) | none found | gated | – | title says "After slice 8; not built" |
 | `pv-advanced-confirm` Turn on Advanced protection? Switching from Standard | none found | gated | – | frame note: Advanced and recovery are Planned |
 | `pv-advanced-confirm-new` Turn on Advanced protection? Account never had a server copy | none found | gated | – | frame note: Advanced and recovery are Planned |
-| `pv-card` Protection card, every state | `features/auth/ProtectionSettings.tsx:164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
-| `pv-card-loading` Protection card, checking | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
-| `pv-card-error` Protection card, couldn’t check | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
-| `pv-verified` Protection, verified | `features/auth/ProtectionSettings.tsx:164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
-| `pv-rollback` Protection, can’t confirm | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
-| `pv-details` Protection details | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
-| `pv-details-unlisted` Protection details: signer not listed | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-card` Protection card, every state | `features/account/ProtectionSettings.tsx:164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-card-loading` Protection card, checking | `features/account/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-card-error` Protection card, couldn’t check | `features/account/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-verified` Protection, verified | `features/account/ProtectionSettings.tsx:164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-rollback` Protection, can’t confirm | `features/account/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-details` Protection details | `features/account/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-details-unlisted` Protection details: signer not listed | `features/account/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
 | `pv-notif-row` Protection change in an app’s notifications | `features/notifications/NotificationsPage.tsx:14` | not checked yet | – |  |
-| `pv-confirm` Confirm your protection level | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
-| `pv-confirm-unset` Confirm: no level set yet | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
-| `pv-confirm-failed` Confirm couldn’t finish | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
-| `pv-busy` Busy buttons | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
-| `pv-confirm-conflict` Changed on another device first | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
-| `pv-notice` Protection was changed on another device | `features/auth/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
-| `pv-phone` Protection and sign-up on a phone | `features/auth/ProtectionSettings.tsx:164` | not checked yet | – |  |
+| `pv-confirm` Confirm your protection level | `features/account/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-confirm-unset` Confirm: no level set yet | `features/account/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-confirm-failed` Confirm couldn’t finish | `features/account/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-busy` Busy buttons | `features/account/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-confirm-conflict` Changed on another device first | `features/account/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-notice` Protection was changed on another device | `features/account/ProtectionSettings.tsx:71, :124, :164` | partial | – | Account Designs v53 copy and states built in #46; not re-compared by screenshot |
+| `pv-phone` Protection and sign-up on a phone | `features/account/ProtectionSettings.tsx:164` | not checked yet | – |  |
 
 ### Sign-up
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `pv-signup-code` Check your email: 6-digit code | `features/auth/AuthScreens.tsx:46` | not checked yet | – |  |
-| `pv-no-memory` Sign-up: this browser can’t hold the account | `features/auth/AuthScreens.tsx:168` | not checked yet | – |  |
+| `pv-signup-code` Check your email: 6-digit code | `features/account/AuthScreens.tsx:46` | not checked yet | – |  |
+| `pv-no-memory` Sign-up: this browser can’t hold the account | `features/account/AuthScreens.tsx:168` | not checked yet | – |  |
 
 ### Keys and devices
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `pv-keys-fail` Account created, keys not saved | `features/auth/KeysNotSaved.tsx:206` | not checked yet | – |  |
-| `pv-approve-choose` Approve another device: which device is it? | `features/auth/KeysNotSaved.tsx:13, :109` | not checked yet | – |  |
-| `pv-keys-fail-again` Keys still not saved | `features/auth/KeysNotSaved.tsx:206` | not checked yet | – |  |
-| `pv-approve-dialog` Approve another device | `features/auth/KeysNotSaved.tsx:13, :109` | not checked yet | – |  |
-| `pv-approve-after` Approve another device: after They match | `features/auth/KeysNotSaved.tsx:13, :109` | not checked yet | – |  |
-| `pv-approve-timeout` Approve another device: no answer | `features/auth/KeysNotSaved.tsx:13, :109` | not checked yet | – |  |
-| `pv-approve-cancelled` Approve another device: the other device cancelled | `features/auth/KeysNotSaved.tsx:13, :109` | not checked yet | – |  |
-| `pv-approve-mismatch` Approve another device: the digits didn’t match | `features/auth/KeysNotSaved.tsx:13, :109` | not checked yet | – |  |
-| `pv-approve-failed` Approve another device: it failed | `features/auth/KeysNotSaved.tsx:13, :109` | not checked yet | – |  |
-| `pv-keys-moved` Keys moved to another device | `features/auth/KeysNotSaved.tsx:206` | not checked yet | – |  |
+| `pv-keys-fail` Account created, keys not saved | `features/account/KeysNotSaved.tsx:206` | not checked yet | – |  |
+| `pv-approve-choose` Approve another device: which device is it? | `features/account/KeysNotSaved.tsx:13, :109` | not checked yet | – |  |
+| `pv-keys-fail-again` Keys still not saved | `features/account/KeysNotSaved.tsx:206` | not checked yet | – |  |
+| `pv-approve-dialog` Approve another device | `features/account/KeysNotSaved.tsx:13, :109` | not checked yet | – |  |
+| `pv-approve-after` Approve another device: after They match | `features/account/KeysNotSaved.tsx:13, :109` | not checked yet | – |  |
+| `pv-approve-timeout` Approve another device: no answer | `features/account/KeysNotSaved.tsx:13, :109` | not checked yet | – |  |
+| `pv-approve-cancelled` Approve another device: the other device cancelled | `features/account/KeysNotSaved.tsx:13, :109` | not checked yet | – |  |
+| `pv-approve-mismatch` Approve another device: the digits didn’t match | `features/account/KeysNotSaved.tsx:13, :109` | not checked yet | – |  |
+| `pv-approve-failed` Approve another device: it failed | `features/account/KeysNotSaved.tsx:13, :109` | not checked yet | – |  |
+| `pv-keys-moved` Keys moved to another device | `features/account/KeysNotSaved.tsx:206` | not checked yet | – |  |
 
 ### Two-factor
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `pv-codes-copied` Recovery codes copied | `features/auth/TwoFactor.tsx:176` | not checked yet | – |  |
+| `pv-codes-copied` Recovery codes copied | `features/account/TwoFactor.tsx:176` | not checked yet | – |  |
 
 ### Emails
 
@@ -462,14 +462,14 @@ Deep pass (Today, calendar, tasks) was complete at the first run; the refresh ab
 
 | Frame | Component (web/src) | Status | Shots | Differs / note |
 | --- | --- | --- | --- | --- |
-| `so-card` Account created, browser can’t keep its keys | `features/auth/AuthScreens.tsx:168` | not checked yet | – |  |
-| `so-check` Check your email | `features/auth/AuthScreens.tsx:46` | not checked yet | – |  |
+| `so-card` Account created, browser can’t keep its keys | `features/account/AuthScreens.tsx:168` | not checked yet | – |  |
+| `so-check` Check your email | `features/account/AuthScreens.tsx:46` | not checked yet | – |  |
 | `so-email` The email | email / other repo | not checked yet | – |  |
 | `so-email-local` The email without an account site | email / other repo | not checked yet | – |  |
-| `so-landing` The link’s landing page and its states | `features/auth/DeleteUnusedPage.tsx:150` | partial | `so-landing-{light,dark,dim}-side.png` (+ -1440) | the frame’s page draws every state on one board (ready, loading, deleted, expired, not empty); ours renders one at a time, so the ready state was compared: copy agrees; the card is 440px wide (`app.css:549`) where the frame’s is about 400px; Cancel and Delete this account are stacked full-width buttons in ours (DeleteUnusedPage.tsx:155-156, `app.css:551-552, 581`) and one compact row in the frame |
-| `so-landing-limited` The link’s landing page · Too many tries | `features/auth/DeleteUnusedPage.tsx:137` | partial | `so-landing-limited-{light,dark,dim}-side.png` (+ -1440) | icon, title and copy agree in all three themes; the card is 440px wide (`app.css:549`) where the frame’s is about 400px |
-| `so-done-released` Account deleted, invite code released | `features/auth/DeleteUnusedPage.tsx:90` | partial | `so-done-released-{light,dark,dim}-side.png` (+ -1440) | copy agrees; ours draws a plain green tick (`pv-ok`, DeleteUnusedPage.tsx:91, `app.css:564`) where the frame has a circled tick in the text colour; “Sign up again” is a full-width button in ours (`app.css:551-552, 581`) and compact in the frame; the card is 440px wide (`app.css:549`) where the frame’s is about 400px |
-| `so-done-not-released` Account deleted, no invite code released | `features/auth/DeleteUnusedPage.tsx:90` | partial | `so-done-not-released-{light,dark,dim}-side.png` (+ -1440) | as `so-done-released` |
+| `so-landing` The link’s landing page and its states | `features/account/DeleteUnusedPage.tsx:150` | partial | `so-landing-{light,dark,dim}-side.png` (+ -1440) | the frame’s page draws every state on one board (ready, loading, deleted, expired, not empty); ours renders one at a time, so the ready state was compared: copy agrees; the card is 440px wide (`app.css:549`) where the frame’s is about 400px; Cancel and Delete this account are stacked full-width buttons in ours (DeleteUnusedPage.tsx:155-156, `app.css:551-552, 581`) and one compact row in the frame |
+| `so-landing-limited` The link’s landing page · Too many tries | `features/account/DeleteUnusedPage.tsx:137` | partial | `so-landing-limited-{light,dark,dim}-side.png` (+ -1440) | icon, title and copy agree in all three themes; the card is 440px wide (`app.css:549`) where the frame’s is about 400px |
+| `so-done-released` Account deleted, invite code released | `features/account/DeleteUnusedPage.tsx:90` | partial | `so-done-released-{light,dark,dim}-side.png` (+ -1440) | copy agrees; ours draws a plain green tick (`pv-ok`, DeleteUnusedPage.tsx:91, `app.css:564`) where the frame has a circled tick in the text colour; “Sign up again” is a full-width button in ours (`app.css:551-552, 581`) and compact in the frame; the card is 440px wide (`app.css:549`) where the frame’s is about 400px |
+| `so-done-not-released` Account deleted, no invite code released | `features/account/DeleteUnusedPage.tsx:90` | partial | `so-done-not-released-{light,dark,dim}-side.png` (+ -1440) | as `so-done-released` |
 | `so-phone` Start over on a phone | email / other repo | not checked yet | – |  |
 
 ### Consent
@@ -513,7 +513,7 @@ Only demos whose app title is Orbyn Planner or Orbyn Account are listed (21 of 8
 | `tabs` Account · Security | underline slides; pane fades and moves 6px | base 200ms, fast 150ms · out, exit io; pane 60ms after underline | no Security tabs in this repo; Project tabs (`ProjectPage.tsx:258`) switch instantly | not built |
 | `inputerr` Account · Sign in | border colour; message fades and moves -4px to 0 | fast 150ms, base 200ms · out, exit io | error text appears with no transition (`AuthScreens.tsx:256`) | not built |
 | `select` Planner · Repeat | menu fades, moves -4px, scale .98; chevron turns 180deg | base 200ms, fast 150ms · out, exit io | native `<select>` (`RepeatPicker.tsx:92`) | not built |
-| `banner` Account · Security | banner fades and moves -8px in a reserved slot | base 200ms, exit 140ms · out, exit io | `features/auth/DeletionBanner.tsx:78` has no transition | not built |
+| `banner` Account · Security | banner fades and moves -8px in a reserved slot | base 200ms, exit 140ms · out, exit io | `features/account/DeletionBanner.tsx:78` has no transition | not built |
 | `skeleton` Planner · Today | skeleton opacity; content opacity | fast 150ms, base 200ms, exit 105ms, wait 400ms · out, exit io | 400 ms wait built (`TodayPage.tsx:66`, `motionMs("wait")`); no fade of skeleton or content (no opacity transition) | differs |
 | `syncline` Planner · Sync | label cross-fade; state shows at least 1s | fast 150ms, exit 105ms · out, exit io | `features/sync/SyncLine.tsx:66` swaps labels at once; no 1s minimum | not built |
 | `checkoff` Planner · Today | tick, strike scaleX, row fade, row moves to Done after 1.5s with Undo | fast 150, base 200, slow 300ms · out | no tick or strike motion; a finished task stays in place until tomorrow (`tasks/selectors.ts:17`); Undo only for repeating tasks (`useComplete.ts:13`) | not built |

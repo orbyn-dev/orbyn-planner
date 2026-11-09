@@ -4,8 +4,8 @@
 // .github/e2e-mail.compose.yaml): no account and no session until the code is right, a new code replaces the old one, and an
 // address that already has an account gets the same answer and no mail. Runs only when ORBYN_E2E_ENGINE and ORBYN_E2E_MAIL are set.
 import { describe, expect, it } from "vitest";
-import { ApiFailure } from "../api/auth";
-import { signIn, signUp } from "../auth/flows";
+import { ApiFailure } from "../core/account/errors";
+import { signIn, signUp } from "../state/services/flows";
 import { browser, engineUrl } from "./testing/support";
 import { codeSentTo, mailUrl } from "./testing/mailbox";
 

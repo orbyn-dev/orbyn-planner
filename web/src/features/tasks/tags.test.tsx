@@ -2,14 +2,14 @@ import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../app/App";
-import { ClockProvider } from "../../app/clock";
-import { LocalStore } from "../../store/LocalStore";
-import type { Task } from "../../store/types";
-import { MemoryPersistence } from "../../store/persistence";
+import { ClockProvider } from "../../state/clock";
+import { LocalStore } from "../../data/local/LocalStore";
+import type { Task } from "../../core/planner/types";
+import { MemoryPersistence } from "../../data/local/persistence";
 
 // The panel stops offering tags at MAX_TAGS_PER_TASK. The real limit (100, covered in the store tests) would mean 100 chips on the page in the
 // row and the panel, so this file runs with a limit of 3; nothing else here has three tags on a task.
-vi.mock("../../store/records", async (original) => ({ ...(await original<typeof import("../../store/records")>()), MAX_TAGS_PER_TASK: 3 }));
+vi.mock("../../core/planner/records", async (original) => ({ ...(await original<typeof import("../../core/planner/records")>()), MAX_TAGS_PER_TASK: 3 }));
 
 const NOW = new Date(2026, 10, 7, 10, 0);
 

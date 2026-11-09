@@ -2,7 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
-import { initialsOf } from "./initials";
+import { initialsOf } from "../lib/initials";
 
 beforeEach(() => {
   window.history.replaceState(null, "", "/");

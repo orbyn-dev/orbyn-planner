@@ -1,9 +1,9 @@
-import { useNow } from "../../app/clock";
-import { useUi } from "../../app/ui";
-import { dateKey, formatDue } from "../../lib/dates";
-import { nextUpcoming } from "../../store/taskRepeat";
-import { useStore } from "../../store/context";
-import type { Task } from "../../store/types";
+import { useNow } from "../../state/clock";
+import { useUi } from "../../ui/product/UiProvider";
+import { dateKey, formatDue } from "../../core/planner/dates";
+import { nextUpcoming } from "../../core/planner/taskRepeat";
+import { useStore } from "../../state/store";
+import type { Task } from "../../core/planner/types";
 
 /** How long the "Marked done" toast, with its Undo, stays. */
 export const MARKED_DONE_TOAST_MS = 5_000;

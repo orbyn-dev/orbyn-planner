@@ -1,16 +1,13 @@
-import { useNow } from "../../app/clock";
-import { useUi } from "../../app/ui";
-import { formatTime, parseDue } from "../../lib/dates";
-import { usePlanner } from "../../store/context";
+import { useNow } from "../../state/clock";
+import { useUi } from "../../ui/product/UiProvider";
+import { formatTime, parseDue } from "../../core/planner/dates";
+import { usePlanner } from "../../state/store";
 import { shownTags, TagChip, tagLabels } from "./TagChips";
-import { statusOf } from "../../store/taskStatus";
-import type { Task } from "../../store/types";
+import { Swatch } from "../../ui/product/Swatch";
+import { statusOf } from "../../core/planner/taskStatus";
+import type { Task } from "../../core/planner/types";
 import { dueText, needsAction } from "./selectors";
 import { useComplete } from "./useComplete";
-
-export function Swatch({ colour }: { colour: string }) {
-  return <span className="sw" style={{ background: `var(--${colour})` }} aria-hidden="true" />;
-}
 
 export function useTaskActions(task: Task) {
   const ui = useUi();

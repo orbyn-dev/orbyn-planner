@@ -1,4 +1,4 @@
-import { isDesktop } from "./platform";
+import { isDesktop } from "../lib/platform";
 
 /**
  * On the macOS desktop shell the window has no title bar of its own: the page draws to the top edge and the traffic lights sit over

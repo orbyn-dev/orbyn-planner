@@ -2,10 +2,10 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../app/App";
-import { ClockProvider } from "../../app/clock";
-import { LocalStore } from "../../store/LocalStore";
-import { MemoryPersistence } from "../../store/persistence";
-import { repeatEvery } from "../../store/repeat";
+import { ClockProvider } from "../../state/clock";
+import { LocalStore } from "../../data/local/LocalStore";
+import { MemoryPersistence } from "../../data/local/persistence";
+import { repeatEvery } from "../../core/planner/repeat";
 import { repeatSummary } from "./RowPopovers";
 
 // Saturday 7 November 2026, 10:00.

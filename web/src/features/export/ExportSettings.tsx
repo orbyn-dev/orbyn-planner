@@ -1,8 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { useNow } from "../../app/clock";
-import { useStore } from "../../store/context";
-import { Icon } from "../../components/Icon";
-import { Modal } from "../../components/Modal";
+import { useNow } from "../../state/clock";
+import { useStore } from "../../state/store";
+import { Icon } from "../../ui/primitives/Icon";
+import { Modal } from "../../ui/primitives/Modal";
 import { fileSize } from "../../lib/fileSize";
 import { buildIcs } from "./exportIcs";
 import { exportJson } from "./exportJson";

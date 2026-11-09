@@ -1,26 +1,26 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { MotionList } from "../../components/MotionList";
-import { useNow } from "../../app/clock";
-import { useRouter } from "../../app/router";
-import { useUi } from "../../app/ui";
-import { useAuth } from "../../auth/AuthProvider";
-import { initialsOf } from "../../app/initials";
-import { PHONE_QUERY, useMediaQuery } from "../../components/useMediaQuery";
+import { MotionList } from "../../ui/primitives/MotionList";
+import { useNow } from "../../state/clock";
+import { useRouter } from "../../state/router";
+import { useUi } from "../../ui/product/UiProvider";
+import { useAuth } from "../../state/account";
+import { initialsOf } from "../../lib/initials";
+import { PHONE_QUERY, useMediaQuery } from "../../ui/primitives/useMediaQuery";
 import { useSlow } from "../../lib/useSlow";
-import { projectStats } from "../projects/stats";
-import { PageHeader } from "../../components/EmptyState";
-import { Icon } from "../../components/Icon";
-import { MONTHS, WEEKDAYS, addDays, dateKey, formatTime, isDueToday, parseDue, startOfDay } from "../../lib/dates";
-import { daysBetween, lastDayOf, touchesDay } from "../../lib/wall";
-import { usePlanner } from "../../store/context";
-import { expandEvents, type Occurrence } from "../../store/occurrences";
-import { eventMeta } from "../calendar/AgendaView";
-import { colourOf } from "../calendar/TimeGrid";
-import { groupToday } from "../tasks/selectors";
-import type { Task } from "../../store/types";
-import { TodayRow } from "../tasks/TaskRow";
-import { SyncLine, useSyncStatus, withPersistence } from "../sync/SyncLine";
-import { useSyncController, useSyncState } from "../../sync/SyncProvider";
+import { projectStats } from "../projects";
+import { PageHeader } from "../../ui/primitives/EmptyState";
+import { Icon } from "../../ui/primitives/Icon";
+import { MONTHS, WEEKDAYS, addDays, dateKey, formatTime, isDueToday, parseDue, startOfDay } from "../../core/planner/dates";
+import { daysBetween, lastDayOf, touchesDay } from "../../core/planner/wall";
+import { usePlanner } from "../../state/store";
+import { expandEvents, type Occurrence } from "../../core/planner/occurrences";
+import { eventMeta } from "../calendar";
+import { colourOf } from "../calendar";
+import { groupToday } from "../tasks";
+import type { Task } from "../../core/planner/types";
+import { TodayRow } from "../tasks";
+import { SyncLine, useSyncStatus, withPersistence } from "../sync";
+import { useSyncController, useSyncState } from "../../state/sync";
 
 /** Morning is 05:00 to 11:59, afternoon 12:00 to 17:59 and evening 18:00 to 04:59, by the local clock. */
 export function greetingAt(now: Date): string {

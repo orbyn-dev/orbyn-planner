@@ -1,5 +1,5 @@
-import { touchesDay, wallMinutes } from "../../lib/wall";
-import type { Occurrence } from "../../store/occurrences";
+import { touchesDay, wallMinutes } from "../../core/planner/wall";
+import type { Occurrence } from "../../core/planner/occurrences";
 
 export const MINUTES_IN_DAY = 1440;
 /** The shortest a block is drawn, so a 5-minute event can still be seen and clicked. */

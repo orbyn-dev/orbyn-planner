@@ -1,8 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { LocalStore } from "../../store/LocalStore";
-import { MemoryPersistence } from "../../store/persistence";
-import { repeatEvery } from "../../store/repeat";
+import { LocalStore } from "../../data/local/LocalStore";
+import { MemoryPersistence } from "../../data/local/persistence";
+import { repeatEvery } from "../../core/planner/repeat";
 import { buildExport, EXPORT_VERSION, exportJson, readExport } from "./exportJson";
 
 async function filledStore() {

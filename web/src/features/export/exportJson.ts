@@ -1,4 +1,4 @@
-import type { CalendarEvent, PlannerCalendar, PlannerState, Project, Tag, Task, TaskList } from "../../store/types";
+import type { CalendarEvent, PlannerCalendar, PlannerState, Project, Tag, Task, TaskList } from "../../core/planner/types";
 
 /** What the file says it is, so another program can tell it apart. */
 export const EXPORT_FORMAT = "orbyn-planner-export";

@@ -1,5 +1,5 @@
-import { LIST_COLOURS, type Tag, type Task } from "../../store/types";
-import { Swatch } from "./TaskRow";
+import { LIST_COLOURS, type Tag, type Task } from "../../core/planner/types";
+import { Swatch } from "../../ui/product/Swatch";
 
 export const TAG_COLOUR_NAMES: Record<(typeof LIST_COLOURS)[number], string> = { c1: "Blue", c2: "Green", c3: "Purple", c4: "Orange" };
 

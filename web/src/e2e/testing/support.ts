@@ -1,11 +1,11 @@
-import { createMemoryKeyStore, type KeyStore, type StoredSession } from "../../api/keyStore";
-import { realAuthCrypto } from "../../api/testing/realModule";
-import { signIn } from "../../auth/flows";
+import { createMemoryKeyStore, type KeyStore, type StoredSession } from "../../data/account/keyStore";
+import { realAuthCrypto } from "../../testing/realModule";
+import { signIn } from "../../state/services/flows";
 import { signUpVerified } from "./mailbox";
-import { ApproverController, DeviceController } from "../../auth/pairing";
-import { createAuthServices, type AuthServices } from "../../auth/services";
-import { LocalStore } from "../../store/LocalStore";
-import { MemoryPersistence } from "../../store/persistence";
+import { ApproverController, DeviceController } from "../../state/services/pairing";
+import { createAuthServices, type AuthServices } from "../../state/services/auth";
+import { LocalStore } from "../../data/local/LocalStore";
+import { MemoryPersistence } from "../../data/local/persistence";
 
 export const engineUrl = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.ORBYN_E2E_ENGINE;
 

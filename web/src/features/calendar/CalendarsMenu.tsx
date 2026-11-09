@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { setSettingsTarget } from "../../app/settingsTarget";
-import { useRouter } from "../../app/router";
-import { Icon } from "../../components/Icon";
-import { usePopover } from "../../components/usePopover";
-import { usePlanner, useStore } from "../../store/context";
+import { setSettingsTarget } from "../../state/settingsTarget";
+import { useRouter } from "../../state/router";
+import { Icon } from "../../ui/primitives/Icon";
+import { usePopover } from "../../ui/primitives/usePopover";
+import { usePlanner, useStore } from "../../state/store";
 
 /**
  * The Calendars button and its popover (Planner Designs p-cal-calendars-popover): the person's calendars with a colour dot and a

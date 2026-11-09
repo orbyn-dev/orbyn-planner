@@ -1,9 +1,9 @@
-import { useNow } from "../../app/clock";
-import { useUi } from "../../app/ui";
-import { useStore } from "../../store/context";
-import { LANE_LABELS, laneOf, moveTo, type Lane } from "../../store/taskStatus";
-import { undoableTasks } from "../../store/taskRepeat";
-import type { Task } from "../../store/types";
+import { useNow } from "../../state/clock";
+import { useUi } from "../../ui/product/UiProvider";
+import { useStore } from "../../state/store";
+import { LANE_LABELS, laneOf, moveTo, type Lane } from "../../core/planner/taskStatus";
+import { undoableTasks } from "../../core/planner/taskRepeat";
+import type { Task } from "../../core/planner/types";
 
 /**
  * Moves a card to a lane of the Tasks board (the contract in `taskStatus.ts`). Out of Done the card is no longer done and takes the lane's

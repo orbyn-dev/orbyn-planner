@@ -3,9 +3,9 @@
 // Record sync end to end against a running engine, with the real module: two paired devices, their stores in
 // memory, the live socket. It runs only when ORBYN_E2E_ENGINE is set (see docs/architecture.md).
 import { describe, expect, it } from "vitest";
-import { SyncController } from "../sync/controller";
-import { LocalStore } from "../store/LocalStore";
-import { MemoryPersistence } from "../store/persistence";
+import { SyncController } from "../state/services/syncController";
+import { LocalStore } from "../data/local/LocalStore";
+import { MemoryPersistence } from "../data/local/persistence";
 import { pairedBrowsers, until, engineUrl, type Browser } from "./testing/support";
 
 const DELAYS = { debounceMs: 30, pollMs: 5_000, retryMs: [100, 1000] as [number, number], socketMs: [100, 1000] as [number, number] };

@@ -1,16 +1,16 @@
 import { useCallback, useMemo, useState, type KeyboardEvent, type TouchEvent } from "react";
-import { usePrefs } from "../../app/prefs";
-import { useUi } from "../../app/ui";
-import { Icon } from "../../components/Icon";
-import { Modal } from "../../components/Modal";
-import { addDays, dateKey, dateOf, formatTime, isoWeek, MONTHS, parseDue, WEEKDAYS, weekLead, weekOrder } from "../../lib/dates";
-import { wallMinutes } from "../../lib/wall";
-import { usePlanner } from "../../store/context";
-import { expandEvents, type Occurrence } from "../../store/occurrences";
-import type { Task } from "../../store/types";
-import { Check, useTaskActions } from "../tasks/TaskRow";
-import { useSyncController, useSyncState } from "../../sync/SyncProvider";
-import { SyncLine, useSyncStatus, withPersistence } from "../sync/SyncLine";
+import { usePrefs } from "../../state/prefs";
+import { useUi } from "../../ui/product/UiProvider";
+import { Icon } from "../../ui/primitives/Icon";
+import { Modal } from "../../ui/primitives/Modal";
+import { addDays, dateKey, dateOf, formatTime, isoWeek, MONTHS, parseDue, WEEKDAYS, weekLead, weekOrder } from "../../core/planner/dates";
+import { wallMinutes } from "../../core/planner/wall";
+import { usePlanner } from "../../state/store";
+import { expandEvents, type Occurrence } from "../../core/planner/occurrences";
+import type { Task } from "../../core/planner/types";
+import { Check, useTaskActions } from "../tasks";
+import { useSyncController, useSyncState } from "../../state/sync";
+import { SyncLine, useSyncStatus, withPersistence } from "../sync";
 import { colourOf } from "./TimeGrid";
 
 const dayName = (key: string) => `${WEEKDAYS[dateOf(key).getDay()]!.slice(0, 3)} ${dateOf(key).getDate()}`;

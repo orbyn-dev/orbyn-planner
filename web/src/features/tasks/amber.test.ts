@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Task } from "../../store/types";
+import type { Task } from "../../core/planner/types";
 import { needsAction } from "./selectors";
 
 const NOW = new Date(2026, 10, 7, 10, 0);

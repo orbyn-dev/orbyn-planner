@@ -2,10 +2,10 @@ import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../app/App";
-import { ClockProvider } from "../../app/clock";
-import { TOAST_MS, TOAST_UNDO_MS } from "../../app/ui";
-import { LocalStore } from "../../store/LocalStore";
-import { MemoryPersistence } from "../../store/persistence";
+import { ClockProvider } from "../../state/clock";
+import { TOAST_MS, TOAST_UNDO_MS } from "../../ui/product/UiProvider";
+import { LocalStore } from "../../data/local/LocalStore";
+import { MemoryPersistence } from "../../data/local/persistence";
 
 const NOW = new Date(2026, 10, 7, 10, 0);
 

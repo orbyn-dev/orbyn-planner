@@ -1,10 +1,10 @@
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../app/App";
-import { ClockProvider } from "../../app/clock";
-import { LocalStore } from "../../store/LocalStore";
-import { MemoryPersistence } from "../../store/persistence";
-import { groupToday } from "../tasks/selectors";
+import { ClockProvider } from "../../state/clock";
+import { LocalStore } from "../../data/local/LocalStore";
+import { MemoryPersistence } from "../../data/local/persistence";
+import { groupToday } from "../tasks";
 import { TodayError, goalLabel } from "./TodayPage";
 
 // Saturday 7 November 2026, 10:00.

@@ -1,20 +1,21 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { MotionList } from "../../components/MotionList";
-import { useNow } from "../../app/clock";
-import { Link } from "../../app/router";
-import { useUi } from "../../app/ui";
-import { EmptyState } from "../../components/EmptyState";
+import { MotionList } from "../../ui/primitives/MotionList";
+import { useNow } from "../../state/clock";
+import { Link } from "../../state/router";
+import { useUi } from "../../ui/product/UiProvider";
+import { EmptyState } from "../../ui/primitives/EmptyState";
 import { useSlow } from "../../lib/useSlow";
-import { useSyncStatus, withPersistence } from "../sync/SyncLine";
-import { useSyncController, useSyncState } from "../../sync/SyncProvider";
-import { QuickAddField } from "../tasks/TasksPage";
-import { Icon } from "../../components/Icon";
-import { usePopover } from "../../components/usePopover";
-import { usePlanner, useStore } from "../../store/context";
-import { StrandedZones } from "../sync/StrandedZones";
-import { LIST_COLOURS, type ListColour, type TaskList } from "../../store/types";
-import { activeTasks, openCount, sortByDue } from "../tasks/selectors";
-import { Swatch, TaskRow } from "../tasks/TaskRow";
+import { useSyncStatus, withPersistence } from "../sync";
+import { useSyncController, useSyncState } from "../../state/sync";
+import { QuickAddField } from "../tasks";
+import { Icon } from "../../ui/primitives/Icon";
+import { usePopover } from "../../ui/primitives/usePopover";
+import { usePlanner, useStore } from "../../state/store";
+import { StrandedZones } from "../sync";
+import { LIST_COLOURS, type ListColour, type TaskList } from "../../core/planner/types";
+import { activeTasks, openCount, sortByDue } from "../tasks";
+import { TaskRow } from "../tasks";
+import { Swatch } from "../../ui/product/Swatch";
 
 const COLOUR_NAMES: Record<ListColour, string> = { c1: "Blue", c2: "Green", c3: "Purple", c4: "Orange" };
 
