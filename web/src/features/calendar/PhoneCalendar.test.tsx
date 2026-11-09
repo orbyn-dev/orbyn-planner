@@ -2,9 +2,9 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../app/App";
-import { ClockProvider } from "../../app/clock";
-import { LocalStore } from "../../store/LocalStore";
-import { MemoryPersistence } from "../../store/persistence";
+import { ClockProvider } from "../../state/clock";
+import { LocalStore } from "../../data/local/LocalStore";
+import { MemoryPersistence } from "../../data/local/persistence";
 import { duration, eventMeta } from "./PhoneCalendar";
 
 // Saturday 7 November 2026, 10:00 (ISO week 45).

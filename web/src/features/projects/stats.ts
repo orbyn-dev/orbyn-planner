@@ -1,6 +1,6 @@
-import { compareDue } from "../../lib/dates";
-import { inOrder } from "../../store/order";
-import type { Project, Task } from "../../store/types";
+import { compareDue } from "../../core/planner/dates";
+import { inOrder } from "../../core/planner/order";
+import type { Project, Task } from "../../core/planner/types";
 
 export interface ProjectStats {
   total: number;

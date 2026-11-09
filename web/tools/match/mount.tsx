@@ -2,11 +2,11 @@
 import { StrictMode } from "react";
 import type { Root } from "react-dom/client";
 import { App } from "../../src/app/App";
-import { ClockProvider } from "../../src/app/clock";
-import { applyChoice, type Theme } from "../../src/app/theme";
-import { LocalStore } from "../../src/store/LocalStore";
-import { MemoryPersistence } from "../../src/store/persistence";
-import type { AuthServices } from "../../src/auth/services";
+import { ClockProvider } from "../../src/state/clock";
+import { applyChoice, type Theme } from "../../src/ui/theme";
+import { LocalStore } from "../../src/data/local/LocalStore";
+import { MemoryPersistence } from "../../src/data/local/persistence";
+import type { AuthServices } from "../../src/state/services/auth";
 import { pretendAccount, signedOutAccount } from "./account";
 import { PINNED_NOW, seed, type Scenario } from "./fixture";
 

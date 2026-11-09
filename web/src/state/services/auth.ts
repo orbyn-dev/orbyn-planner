@@ -1,0 +1,100 @@
+import { askWhetherDeleted } from "../../data/account/deletedAccount";
+import { createAuthApi, type AuthApi } from "../../data/remote/auth";
+import { requireAuthCrypto, type AuthCrypto } from "../../core/account/authCrypto";
+import { defaultKeyStore, withMemoryFallback, type FallbackKeyStore, type KeyStore } from "../../data/account/keyStore";
+import { TokenStore } from "../../data/account/tokenStore";
+import { freshWrapSecret, wrapSecretFrom } from "../../data/account/wrapSecret";
+import { deletionNotice } from "../deletionNotice";
+import { browserLock, createEngineHost, type EngineHost, type Lock } from "../../data/account/engineHost";
+
+/** Everything the account screens use, so tests can swap the network, the storage and the crypto. */
+export interface AuthServices {
+  api: AuthApi;
+  tokens: TokenStore;
+  keys: FallbackKeyStore;
+  /** The crypto to use now. In a build this refuses unless the real module registered itself. */
+  crypto: () => AuthCrypto;
+  /** The time in milliseconds; tests pin it. */
+  now: () => number;
+  /** The secret keys and the engine snapshot are sealed under. */
+  wrapSecret: () => Promise<Uint8Array>;
+  /** A new wrapping secret, with the key it comes from (null when the secret is supplied from outside), made but not stored. */
+  freshWrap: () => Promise<{ secret: Uint8Array; key: CryptoKey | null }>;
+  /** This device's sync engine, kept sealed in the key store. */
+  engine: EngineHost;
+  /** Tabs tell each other when one signs out, so the others drop their session too. */
+  signedOut: { post(): void; listen(listener: () => void): () => void };
+  /** Settles when the crypto this build uses has loaded (or failed to); nothing reads a saved session before. */
+  ready: Promise<void>;
+  /** How a waiting device or approver asks the server again: back off from `firstMs` to `maxMs`, give up after `totalMs`. */
+  poll: PollSchedule;
+}
+
+export interface PollSchedule {
+  firstMs: number;
+  maxMs: number;
+  totalMs: number;
+}
+
+/** Two seconds, slowing to ten, for up to ten minutes (an approval's life). */
+export const DEFAULT_POLL: PollSchedule = { firstMs: 2000, maxMs: 10_000, totalMs: 600_000 };
+
+export interface AuthServiceOptions {
+  fetch?: typeof fetch;
+  baseUrl?: string;
+  keys?: KeyStore;
+  crypto?: () => AuthCrypto;
+  now?: () => number;
+  poll?: PollSchedule;
+  wrapSecret?: () => Promise<Uint8Array>;
+  lock?: Lock;
+  ready?: Promise<void>;
+}
+
+export function createAuthServices(options: AuthServiceOptions = {}): AuthServices {
+  const keys = withMemoryFallback(options.keys ?? defaultKeyStore(), options.lock ?? browserLock);
+  const tokens = new TokenStore(keys);
+  // The engine refuses changes to devices, protection and two-factor while a deletion is scheduled: when it does, the date is read
+  // again, so every screen shows those controls as paused.
+  const later: { api?: AuthApi } = {};
+  const api = createAuthApi({
+    onDeletionScheduled: () => void later.api?.currentDevice().then((d) => deletionNotice.set(d.deletion_scheduled_at ?? null), () => undefined),
+    fetch: options.fetch,
+    baseUrl: options.baseUrl,
+    token: tokens.token,
+    // A 401 on a signed-in call: the session is over, so forget the token, and ask once whether the account was deleted.
+    onUnauthorized: () => {
+      const ended = tokens.getSession();
+      void tokens.clear();
+      if (ended && later.api) void askWhetherDeleted(later.api, ended, keys.inMemory);
+    },
+  });
+  later.api = api;
+  const crypto = options.crypto ?? requireAuthCrypto;
+  const now = options.now ?? Date.now;
+  const wrapSecret = options.wrapSecret ?? (() => wrapSecretFrom(keys));
+  // With a wrapping secret supplied from outside (tests) there is no stored key to look for.
+  const engine = createEngineHost({ keys, crypto, wrapSecret, now, lock: options.lock, wrapKeyPresent: options.wrapSecret ? async () => true : undefined });
+  const channelName = "orbyn-planner-auth";
+  const signedOut = {
+    // A tab that holds its account in memory only neither says it signed out nor acts on another tab saying so: the two share
+    // nothing, and its sign-out clears only its own memory.
+    post: () => {
+      if (keys.inMemory) return;
+      try {
+        const channel = new BroadcastChannel(channelName);
+        channel.postMessage("signed-out");
+        channel.close();
+      } catch {
+        // No BroadcastChannel: the other tabs find out on their next call.
+      }
+    },
+    listen: (listener: () => void) => {
+      if (typeof BroadcastChannel === "undefined") return () => undefined;
+      const channel = new BroadcastChannel(channelName);
+      channel.onmessage = (e: MessageEvent) => e.data === "signed-out" && !keys.inMemory && listener();
+      return () => channel.close();
+    },
+  };
+  return { api, tokens, keys, crypto, now, poll: options.poll ?? DEFAULT_POLL, wrapSecret, freshWrap: options.wrapSecret ? async () => ({ secret: await options.wrapSecret!(), key: null }) : freshWrapSecret, engine, signedOut, ready: options.ready ?? Promise.resolve() };
+}

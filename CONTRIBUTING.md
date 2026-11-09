@@ -23,6 +23,8 @@ The [Title](.github/workflows/pr-title.yml) check enforces this.
 cd web && npm run check && npm test && npm run build
 ```
 
+`npm run check` runs TypeScript, ESLint and the import-boundary checker (`npm run check:imports`).
+
 ## Pull requests
 
 - Fill in the template. Say what you verified and what you did not.

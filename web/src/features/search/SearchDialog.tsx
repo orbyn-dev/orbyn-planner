@@ -1,16 +1,16 @@
 import { useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { useNow } from "../../app/clock";
-import { useRouter } from "../../app/router";
-import { useUi } from "../../app/ui";
-import { Icon } from "../../components/Icon";
-import { Portal } from "../../components/Portal";
-import { useDialog } from "../../components/useDialog";
-import { MONTHS, WEEKDAYS, dateKey, dateOf, makeDue, parseDue } from "../../lib/dates";
-import { usePlanner, useStore } from "../../store/context";
-import type { CalendarEvent, Project, Task, TaskList } from "../../store/types";
-import { describeRepeat, parseQuickAdd } from "../tasks/quickAdd";
-import { isLive } from "../tasks/selectors";
-import { Swatch } from "../tasks/TaskRow";
+import { useNow } from "../../state/clock";
+import { useRouter } from "../../state/router";
+import { useUi } from "../../ui/product/UiProvider";
+import { Icon } from "../../ui/primitives/Icon";
+import { Portal } from "../../ui/primitives/Portal";
+import { useDialog } from "../../ui/primitives/useDialog";
+import { MONTHS, WEEKDAYS, dateKey, dateOf, makeDue, parseDue } from "../../core/planner/dates";
+import { usePlanner, useStore } from "../../state/store";
+import type { CalendarEvent, Project, Task, TaskList } from "../../core/planner/types";
+import { describeRepeat, parseQuickAdd } from "../tasks";
+import { isLive } from "../tasks";
+import { Swatch } from "../../ui/product/Swatch";
 
 type Item =
   | { kind: "add-task" | "add-event"; id: string; label: string }

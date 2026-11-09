@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
-import { useNow } from "../../app/clock";
-import { useRouter } from "../../app/router";
-import { EmptyState, PageHeader } from "../../components/EmptyState";
-import { Icon } from "../../components/Icon";
-import { formatDue, isDueToday, isOverdue } from "../../lib/dates";
-import { usePlanner } from "../../store/context";
-import { Swatch } from "../tasks/TaskRow";
+import { useNow } from "../../state/clock";
+import { useRouter } from "../../state/router";
+import { EmptyState, PageHeader } from "../../ui/primitives/EmptyState";
+import { Icon } from "../../ui/primitives/Icon";
+import { formatDue, isDueToday, isOverdue } from "../../core/planner/dates";
+import { usePlanner } from "../../state/store";
+import { Swatch } from "../../ui/product/Swatch";
 import { ProjectDialog } from "./ProjectDialog";
 import { projectStats } from "./stats";
 

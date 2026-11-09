@@ -1,7 +1,7 @@
 import { browserStorage } from "../../lib/browserStorage";
-import { compareDue } from "../../lib/dates";
-import type { Priority, Task, TaskList } from "../../store/types";
-import { LANES, LANE_LABELS, laneOf, type Lane } from "../../store/taskStatus";
+import { compareDue } from "../../core/planner/dates";
+import type { Priority, Task, TaskList } from "../../core/planner/types";
+import { LANES, LANE_LABELS, laneOf, type Lane } from "../../core/planner/taskStatus";
 import { groupTasks, sortByDue, type TaskGroup } from "./selectors";
 
 /** How the Tasks list and board are arranged. Kept on this device only, as a convenience. */

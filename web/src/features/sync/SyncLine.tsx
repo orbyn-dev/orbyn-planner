@@ -1,9 +1,9 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
-import { getHealth } from "../../api/engine";
-import { Icon } from "../../components/Icon";
-import { PHONE_QUERY, useMediaQuery } from "../../components/useMediaQuery";
-import { formatTime } from "../../lib/dates";
-import type { SyncState } from "../../sync/controller";
+import { getHealth } from "../../state/health";
+import { Icon } from "../../ui/primitives/Icon";
+import { PHONE_QUERY, useMediaQuery } from "../../ui/primitives/useMediaQuery";
+import { formatTime } from "../../core/planner/dates";
+import type { SyncState } from "../../state/services/syncController";
 
 export type SyncStatus =
   | { kind: "synced"; devices: number }

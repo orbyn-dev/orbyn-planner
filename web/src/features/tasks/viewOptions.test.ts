@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { Task, TaskList } from "../../store/types";
+import type { Task, TaskList } from "../../core/planner/types";
 import { DEFAULT_VIEW_OPTIONS, groupFor, lanesFor, loadViewOptions, saveViewOptions, sortTasks } from "./viewOptions";
 
 const NOW = new Date(2026, 10, 7, 10, 0);

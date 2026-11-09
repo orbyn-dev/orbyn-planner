@@ -1,9 +1,9 @@
-import { useUi } from "../../app/ui";
-import { EmptyState } from "../../components/EmptyState";
-import { dateOf, formatTime, parseDue, shortDay } from "../../lib/dates";
-import { touchesDay } from "../../lib/wall";
-import { usePlanner } from "../../store/context";
-import type { Occurrence } from "../../store/occurrences";
+import { useUi } from "../../ui/product/UiProvider";
+import { EmptyState } from "../../ui/primitives/EmptyState";
+import { dateOf, formatTime, parseDue, shortDay } from "../../core/planner/dates";
+import { touchesDay } from "../../core/planner/wall";
+import { usePlanner } from "../../state/store";
+import type { Occurrence } from "../../core/planner/occurrences";
 import { duration } from "./PhoneCalendar";
 import { colourOf } from "./TimeGrid";
 

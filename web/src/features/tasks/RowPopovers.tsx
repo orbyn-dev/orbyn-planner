@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { Modal } from "../../components/Modal";
-import { MonthGrid } from "../../components/MonthGrid";
-import { OptionMenu, type MenuOption } from "../../components/OptionMenu";
-import { PopoverRow } from "../../components/PopoverRow";
-import { addDays, dateKey, dateOf, formatDue, parseDue, type WeekStart } from "../../lib/dates";
-import { readTime } from "../../lib/whenParser";
-import { ruleLabel } from "../../store/occurrences";
-import { dayOf, type Repeat } from "../../store/repeat";
-import { STATUSES, STATUS_LABELS, statusOf, type Status } from "../../store/taskStatus";
-import { LIST_COLOURS, PRIORITIES, type Priority, type Task, type TaskList } from "../../store/types";
+import { Modal } from "../../ui/primitives/Modal";
+import { MonthGrid } from "../../ui/product/MonthGrid";
+import { OptionMenu, type MenuOption } from "../../ui/primitives/OptionMenu";
+import { PopoverRow } from "../../ui/primitives/PopoverRow";
+import { addDays, dateKey, dateOf, formatDue, parseDue, type WeekStart } from "../../core/planner/dates";
+import { readTime } from "../../core/planner/whenParser";
+import { ruleLabel } from "../../core/planner/occurrences";
+import { dayOf, type Repeat } from "../../core/planner/repeat";
+import { STATUSES, STATUS_LABELS, statusOf, type Status } from "../../core/planner/taskStatus";
+import { LIST_COLOURS, PRIORITIES, type Priority, type Task, type TaskList } from "../../core/planner/types";
 import { RepeatPicker, kindOf, ruleFor, type RepeatKind } from "./RepeatPicker";
 import { REMINDER_MENU, reminderLabel } from "./reminder";
 

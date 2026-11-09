@@ -4,12 +4,12 @@ import "@fontsource/jetbrains-mono/400.css";
 import { createRoot } from "react-dom/client";
 import "../../src/styles/tokens.css";
 import "../../src/styles/app.css";
-import { THEMES, type Theme } from "../../src/app/theme";
+import { THEMES, type Theme } from "../../src/ui/theme";
 import { isScenario } from "./fixture";
 import { installNoSocket } from "./noSocket";
 import { mountMatch } from "./mount";
-import { DeleteUnusedPage } from "../../src/features/auth/DeleteUnusedPage";
-import { applyChoice } from "../../src/app/theme";
+import { DeleteUnusedPage } from "../../src/features/account/DeleteUnusedPage";
+import { applyChoice } from "../../src/ui/theme";
 import { StrictMode } from "react";
 
 installNoSocket();

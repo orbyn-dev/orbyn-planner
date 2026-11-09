@@ -2,24 +2,24 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { firstRunDoneForTests } from "../../test-setup";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { takeSettingsTarget } from "../../app/settingsTarget";
-import type { ProtectionReport } from "../../auth/flows";
-import type { Task } from "../../store/types";
+import { takeSettingsTarget } from "../../state/settingsTarget";
+import type { ProtectionReport } from "../../state/services/flows";
+import type { Task } from "../../core/planner/types";
 import { NotificationsPage } from "./NotificationsPage";
-import { NotificationsProvider, dueWords, useNotifications } from "./useNotifications";
+import { NotificationsProvider, dueWords, useNotifications } from "../../state/notifications";
 
 const read = vi.fn<() => Promise<ProtectionReport>>();
 const navigate = vi.fn();
 const openTask = vi.fn();
 let tasks: Task[] = [];
 const NOW = new Date(2026, 10, 7, 12, 30);
-vi.mock("../../auth/flows", () => ({ readProtection: () => read() }));
-vi.mock("../../app/router", () => ({ useRouter: () => ({ path: "/notifications", navigate }) }));
-vi.mock("../../app/ui", () => ({ useUi: () => ({ openTask }) }));
-vi.mock("../../app/clock", () => ({ useNow: () => NOW }));
-vi.mock("../../store/context", () => ({ usePlanner: () => ({ tasks }) }));
+vi.mock("../../state/services/flows", () => ({ readProtection: () => read() }));
+vi.mock("../../state/router", () => ({ useRouter: () => ({ path: "/notifications", navigate }) }));
+vi.mock("../../ui/product/UiProvider", () => ({ useUi: () => ({ openTask }) }));
+vi.mock("../../state/clock", () => ({ useNow: () => NOW }));
+vi.mock("../../state/store", () => ({ usePlanner: () => ({ tasks }) }));
 const auth = vi.hoisted(() => ({ services: {}, session: { accountId: "acct-1", deviceState: "trusted", deviceId: "d1" } as { accountId: string; deviceState: string; deviceId: string } }));
-vi.mock("../../auth/AuthProvider", () => ({ useAuth: () => auth }));
+vi.mock("../../state/account", () => ({ useAuth: () => auth }));
 
 const at = Math.floor(new Date(2026, 10, 7, 9, 41).getTime() / 1000);
 const changed: ProtectionReport = {

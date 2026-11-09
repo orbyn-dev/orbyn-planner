@@ -1,7 +1,7 @@
 // DEVELOPMENT AND TESTS ONLY. This folder is never imported by src/ and never reaches a production or staging build
 // (tools/match/guard.test.ts builds both and fails if anything here, or any sample string below, is in the output).
 // It never touches an account or the engine: it seeds an in-memory planner and nothing else. Read docs/match-kit.md.
-import type { ListColour, PlannerStore } from "../../src/store/types";
+import type { ListColour, PlannerStore } from "../../src/core/planner/types";
 
 /** Sat 7 Nov 2026, 08:30 UTC: the day every design frame is drawn on. */
 export const PINNED_NOW = "2026-11-07T08:30:00.000Z";

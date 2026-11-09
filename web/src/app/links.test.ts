@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { linksIn, listenForExternalLinks, openExternal } from "./links";
+import { linksIn, listenForExternalLinks, openExternal } from "../lib/links";
 
 afterEach(() => {
   vi.unstubAllGlobals();

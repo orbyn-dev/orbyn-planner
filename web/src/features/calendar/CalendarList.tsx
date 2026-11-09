@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { formatTime } from "../../lib/dates";
-import { usePlanner, useStore } from "../../store/context";
-import { LIST_COLOURS, type ListColour, type PlannerCalendar } from "../../store/types";
-import { Swatch } from "../tasks/TaskRow";
-import { NEEDS_ENGINE } from "../../api/feeds";
-import { NOT_SUPPORTED } from "../../lib/ics";
-import { FeedError, feedAddress, refreshCalendar, subscriptionsAvailable } from "./subscriptions";
+import { formatTime } from "../../core/planner/dates";
+import { usePlanner, useStore } from "../../state/store";
+import { LIST_COLOURS, type ListColour, type PlannerCalendar } from "../../core/planner/types";
+import { Swatch } from "../../ui/product/Swatch";
+import { NEEDS_ENGINE } from "../../lib/engine";
+import { NOT_SUPPORTED } from "../../core/planner/ics";
+import { FeedError, feedAddress, refreshCalendar, subscriptionsAvailable } from "../../state/subscriptions";
 
 const COLOUR_NAMES: Record<ListColour, string> = { c1: "Blue", c2: "Green", c3: "Purple", c4: "Orange" };
 

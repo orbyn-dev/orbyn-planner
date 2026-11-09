@@ -27,11 +27,11 @@ describe("the match kit stays out of the app", () => {
     expect(files.map(([p]) => p)).toEqual(expect.arrayContaining(["/tools/match/fixture.ts", "/tools/match/mount.tsx", "/tools/match/main.tsx", "/tools/match/account.ts", "/tools/match/noSocket.ts"]));
     // The only engine-side modules the kit may import: the crypto registry, the in-memory key store, the in-process mock engine, the engine's module as the sync tests load it, the tests' stand-in crypto (the mock engine checks signatures with it), the
     // service type, and the sync tests' mock-engine rig. Everything else (the real engine address, session, sockets) stays out.
-    const allowed = new Set(["../../src/api/authCrypto", "../../src/api/keyStore", "../../src/api/testing/MockEngine", "../../src/api/testing/FakeAuthCrypto", "../../src/api/testing/realModule", "../../src/auth/services", "../../src/sync/testing/rig", "../../src/features/auth/DeleteUnusedPage"]);
+    const allowed = new Set(["../../src/core/account/authCrypto", "../../src/data/account/keyStore", "../../src/testing/MockEngine", "../../src/testing/FakeAuthCrypto", "../../src/testing/realModule", "../../src/testing/syncRig", "../../src/state/services/auth", "../../src/features/account/DeleteUnusedPage"]);
     const offenders: string[] = [];
     for (const [path, code] of files) {
       const imports = [...code.matchAll(/from\s+["']([^"']+)["']/g)].map((m) => m[1]!);
-      for (const target of imports) if (/\/(api|auth|sync)\/|\/engine|\/generated\//.test(target) && !allowed.has(target)) offenders.push(`${path} imports ${target}`);
+      for (const target of imports) if (/\/(data\/(?:account|remote)\/|state\/services\/(?!auth)|state\/(?:sync|account)\/|core\/account\/(?!authCrypto)|core\/sync\/|testing\/|generated\/|engine\b)/.test(target) && !allowed.has(target)) offenders.push(`${path} imports ${target}`);
       const code0 = code.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
       for (const word of ["fetch(", "XMLHttpRequest", "EventSource", "sendBeacon", "VITE_ENGINE_URL"]) if (code0.includes(word)) offenders.push(`${path} uses ${word}`);
       // The page's socket is replaced by one that never opens: the word may appear only there, and never with `new`.

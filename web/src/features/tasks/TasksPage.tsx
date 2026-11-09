@@ -1,23 +1,24 @@
 import { useMemo, useState } from "react";
-import { MotionList } from "../../components/MotionList";
-import { useNow } from "../../app/clock";
-import { useUi } from "../../app/ui";
-import { EmptyState, PageHeader } from "../../components/EmptyState";
-import { Icon } from "../../components/Icon";
-import { formatDue } from "../../lib/dates";
-import { usePlanner, useStore } from "../../store/context";
+import { MotionList } from "../../ui/primitives/MotionList";
+import { useNow } from "../../state/clock";
+import { useUi } from "../../ui/product/UiProvider";
+import { EmptyState, PageHeader } from "../../ui/primitives/EmptyState";
+import { Icon } from "../../ui/primitives/Icon";
+import { formatDue } from "../../core/planner/dates";
+import { usePlanner, useStore } from "../../state/store";
 import { describeParse, parseQuickAdd } from "./quickAdd";
 import { DUE_FILTERS, activeTasks, completedGroups, isLive, isOpen, matchesDue, type DueFilter } from "./selectors";
 import { FilterChip } from "./FilterChip";
-import { LANES, LANE_LABELS, laneOf, type Lane } from "../../store/taskStatus";
+import { LANES, LANE_LABELS, laneOf, type Lane } from "../../core/planner/taskStatus";
 import { focusCard } from "../../lib/focus";
 import { useMoveTask } from "./useMoveTask";
 import { CardMenu, cardLabel, laneForKey } from "./CardMenu";
 import { ViewOptionsButton } from "./ViewOptionsButton";
 import { groupFor, lanesFor, loadViewOptions, saveViewOptions, type ViewOptions } from "./viewOptions";
 import { tagLabels } from "./TagChips";
-import { Swatch, TaskRow, useTaskActions } from "./TaskRow";
-import type { Priority, Task } from "../../store/types";
+import { TaskRow, useTaskActions } from "./TaskRow";
+import { Swatch } from "../../ui/product/Swatch";
+import type { Priority, Task } from "../../core/planner/types";
 
 type View = "list" | "board";
 

@@ -1,9 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { SettingsPage } from "../features/settings/SettingsPage";
-import { detectPlatform, isDesktop } from "./platform";
-import { PrefsProvider } from "./prefs";
+import { SettingsPage } from "../features/settings";
+import { detectPlatform, isDesktop } from "../lib/platform";
+import { PrefsProvider } from "../state/prefs";
 
 const Settings = () => (
   <PrefsProvider>

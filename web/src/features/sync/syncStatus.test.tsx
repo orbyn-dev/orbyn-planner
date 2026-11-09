@@ -1,15 +1,15 @@
 import { render, renderHook, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { StoreProvider } from "../../store/context";
-import { LocalStore } from "../../store/LocalStore";
-import { MemoryPersistence } from "../../store/persistence";
+import { StoreProvider } from "../../state/store";
+import { LocalStore } from "../../data/local/LocalStore";
+import { MemoryPersistence } from "../../data/local/persistence";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
-import type { SyncState } from "../../sync/controller";
-import { SyncProviderForTests } from "../../sync/testing/SyncProviderForTests";
+import type { SyncState } from "../../state/services/syncController";
+import { SyncProviderForTests } from "../../testing/SyncProviderForTests";
 import { StrandedZones } from "./StrandedZones";
-import { OnlyDeviceNote } from "../auth/AccountSettings";
-import { SyncSettings } from "../settings/SyncSettings";
+import { OnlyDeviceNote } from "../account";
+import { SyncSettings } from "./SyncSettings";
 import { useSyncStatus } from "./SyncLine";
 
 const base: SyncState = { phase: "idle", devices: 2, lastSyncedAt: "2026-11-07T10:00:00Z", quarantined: 0, waitingForKeys: [], stranded: [], needsApproval: false, keysPending: [], dropped: [], trashedEdits: [], failed: [], skipped: [], error: null, leader: true, live: true };

@@ -1,6 +1,6 @@
-import type { StoredSession } from "../../api/keyStore";
-import { signUp } from "../../auth/flows";
-import type { AuthServices } from "../../auth/services";
+import type { StoredSession } from "../../data/account/keyStore";
+import { signUp } from "../../state/services/flows";
+import type { AuthServices } from "../../state/services/auth";
 
 /** Where the test mailbox's API is (Mailpit, which the engine's worker sends to); set with ORBYN_E2E_MAIL, such as http://127.0.0.1:8025. */
 export const mailUrl = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.ORBYN_E2E_MAIL;

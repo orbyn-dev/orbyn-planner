@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { newSeries, type Repeat } from "../../store/repeat";
-import type { CalendarEvent, PlannerCalendar, Tag, Task, TaskList } from "../../store/types";
+import { newSeries, type Repeat } from "../../core/planner/repeat";
+import type { CalendarEvent, PlannerCalendar, Tag, Task, TaskList } from "../../core/planner/types";
 import { buildIcs, fold } from "./exportIcs";
 
 const NOW = new Date("2026-11-07T10:00:00Z");

@@ -1,16 +1,16 @@
-import { takeSettingsTarget } from "../../app/settingsTarget";
-import { ProtectionSettings } from "../auth/ProtectionSettings";
+import { takeSettingsTarget } from "../../state/settingsTarget";
+import { ProtectionSettings } from "../account";
 import { useState } from "react";
-import { applyChoice, chooseTheme, readDarkTheme, readStoredChoice, setDarkTheme, type DarkTheme, type ThemeChoice } from "../../app/theme";
-import { usePrefs } from "../../app/prefs";
-import { Icon } from "../../components/Icon";
-import { CalendarForms, CalendarList, UnsupportedRepeats } from "../calendar/CalendarList";
-import { AccountSettings } from "../auth/AccountSettings";
-import { NotificationsSettings } from "./NotificationsSettings";
-import { DeleteAccountRow } from "../auth/DeleteAccount";
-import { ExportSettings } from "../export/ExportSettings";
-import { TagsSettings } from "./TagsSettings";
-import { InstallHint } from "../../components/InstallHint";
+import { applyChoice, chooseTheme, readDarkTheme, readStoredChoice, setDarkTheme, type DarkTheme, type ThemeChoice } from "../../ui/theme";
+import { usePrefs } from "../../state/prefs";
+import { Icon } from "../../ui/primitives/Icon";
+import { CalendarForms, CalendarList, UnsupportedRepeats } from "../calendar";
+import { AccountSettings } from "../account";
+import { NotificationsSettings } from "../notifications";
+import { DeleteAccountRow } from "../account";
+import { ExportSettings } from "../export";
+import { TagsSettings } from "../tasks";
+import { InstallHint } from "../../ui/product/InstallHint";
 
 const THEME_ROWS = [["system", "System"], ["light", "Light"], ["dark", "Dark"]] as const;
 const DARK_ROWS = [["dark", "Dark"], ["dim", "Dim"]] as const;

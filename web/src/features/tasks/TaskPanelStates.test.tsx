@@ -2,10 +2,10 @@ import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../app/App";
-import { ClockProvider } from "../../app/clock";
-import { UiProvider } from "../../app/ui";
-import { LocalStore } from "../../store/LocalStore";
-import { MemoryPersistence } from "../../store/persistence";
+import { ClockProvider } from "../../state/clock";
+import { UiProvider } from "../../ui/product/UiProvider";
+import { LocalStore } from "../../data/local/LocalStore";
+import { MemoryPersistence } from "../../data/local/persistence";
 import { TaskPanelState } from "./TaskPanel";
 
 // The task panel's loading and error states (Planner Designs p-task-loading, p-task-error).

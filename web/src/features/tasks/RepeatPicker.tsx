@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { dayOf, DAYS, newSeries, repeatEvery, RepeatError, type Day, type Frequency, type Repeat } from "../../store/repeat";
+import { dayOf, DAYS, newSeries, repeatEvery, RepeatError, type Day, type Frequency, type Repeat } from "../../core/planner/repeat";
 
 export type RepeatKind = "never" | "daily" | "weekdays" | "weekly-on" | "monthly" | "yearly" | "custom";
 

@@ -1,10 +1,10 @@
 import { useRef, useState } from "react";
-import { Portal } from "../../components/Portal";
-import { useDialog } from "../../components/useDialog";
-import { MONTHS, WEEKDAYS, dateOf } from "../../lib/dates";
-import type { Scope } from "../../store/eventScope";
-import { ruleLabel } from "../../store/occurrences";
-import type { CalendarEvent } from "../../store/types";
+import { Portal } from "../../ui/primitives/Portal";
+import { useDialog } from "../../ui/primitives/useDialog";
+import { MONTHS, WEEKDAYS, dateOf } from "../../core/planner/dates";
+import type { Scope } from "../../core/planner/eventScope";
+import { ruleLabel } from "../../core/planner/occurrences";
+import type { CalendarEvent } from "../../core/planner/types";
 
 /** "Sat 7 Nov". */
 const dayName = (key: string): string => {

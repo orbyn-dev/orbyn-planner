@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "../../auth/AuthProvider";
+import { useAuth } from "../../state/account";
 import { browserStorage } from "../../lib/browserStorage";
-import { usePlanner } from "../../store/context";
+import { usePlanner } from "../../state/store";
 
 /**
  * Whether first run has been done, kept on this device only (never on a server): per account when signed in, otherwise for the

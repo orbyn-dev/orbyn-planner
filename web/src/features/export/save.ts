@@ -1,4 +1,4 @@
-import { isDesktop } from "../../app/platform";
+import { isDesktop } from "../../lib/platform";
 
 interface Internals {
   invoke: (command: string, args: Record<string, unknown>) => Promise<unknown>;

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { pendingChange, readConfirmed, recordReport } from "../auth/protectionNotice";
-import type { ProtectionReport } from "../auth/flows";
+import { pendingChange, readConfirmed, recordReport } from "../state/protectionNotice";
+import type { ProtectionReport } from "../state/services/flows";
 import { browserStorage, setMemoryOnly } from "./browserStorage";
 
 beforeEach(() => localStorage.clear());

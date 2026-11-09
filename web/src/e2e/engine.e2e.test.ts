@@ -4,12 +4,12 @@
 // ORBYN_E2E_ENGINE names the engine (for example http://localhost:8080), which must have been started with
 // ORBYN_AUTH_SETUP set; see docs/architecture.md, "Running the end-to-end test".
 import { describe, expect, it } from "vitest";
-import { realAuthCrypto } from "../api/testing/realModule";
-import { createMemoryKeyStore, type KeyStore } from "../api/keyStore";
-import { readProtection, removeDevice, signIn, signOut, signStandardProtection } from "../auth/flows";
+import { realAuthCrypto } from "../testing/realModule";
+import { createMemoryKeyStore, type KeyStore } from "../data/account/keyStore";
+import { readProtection, removeDevice, signIn, signOut, signStandardProtection } from "../state/services/flows";
 import { signUpVerified } from "./testing/mailbox";
-import { ApproverController, DeviceController } from "../auth/pairing";
-import { createAuthServices, type AuthServices } from "../auth/services";
+import { ApproverController, DeviceController } from "../state/services/pairing";
+import { createAuthServices, type AuthServices } from "../state/services/auth";
 
 const engineUrl = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.ORBYN_E2E_ENGINE;
 

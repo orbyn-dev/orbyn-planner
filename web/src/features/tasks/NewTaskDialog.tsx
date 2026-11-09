@@ -1,16 +1,16 @@
 import { useRef, useState } from "react";
-import { useNow } from "../../app/clock";
-import { usePrefs } from "../../app/prefs";
-import { useUi } from "../../app/ui";
-import { Portal } from "../../components/Portal";
-import { WhenField } from "../../components/WhenField";
-import type { When } from "../../lib/whenParser";
-import { useDialog } from "../../components/useDialog";
-import { dateKey, makeDue, parseDue } from "../../lib/dates";
-import { usePlanner, useStore } from "../../store/context";
-import { inOrder } from "../../store/order";
-import type { Repeat } from "../../store/repeat";
-import { PRIORITIES, type Priority } from "../../store/types";
+import { useNow } from "../../state/clock";
+import { usePrefs } from "../../state/prefs";
+import { useUi } from "../../ui/product/UiProvider";
+import { Portal } from "../../ui/primitives/Portal";
+import { WhenField } from "../../ui/primitives/WhenField";
+import type { When } from "../../core/planner/whenParser";
+import { useDialog } from "../../ui/primitives/useDialog";
+import { dateKey, makeDue, parseDue } from "../../core/planner/dates";
+import { usePlanner, useStore } from "../../state/store";
+import { inOrder } from "../../core/planner/order";
+import type { Repeat } from "../../core/planner/repeat";
+import { PRIORITIES, type Priority } from "../../core/planner/types";
 import { RepeatPicker } from "./RepeatPicker";
 import { TASK_REMINDERS } from "./reminder";
 

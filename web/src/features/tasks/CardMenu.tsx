@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
-import { usePopover } from "../../components/usePopover";
+import { usePopover } from "../../ui/primitives/usePopover";
 
 export interface CardLane {
   key: string;

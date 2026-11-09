@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { usePopover } from "../../components/usePopover";
-import { LIST_COLOURS, type Tag } from "../../store/types";
+import { usePopover } from "../../ui/primitives/usePopover";
+import { LIST_COLOURS, type Tag } from "../../core/planner/types";
 import { TagChip, tagLabels } from "./TagChips";
 
 /**

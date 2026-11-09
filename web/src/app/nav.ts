@@ -1,4 +1,4 @@
-import type { IconName } from "../components/icons";
+import type { IconName } from "../ui/primitives/icons";
 
 export interface NavItem {
   path: string;

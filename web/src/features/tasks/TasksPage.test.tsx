@@ -3,11 +3,11 @@ import { firstRunDoneForTests } from "../../test-setup";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../app/App";
-import { ClockProvider } from "../../app/clock";
-import { formatDue } from "../../lib/dates";
-import { TOAST_MS } from "../../app/ui";
-import { LocalStore } from "../../store/LocalStore";
-import { MemoryPersistence } from "../../store/persistence";
+import { ClockProvider } from "../../state/clock";
+import { formatDue } from "../../core/planner/dates";
+import { TOAST_MS } from "../../ui/product/UiProvider";
+import { LocalStore } from "../../data/local/LocalStore";
+import { MemoryPersistence } from "../../data/local/persistence";
 
 const NOW = new Date(2026, 10, 7, 10, 0);
 

@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { usePrefs } from "../../app/prefs";
-import { NotAvailable, Planned } from "../../components/Planned";
-import { localeWeekStart, type WeekStart } from "../../lib/dates";
-import { PERSONAL_CALENDAR_ID } from "../../store/LocalStore";
-import { usePlanner, useStore } from "../../store/context";
-import { LIST_COLOURS, type ListColour } from "../../store/types";
-import { NEEDS_ENGINE } from "../../api/feeds";
-import { feedAddress, fetchFeed, subscriptionsAvailable } from "../calendar/subscriptions";
+import { usePrefs } from "../../state/prefs";
+import { NotAvailable, Planned } from "../../ui/product/Planned";
+import { localeWeekStart, type WeekStart } from "../../core/planner/dates";
+import { PERSONAL_CALENDAR_ID } from "../../data/local/LocalStore";
+import { usePlanner, useStore } from "../../state/store";
+import { LIST_COLOURS, type ListColour } from "../../core/planner/types";
+import { NEEDS_ENGINE } from "../../lib/engine";
+import { feedAddress, fetchFeed, subscriptionsAvailable } from "../../state/subscriptions";
 
 const COLOUR_NAMES: Record<ListColour, string> = { c1: "Blue", c2: "Green", c3: "Purple", c4: "Orange" };
 const WEEK_STARTS: readonly { id: WeekStart; label: string; note: string }[] = [

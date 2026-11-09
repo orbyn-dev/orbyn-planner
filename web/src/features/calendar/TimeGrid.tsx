@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { useUi } from "../../app/ui";
-import { WEEKDAYS, dateOf, formatTime, isOverdue, parseDue, startOfDay } from "../../lib/dates";
-import { lastDayOf, touchesDay } from "../../lib/wall";
-import { usePlanner } from "../../store/context";
-import type { Occurrence } from "../../store/occurrences";
-import type { CalendarEvent, Task } from "../../store/types";
-import { dueText, isOpen, needsAction, sortByDue } from "../tasks/selectors";
-import { TodayRow, useTaskActions } from "../tasks/TaskRow";
+import { useUi } from "../../ui/product/UiProvider";
+import { WEEKDAYS, dateOf, formatTime, isOverdue, parseDue, startOfDay } from "../../core/planner/dates";
+import { lastDayOf, touchesDay } from "../../core/planner/wall";
+import { usePlanner } from "../../state/store";
+import type { Occurrence } from "../../core/planner/occurrences";
+import type { CalendarEvent, Task } from "../../core/planner/types";
+import { dueText, isOpen, needsAction, sortByDue } from "../tasks";
+import { TodayRow, useTaskActions } from "../tasks";
 import { HOUR_PX } from "../../styles/tokens";
 import { isAllDayLike, layoutDay } from "./layout";
 

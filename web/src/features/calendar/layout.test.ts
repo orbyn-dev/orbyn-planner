@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Occurrence } from "../../store/occurrences";
-import type { CalendarEvent } from "../../store/types";
+import type { Occurrence } from "../../core/planner/occurrences";
+import type { CalendarEvent } from "../../core/planner/types";
 import { countOverlaps, layoutDay, isAllDayLike } from "./layout";
 
 let n = 0;

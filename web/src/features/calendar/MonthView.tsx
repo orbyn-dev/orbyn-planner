@@ -1,9 +1,9 @@
 import { useState, type KeyboardEvent } from "react";
-import { useUi } from "../../app/ui";
-import { addDays, dateKey, dateOf, WEEKDAYS, weekOrder, type WeekStart } from "../../lib/dates";
-import { touchesDay } from "../../lib/wall";
-import { usePlanner } from "../../store/context";
-import type { Occurrence } from "../../store/occurrences";
+import { useUi } from "../../ui/product/UiProvider";
+import { addDays, dateKey, dateOf, WEEKDAYS, weekOrder, type WeekStart } from "../../core/planner/dates";
+import { touchesDay } from "../../core/planner/wall";
+import { usePlanner } from "../../state/store";
+import type { Occurrence } from "../../core/planner/occurrences";
 import { colourOf } from "./TimeGrid";
 
 const MAX_CHIPS = 3;
