@@ -5,9 +5,11 @@ import { createRoot } from "react-dom/client";
 import "./styles/tokens.css";
 import "./styles/app.css";
 import { applyChoice, readStoredChoice, watchSystemTheme } from "./app/theme";
+import { applyTitlebar } from "./app/titlebar";
 
 applyChoice(readStoredChoice());
 watchSystemTheme();
+applyTitlebar();
 
 const root = createRoot(document.getElementById("root")!);
 

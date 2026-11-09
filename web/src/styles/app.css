@@ -8,7 +8,12 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 html, body, #root { height: 100%; }
+/* The macOS desktop shell draws up to the top edge; --titlebar is the height it keeps clear for the traffic lights (src/app/titlebar.ts). */
+:root { --titlebar: calc(var(--sp-28) * 0); }
+:root[data-titlebar="overlay"] { --titlebar: var(--sp-28); }
+.titlebar { position: fixed; inset: 0 0 auto 0; height: var(--titlebar); z-index: 200; }
 body {
+  padding-top: var(--titlebar);
   margin: 0; background: var(--bg); color: var(--t1);
   font: var(--fw-regular) var(--fs-13)/1.45 var(--sans); -webkit-font-smoothing: antialiased;
 }
@@ -29,7 +34,7 @@ button { cursor: pointer; }
 .ic.sm { width: var(--sp-13); height: var(--sp-13); }
 
 /* Shell */
-.app { height: 100dvh; display: grid; grid-template-columns: var(--sp-224) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); min-height: 0; }
+.app { height: calc(100dvh - var(--titlebar)); display: grid; grid-template-columns: var(--sp-224) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); min-height: 0; }
 /* Live regions and other helpers stay out of the grid, so the sidebar and the
    sheet always fill the window. */
 .toast-live { position: fixed; right: var(--sp-12); bottom: var(--sp-12); z-index: 50; width: var(--sp-340); max-width: calc(100vw - var(--sp-24)); display: flex; flex-direction: column; align-items: stretch; gap: var(--sp-8); pointer-events: none; }
@@ -475,7 +480,7 @@ button.pillx { border: 0; }
 .md:focus-visible, .slot:focus-visible { outline: var(--bw-2) solid var(--t1); outline-offset: var(--sp-n2); }
 
 /* Accounts: the public pages, the approval screen, the devices list */
-.public-page { min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: var(--sp-24) var(--sp-16); background: var(--bg); }
+.public-page { min-height: calc(100dvh - var(--titlebar)); display: flex; align-items: center; justify-content: center; padding: var(--sp-24) var(--sp-16); background: var(--bg); }
 .public { display: flex; flex-direction: column; align-items: center; gap: var(--sp-16); max-width: var(--sp-640); text-align: center; }
 .public h1 { font-size: var(--fs-30); font-weight: var(--fw-medium); letter-spacing: var(--ls-heading); color: var(--t1); }
 .public p { color: var(--t3); max-width: 46ch; }

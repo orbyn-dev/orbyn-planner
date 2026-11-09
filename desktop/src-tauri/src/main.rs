@@ -10,6 +10,8 @@
 use tauri::menu::{Menu, PredefinedMenuItem, Submenu};
 use tauri::webview::{NewWindowResponse, WebviewWindowBuilder};
 use tauri::{AppHandle, Manager, Runtime, WebviewUrl};
+#[cfg(target_os = "macos")]
+use tauri::TitleBarStyle;
 use tauri_plugin_dialog::DialogExt;
 use url::Url;
 
@@ -181,14 +183,18 @@ fn main() {
             } else {
                 WebviewUrl::default()
             };
-            WebviewWindowBuilder::new(app, "main", url)
+            let window = WebviewWindowBuilder::new(app, "main", url)
                 .title(TITLE)
                 .inner_size(WIDTH, HEIGHT)
                 .min_inner_size(MIN_WIDTH, MIN_HEIGHT)
                 .on_navigation(move |url| may_show(url, debug))
                 // A link that wants a new window gets none: the shell opens no other windows.
-                .on_new_window(|_, _| NewWindowResponse::Deny)
-                .build()?;
+                .on_new_window(|_, _| NewWindowResponse::Deny);
+            // macOS: the page draws up to the top edge and the traffic lights sit over it, so the title bar is
+            // the app's own surface instead of a separate grey band. The page marks the top strip as draggable.
+            #[cfg(target_os = "macos")]
+            let window = window.title_bar_style(TitleBarStyle::Overlay).hidden_title(true);
+            window.build()?;
             let _ = app.get_webview_window("main");
             Ok(())
         })
