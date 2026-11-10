@@ -56,6 +56,7 @@ function NavLink({ item, className = "nav", onNavigate, badge, amberBadge = fals
 /** The sidebar's search-or-add field: opens the dialog, also from Ctrl+K or Cmd+K. */
 function QuickFind() {
   const ui = useUi();
+  const searchHint = /Mac/i.test(navigator.platform || navigator.userAgent) ? "⌘K" : "Ctrl+K";
   const { searchOpen, openSearch, closeSearch } = ui;
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -72,7 +73,7 @@ function QuickFind() {
     <button type="button" className="search" onClick={openSearch} aria-keyshortcuts="Control+K Meta+K" aria-label="Search or add">
       <Icon name="search" small />
       <span>Search or add</span>
-      <kbd>⌘K</kbd>
+      <kbd>{searchHint}</kbd>
     </button>
   );
 }
