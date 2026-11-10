@@ -170,7 +170,9 @@ describe("First run", () => {
   it("Settings › Planning offers Saturday too", async () => {
     localStorage.setItem(firstRunKey(null), "done");
     await open(undefined, undefined, "/settings");
-    expect(await screen.findByRole("radio", { name: "Saturday" })).toBeInTheDocument();
+    // The row shows the current choice; the choices open from it (Planner Designs settings).
+    await userEvent.click(await screen.findByRole("button", { name: /^Week starts on, / }));
+    expect(screen.getByRole("menuitemradio", { name: "Saturday" })).toBeInTheDocument();
   });
 });
 

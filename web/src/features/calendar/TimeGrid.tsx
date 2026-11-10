@@ -20,7 +20,8 @@ function range(occ: Occurrence): string {
   if (occ.allDay) return "All day";
   const a = parseDue(occ.start).date;
   const b = parseDue(occ.end).date;
-  return occ.start === occ.end ? formatTime(a) : `${formatTime(a)} to ${formatTime(b)}`;
+  // An hour or less reads as its start, a longer one as the whole range (Planner Designs calendar-day).
+  return b.getTime() - a.getTime() <= 3_600_000 ? formatTime(a) : `${formatTime(a)} to ${formatTime(b)}`;
 }
 
 /** The line under a task in the side column: "1 day late" for an overdue one, otherwise its due text ("Today 12:00"). */
@@ -120,7 +121,7 @@ export function TimeGrid({ days, occurrences, today, now, mode, side = true }: {
               </div>
             );
           })}
-          {allDay.length > 0 && (
+          {mode === "week" && allDay.length > 0 && (
             <>
               <div className="adl" style={{ gridRow: `2 / span ${bars.length + (singles.length > 0 ? 1 : 0)}` }}>All day</div>
               {bars.map((b, k) => (
