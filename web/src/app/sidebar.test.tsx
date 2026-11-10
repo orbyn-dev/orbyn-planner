@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import { holdMemoryOnly } from "../lib/browserStorage";
+import { getSidebarSnapshot } from "./sidebarControls";
 
 let setDesktop: (desktop: boolean) => void;
 
@@ -39,6 +40,36 @@ async function collapse() {
 }
 
 describe("desktop sidebar rail", () => {
+  it("shares pin state with external header controls and permits a fresh rail entry", () => {
+    const app = render(<App />);
+    expect(getSidebarSnapshot()).toMatchObject({ pinned: true, expanded: true });
+    act(() => screen.getByRole("main").focus());
+    act(() => getSidebarSnapshot()?.toggle());
+    expect(getSidebarSnapshot()).toMatchObject({ pinned: false, expanded: false });
+    fireEvent.pointerEnter(screen.getByRole("complementary"), { pointerType: "mouse" });
+    expect(getSidebarSnapshot()).toMatchObject({ pinned: false, expanded: true });
+    act(() => getSidebarSnapshot()?.toggle());
+    expect(screen.getByRole("button", { name: "Collapse sidebar" })).toHaveAttribute("aria-pressed", "true");
+    app.unmount();
+    expect(getSidebarSnapshot()).toBeNull();
+  });
+
+  it("applies rapid external toggles against the latest pinned state", () => {
+    render(<App />);
+    const toggle = getSidebarSnapshot()!.toggle;
+    act(() => { toggle(); toggle(); });
+    expect(getSidebarSnapshot()).toMatchObject({ pinned: true, expanded: true });
+  });
+
+  it("withdraws external controls on phone widths and restores them at desktop width", () => {
+    render(<App />);
+    expect(getSidebarSnapshot()).not.toBeNull();
+    act(() => setDesktop(false));
+    expect(getSidebarSnapshot()).toBeNull();
+    act(() => setDesktop(true));
+    expect(getSidebarSnapshot()).toMatchObject({ pinned: true, expanded: true });
+  });
+
   it("starts pinned and retains every named destination when collapsed", async () => {
     render(<App />);
     expect(screen.getByRole("button", { name: "Collapse sidebar" })).toHaveAttribute("aria-pressed", "true");

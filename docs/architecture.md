@@ -56,7 +56,7 @@ Accounts are optional in v1. Signed out, the person sees the landing page, and "
 
 ## Sidebar navigation
 
-At desktop widths the sidebar starts pinned open and reserves 224px. Its toggle saves only the device-local pinned preference; a collapsed sidebar reserves 56px and reveals its labels over the sheet while hovered or focused. Escape dismisses that temporary reveal and returns focus to the toggle until pointer and focus leave. Storage refusal leaves the preference in memory. Phone navigation remains separate and does not reset the preference. Sidebar geometry and interaction follow Planner desktop shell v1: sidebar-expanded, sidebar-collapsed, sidebar-hover-focus and sidebar-mac-context.
+At desktop widths the sidebar starts pinned open and reserves 224px. Its toggle saves only the device-local pinned preference; a collapsed sidebar reserves 56px and reveals its labels over the sheet while hovered or focused. Escape dismisses that temporary reveal and returns focus to the toggle until pointer and focus leave. Storage refusal leaves the preference in memory. The mounted desktop sidebar exposes its current pin and label visibility and its own toggle to the app shell; the sidebar remains the sole owner of that preference. The control is unavailable when the sidebar unmounts or phone navigation is active. Phone navigation remains separate and does not reset the preference. Sidebar geometry and interaction follow Planner desktop shell v1: sidebar-expanded, sidebar-collapsed, sidebar-hover-focus and sidebar-mac-context.
 
 ## Desktop
 

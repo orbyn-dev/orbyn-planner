@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Icon } from "../ui/primitives/Icon";
 import { Portal } from "../ui/primitives/Portal";
 import { useDialog } from "../ui/primitives/useDialog";
@@ -29,6 +29,7 @@ import { TodayPage } from "../features/today";
 import { PHONE_MAX_PX } from "../styles/tokens";
 import { browserStorage } from "../lib/browserStorage";
 import { initialsOf } from "../lib/initials";
+import { registerSidebarControls } from "./sidebarControls";
 import { NAV, PHONE_MENU, SETTINGS, TABS, type NavItem } from "./nav";
 import { SyncLine, useSyncStatus, withPersistence } from "../features/sync";
 import { useSyncController, useSyncState } from "../state/sync";
@@ -132,6 +133,8 @@ function readSidebarPinned(): boolean {
 
 function Sidebar({ due, unread }: { due: number; unread: number }) {
   const [pinned, setPinned] = useState(readSidebarPinned);
+  const pinnedRef = useRef(pinned);
+  const registration = useRef<ReturnType<typeof registerSidebarControls> | null>(null);
   const [peek, setPeek] = useState(false);
   const [phone, setPhone] = useState(() => typeof matchMedia === "function" && matchMedia(`(max-width: ${PHONE_MAX_PX}px)`).matches);
   const sidebar = useRef<HTMLElement>(null);
@@ -171,13 +174,33 @@ function Sidebar({ due, unread }: { due: number; unread: number }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [pinned, peek]);
 
-  const changePinned = () => {
-    const next = !pinned;
+  const changePinned = useCallback(() => {
+    const next = !pinnedRef.current;
+    pinnedRef.current = next;
     setPinned(next);
-    suppressed.current = true;
+    suppressed.current = pointer.current || (sidebar.current?.contains(document.activeElement) ?? false);
     setPeek(false);
     try { browserStorage.set(SIDEBAR_KEY, next ? "expanded" : "collapsed"); } catch { /* Preference remains in memory. */ }
-  };
+  }, []);
+
+  const currentSnapshot = useRef({ pinned, expanded: pinned || peek, toggle: changePinned });
+  useLayoutEffect(() => {
+    currentSnapshot.current = { pinned, expanded: pinned || peek, toggle: changePinned };
+  }, [pinned, peek, changePinned]);
+
+  useLayoutEffect(() => {
+    if (phone) return;
+    const entry = registerSidebarControls(currentSnapshot.current);
+    registration.current = entry;
+    return () => {
+      entry.unregister();
+      if (registration.current === entry) registration.current = null;
+    };
+  }, [phone, changePinned]);
+
+  useLayoutEffect(() => {
+    registration.current?.update({ pinned, expanded: pinned || peek, toggle: changePinned });
+  }, [pinned, peek, changePinned]);
 
   return (
     <aside ref={sidebar} className="side" data-pinned={pinned} data-expanded={pinned || peek}
