@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Icon } from "../ui/primitives/Icon";
 import { Portal } from "../ui/primitives/Portal";
 import { useDialog } from "../ui/primitives/useDialog";
@@ -26,7 +26,10 @@ import { PrefsProvider } from "../state/prefs";
 import { useReminders } from "../state/reminders";
 import { useSubscriptionRefresh } from "../state/subscriptions";
 import { TodayPage } from "../features/today";
+import { PHONE_MAX_PX } from "../styles/tokens";
+import { browserStorage } from "../lib/browserStorage";
 import { initialsOf } from "../lib/initials";
+import { registerSidebarControls } from "./sidebarControls";
 import { NAV, PHONE_MENU, SETTINGS, TABS, type NavItem } from "./nav";
 import { SyncLine, useSyncStatus, withPersistence } from "../features/sync";
 import { useSyncController, useSyncState } from "../state/sync";
@@ -45,10 +48,10 @@ const PAGES: Record<string, () => ReactNode> = {
 
 function NavLink({ item, className = "nav", onNavigate, badge, amberBadge = false }: { item: NavItem; className?: string; onNavigate?: () => void; badge?: string; amberBadge?: boolean }) {
   return (
-    <Link to={item.path} className={className} onClick={onNavigate}>
+    <Link to={item.path} className={className} onClick={onNavigate} data-badge={badge ? "true" : undefined} aria-label={badge ? `${item.label}, ${badge}${item.path === "/notifications" ? " unread" : ""}` : item.label}>
       <Icon name={item.icon} />
-      <span>{item.label}</span>
-      {badge && <span className={amberBadge ? "n amber" : "n"}>{badge}</span>}
+      <span className="side-label">{item.label}</span>
+      {badge && <span className={amberBadge ? "n amber side-label" : "n side-label"}>{badge}</span>}
     </Link>
   );
 }
@@ -72,7 +75,7 @@ function QuickFind() {
     <button type="button" className="search" onClick={openSearch} aria-keyshortcuts="Control+K Meta+K" aria-label="Search or add">
       <Icon name="search" small />
       <span>Search or add</span>
-      <kbd>⌘K</kbd>
+      <kbd>{typeof navigator !== "undefined" && /Mac|iPhone|iPad/i.test(`${navigator.platform} ${navigator.userAgent}`) ? "⌘K" : "Ctrl+K"}</kbd>
     </button>
   );
 }
@@ -121,6 +124,106 @@ function PhoneMenu({ onClose, unread }: { onClose: () => void; unread: number })
   );
 }
 
+const SIDEBAR_KEY = "orbyn-planner.sidebar";
+
+function readSidebarPinned(): boolean {
+  try { return browserStorage.get(SIDEBAR_KEY) !== "collapsed"; }
+  catch { return true; }
+}
+
+function Sidebar({ due, unread }: { due: number; unread: number }) {
+  const [pinned, setPinned] = useState(readSidebarPinned);
+  const pinnedRef = useRef(pinned);
+  const registration = useRef<ReturnType<typeof registerSidebarControls> | null>(null);
+  const [peek, setPeek] = useState(false);
+  const [phone, setPhone] = useState(() => typeof matchMedia === "function" && matchMedia(`(max-width: ${PHONE_MAX_PX}px)`).matches);
+  const sidebar = useRef<HTMLElement>(null);
+  const toggle = useRef<HTMLButtonElement>(null);
+  const pointer = useRef(false);
+  const suppressed = useRef(false);
+
+  const refresh = useCallback(() => {
+    const focused = sidebar.current?.contains(document.activeElement) ?? false;
+    if (!pointer.current && !focused) suppressed.current = false;
+    setPeek(!suppressed.current && (pointer.current || focused));
+  }, []);
+
+  useEffect(() => {
+    if (typeof matchMedia !== "function") return;
+    const query = matchMedia(`(max-width: ${PHONE_MAX_PX}px)`);
+    const onChange = () => {
+      setPhone(query.matches);
+      pointer.current = false;
+      suppressed.current = sidebar.current?.contains(document.activeElement) ?? false;
+      setPeek(false);
+    };
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    if (pinned || !peek) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      suppressed.current = true;
+      setPeek(false);
+      toggle.current?.focus();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [pinned, peek]);
+
+  const changePinned = useCallback(() => {
+    const next = !pinnedRef.current;
+    pinnedRef.current = next;
+    setPinned(next);
+    suppressed.current = pointer.current || (sidebar.current?.contains(document.activeElement) ?? false);
+    setPeek(false);
+    try { browserStorage.set(SIDEBAR_KEY, next ? "expanded" : "collapsed"); } catch { /* Preference remains in memory. */ }
+  }, []);
+
+  const currentSnapshot = useRef({ pinned, expanded: pinned || peek, toggle: changePinned });
+  useLayoutEffect(() => {
+    currentSnapshot.current = { pinned, expanded: pinned || peek, toggle: changePinned };
+  }, [pinned, peek, changePinned]);
+
+  useLayoutEffect(() => {
+    if (phone) return;
+    const entry = registerSidebarControls(currentSnapshot.current);
+    registration.current = entry;
+    return () => {
+      entry.unregister();
+      if (registration.current === entry) registration.current = null;
+    };
+  }, [phone, changePinned]);
+
+  useLayoutEffect(() => {
+    registration.current?.update({ pinned, expanded: pinned || peek, toggle: changePinned });
+  }, [pinned, peek, changePinned]);
+
+  return (
+    <aside ref={sidebar} className="side" data-pinned={pinned} data-expanded={pinned || peek}
+      onPointerEnter={(event) => { if (event.pointerType !== "touch") { pointer.current = true; refresh(); } }}
+      onPointerLeave={() => { pointer.current = false; refresh(); }}
+      onFocus={refresh}
+      onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) { if (!pointer.current) suppressed.current = false; setPeek(!suppressed.current && pointer.current); } }}>
+      {!phone && <button ref={toggle} type="button" className="side-toggle" aria-label={pinned ? "Collapse sidebar" : "Pin sidebar open"}
+        aria-controls="primary-navigation" aria-expanded={pinned || peek} aria-pressed={pinned} onClick={changePinned}>
+        <svg className="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" /></svg>
+        <span className="side-label">{pinned ? "Collapse sidebar" : "Pin sidebar open"}</span>
+      </button>}
+      <QuickFind />
+      <nav id="primary-navigation" aria-label="Primary" className="primary">
+        {NAV.map((item) => (
+          <NavLink key={item.path} item={item} badge={item.path === "/tasks" && due > 0 ? `${due} due` : item.path === "/notifications" && unread > 0 ? String(unread) : undefined} amberBadge={item.path === "/tasks"} />
+        ))}
+        <NavLink item={SETTINGS} className="nav bottom" />
+      </nav>
+    </aside>
+  );
+}
+
 function Shell() {
   const { path } = useRouter();
   const main = useRef<HTMLElement>(null);
@@ -149,15 +252,7 @@ function Shell() {
       >
         Skip to content
       </a>
-      <aside className="side">
-        <QuickFind />
-        <nav aria-label="Primary" className="primary">
-          {NAV.map((item) => (
-            <NavLink key={item.path} item={item} badge={item.path === "/tasks" && due > 0 ? `${due} due` : item.path === "/notifications" && unread > 0 ? String(unread) : undefined} amberBadge={item.path === "/tasks"} />
-          ))}
-          <NavLink item={SETTINGS} className="nav bottom" />
-        </nav>
-      </aside>
+      <Sidebar due={due} unread={unread} />
       <main id="content" ref={main} tabIndex={-1} className="sheet">
         <DeletionBanner />
         <div className={ui.taskId || ui.eventKey ? "sheet-grid has-panel" : "sheet-grid"}>

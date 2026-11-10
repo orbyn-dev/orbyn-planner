@@ -34,13 +34,26 @@ button { cursor: pointer; }
 .ic.sm { width: var(--sp-13); height: var(--sp-13); }
 
 /* Shell */
-.app { height: calc(100dvh - var(--titlebar)); display: grid; grid-template-columns: var(--sp-224) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); min-height: 0; }
+.app { position: relative; height: calc(100dvh - var(--titlebar)); display: grid; grid-template-columns: var(--sp-56) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); min-height: 0; }
+.app:has(.side[data-pinned="true"]) { grid-template-columns: var(--sp-224) minmax(0, 1fr); }
 /* Live regions and other helpers stay out of the grid, so the sidebar and the
    sheet always fill the window. */
 .toast-live { position: fixed; right: var(--sp-12); bottom: var(--sp-12); z-index: 50; width: var(--sp-340); max-width: calc(100vw - var(--sp-24)); display: flex; flex-direction: column; align-items: stretch; gap: var(--sp-8); pointer-events: none; }
 .toast-live > * { pointer-events: auto; }
-.side { display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-12) var(--sp-10) var(--sp-10); min-width: 0; }
-.side .primary { display: flex; flex-direction: column; gap: var(--sp-1); flex: 1; min-height: 0; }
+.side { position: relative; z-index: 2; display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-8); width: var(--sp-56); min-width: 0; min-height: 0; overflow: hidden; background: var(--bg); border-right: var(--bw) solid var(--line); }
+.side[data-expanded="true"] { width: var(--sp-224); }
+.side[data-expanded="true"][data-pinned="false"] { box-shadow: var(--sh-pop); }
+.side .primary { display: flex; flex-direction: column; gap: var(--sp-1); flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+.side .side-toggle, .side .nav, .side .search { flex: none; display: flex; align-items: center; gap: var(--sp-12); width: 100%; height: var(--sp-36); padding: 0 var(--sp-10); border: 0; border-radius: var(--r-6); white-space: nowrap; font-size: var(--fs-13); color: var(--t2); }
+.side .side-toggle { margin-bottom: var(--sp-8); background: transparent; text-align: left; }
+.side .side-toggle:hover { background: var(--raise); }
+.side .ic, .side .ic.sm { width: var(--sp-18); height: var(--sp-18); }
+.side :is(.side-label, .search > span, .search > kbd) { opacity: 0; transition: opacity var(--m-fast) var(--m-out); }
+.side[data-expanded="true"] :is(.side-label, .search > span, .search > kbd) { opacity: 1; }
+.side .nav[data-badge="true"] { position: relative; }
+.side[data-expanded="false"] .nav[data-badge="true"]::after { content: ""; position: absolute; top: var(--sp-4); right: var(--sp-4); width: var(--sp-6); height: var(--sp-6); border-radius: var(--r-round); background: var(--t3); }
+.side[data-expanded="false"] .nav[data-badge="true"]:has(.amber)::after { background: var(--amber); }
+.side .nav.bottom { margin-top: auto; }
 .search {
   display: flex; align-items: center; gap: var(--sp-8); height: var(--sp-32); margin-bottom: var(--sp-4); padding: 0 var(--sp-10);
   border-radius: var(--r-9); background: var(--raise); color: var(--t3);
@@ -179,7 +192,7 @@ button { cursor: pointer; }
 .more-sheet .nav { height: var(--sp-48); font-size: var(--fs-14); }
 
 @media (max-width: 767px) {
-  .app { display: flex; flex-direction: column; }
+  .app, .app:has(.side[data-pinned="true"]) { display: flex; flex-direction: column; }
   .side { display: none; }
   .sheet { flex: 1; background: var(--bg); border: 0; border-radius: 0; }
   .ph { flex-wrap: wrap; align-items: baseline; gap: var(--sp-2) var(--sp-12); padding: var(--sp-12) var(--sp-20) var(--sp-8); }
