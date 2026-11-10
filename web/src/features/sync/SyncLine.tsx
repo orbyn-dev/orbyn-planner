@@ -1,5 +1,4 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
-import { getHealth } from "../../state/health";
 import { Icon } from "../../ui/primitives/Icon";
 import { PHONE_QUERY, useMediaQuery } from "../../ui/primitives/useMediaQuery";
 import { formatTime } from "../../core/planner/dates";
@@ -154,17 +153,9 @@ export function withPersistence(status: SyncStatus, persistence: { status: strin
   return status;
 }
 
-/** Seconds until the next health check: slowing down while healthy, quick to retry a failure. */
-export function healthDelay(healthy: boolean, streak: number): number {
-  if (healthy) return [15, 30, 60, 120, 300][Math.min(streak, 4)]!;
-  return Math.min(5 * 2 ** streak, 60);
-}
-
-/** Derives the sync status from the connection, the engine health check and the changes waiting. */
+/** Derives the sync status from the connection and the active sync controller. */
 export function useSyncStatus(pending = 0, sync: SyncState | null = null, syncNow?: () => void): { status: SyncStatus; retry: () => void } {
   const [online, setOnline] = useState(() => navigator.onLine);
-  const [attempt, setAttempt] = useState(0);
-  const [healthy, setHealthy] = useState<boolean | null>(null);
 
   useEffect(() => {
     const on = () => setOnline(true);
@@ -178,53 +169,8 @@ export function useSyncStatus(pending = 0, sync: SyncState | null = null, syncNo
   }, []);
 
   const syncing = sync !== null && sync.phase !== "off";
-  useEffect(() => {
-    // Real sync knows better than a health check does.
-    if (!online || syncing) return;
-    const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let streak = 0;
-    let last: boolean | null = null;
-
-    // One check at a time: a visibility change during a slow check must not
-    // start a second loop of timers.
-    let inFlight = false;
-    const check = async () => {
-      if (inFlight) return;
-      inFlight = true;
-      clearTimeout(timer);
-      let ok: boolean;
-      try {
-        ok = (await getHealth(controller.signal)).status === "ok";
-      } catch {
-        ok = false;
-      } finally {
-        inFlight = false;
-      }
-      if (controller.signal.aborted) return;
-      streak = ok === last ? streak + 1 : 0;
-      last = ok;
-      setHealthy(ok);
-      clearTimeout(timer);
-      timer = setTimeout(check, healthDelay(ok, streak) * 1000);
-    };
-    const onVisible = () => {
-      if (document.visibilityState === "visible") void check();
-    };
-
-    void check();
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      controller.abort();
-      clearTimeout(timer);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [online, attempt, syncing]);
-
   const retry = useCallback(() => {
-    if (syncNow) syncNow();
-    setHealthy(null);
-    setAttempt((n) => n + 1);
+    syncNow?.();
   }, [syncNow]);
 
   let status: SyncStatus;
@@ -234,7 +180,6 @@ export function useSyncStatus(pending = 0, sync: SyncState | null = null, syncNo
     else if (sync.phase === "syncing" || sync.lastSyncedAt === null) status = { kind: "syncing" };
     else status = { kind: "synced", devices: sync.devices };
   } else if (!online) status = { kind: "offline", waiting: pending };
-  else if (healthy === null || healthy) status = { kind: "local" }; // nothing is syncing: no "Syncing" flash for a planner that only lives here
-  else status = { kind: "error" };
+  else status = { kind: "local" };
   return { status, retry };
 }

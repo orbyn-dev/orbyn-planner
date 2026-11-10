@@ -1,4 +1,4 @@
-import { render, renderHook, screen, within } from "@testing-library/react";
+import { act, render, renderHook, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StoreProvider } from "../../state/store";
 import { LocalStore } from "../../data/local/LocalStore";
@@ -23,6 +23,40 @@ describe("the sync line follows real sync when it runs", () => {
     expect(status({ ...base, lastSyncedAt: null })).toEqual({ kind: "syncing" }); // not synced yet
     expect(status({ ...base, phase: "offline" }, 3)).toEqual({ kind: "offline", waiting: 3, lastSynced: "2026-11-07T10:00:00Z" });
     expect(status({ ...base, phase: "error", error: "x" })).toEqual({ kind: "error" });
+  });
+
+  it("does not contact the engine or show a sync error for a local-only planner", async () => {
+    const fetchMock = vi.fn(() => Promise.reject(new Error("engine unavailable")));
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      const { result } = renderHook(() => useSyncStatus(0, null));
+      await act(async () => { await Promise.resolve(); });
+      expect(result.current.status).toEqual({ kind: "local" });
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("stops reporting sync errors when sync turns off, and retries only active sync", async () => {
+    const fetchMock = vi.fn();
+    const syncNow = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      const { result, rerender } = renderHook(({ sync }: { sync: SyncState | null }) => useSyncStatus(0, sync, syncNow),
+        { initialProps: { sync: { ...base, phase: "error", error: "refused" } as SyncState | null } });
+      expect(result.current.status).toEqual({ kind: "error" });
+      act(() => result.current.retry());
+      expect(syncNow).toHaveBeenCalledOnce();
+      rerender({ sync: { ...base, phase: "off" } });
+      await act(async () => { document.dispatchEvent(new Event("visibilitychange")); await Promise.resolve(); });
+      expect(result.current.status).toEqual({ kind: "local" });
+      rerender({ sync: null });
+      expect(result.current.status).toEqual({ kind: "local" });
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("without sync it is On this device, never a Syncing flash", () => {
