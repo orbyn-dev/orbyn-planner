@@ -6,10 +6,12 @@ import "./styles/tokens.css";
 import "./styles/app.css";
 import { applyChoice, readStoredChoice, watchSystemTheme } from "./ui/theme";
 import { applyTitlebar } from "./app/titlebar";
+import { mountDesktopTitlebar } from "./app/DesktopTitlebar";
 
 applyChoice(readStoredChoice());
 watchSystemTheme();
 applyTitlebar();
+mountDesktopTitlebar();
 
 const root = createRoot(document.getElementById("root")!);
 

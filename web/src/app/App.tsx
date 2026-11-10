@@ -31,6 +31,7 @@ import { NAV, PHONE_MENU, SETTINGS, TABS, type NavItem } from "./nav";
 import { SyncLine, useSyncStatus, withPersistence } from "../features/sync";
 import { useSyncController, useSyncState } from "../state/sync";
 import { Link, RouterProvider, useRouter } from "../state/router";
+import { registerDesktopSearch } from "./desktopShell";
 
 const PAGES: Record<string, () => ReactNode> = {
   "/today": () => <TodayPage />,
@@ -125,6 +126,7 @@ function Shell() {
   const { path } = useRouter();
   const main = useRef<HTMLElement>(null);
   const ui = useUi();
+  useEffect(() => registerDesktopSearch(ui.openSearch), [ui.openSearch]);
   const { tasks } = usePlanner();
   const now = useNow();
   const due = dueCount(tasks, now);

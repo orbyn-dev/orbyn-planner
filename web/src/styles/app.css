@@ -8,10 +8,28 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 html, body, #root { height: 100%; }
-/* The macOS desktop shell draws up to the top edge; --titlebar is the height it keeps clear for the traffic lights (src/app/titlebar.ts). */
+/* Desktop chrome reserves its own row; macOS keeps its existing traffic-light drag strip. */
 :root { --titlebar: calc(var(--sp-28) * 0); }
 :root[data-titlebar="overlay"] { --titlebar: var(--sp-28); }
+:root[data-titlebar="windows"] { --titlebar: var(--sp-40); }
 .titlebar { position: fixed; inset: 0 0 auto 0; height: var(--titlebar); z-index: 200; }
+.desktop-titlebar { position: fixed; inset: 0 0 auto 0; height: var(--titlebar); z-index: 200; display: flex; align-items: center; background: var(--bg); border-bottom: var(--bw) solid var(--line); user-select: none; }
+.desktop-titlebar button { appearance: none; display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--t2); padding: 0; }
+.desktop-titlebar button:hover { background: var(--raise); color: var(--t1); }
+.desktop-titlebar button:focus-visible { outline-offset: calc(var(--sp-2) * -1); }
+.desktop-titlebar .desktop-menu { margin-left: var(--sp-8); gap: var(--sp-8); padding: var(--sp-6) var(--sp-8); border-radius: var(--r-5); font-size: var(--fs-12); }
+.desktop-brand { width: var(--sp-18); height: var(--sp-18); fill: none; stroke: currentColor; stroke-width: 1.6; }
+.desktop-menu .ic { width: var(--sp-12); height: var(--sp-18); }
+.desktop-titlebar .desktop-search { position: absolute; left: 50%; transform: translateX(-50%); width: var(--sp-340); min-width: var(--sp-224); max-width: 40%; height: var(--sp-28); border: var(--bw) solid var(--line2); border-radius: var(--r-5); padding: 0 var(--sp-8); gap: var(--sp-8); background: var(--main); color: var(--t3); font-size: var(--fs-12); }
+.desktop-search span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desktop-search kbd { margin-left: auto; white-space: nowrap; font: var(--fw-regular) var(--fs-10-5)/1 var(--mono); }
+.desktop-titlebar .desktop-search:disabled { cursor: default; color: var(--t3); background: var(--main); }
+.desktop-caption { display: flex; align-self: stretch; margin-left: auto; }
+.desktop-caption button { width: var(--sp-46); border-radius: 0; }
+.desktop-caption svg { width: var(--sp-12); height: var(--sp-12); fill: none; stroke: currentColor; stroke-width: 1; }
+.desktop-caption .desktop-close:hover { background: var(--red-bg); color: var(--red); }
+.desktop-window-error { position: absolute; top: 100%; right: var(--sp-8); display: flex; align-items: center; gap: var(--sp-8); padding: var(--sp-8) var(--sp-12); border-radius: var(--r-5); box-shadow: var(--sh-pop); background: var(--main); color: var(--t2); font-size: var(--fs-12); }
+.desktop-window-error button { padding: var(--sp-4) var(--sp-8); border-radius: var(--r-5); color: var(--t1); }
 body {
   padding-top: var(--titlebar);
   margin: 0; background: var(--bg); color: var(--t1);
