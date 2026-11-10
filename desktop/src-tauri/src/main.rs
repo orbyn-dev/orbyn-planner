@@ -127,11 +127,27 @@ fn validate_desktop_action(windows: bool, label: &str, action: &str) -> Result<D
     }
 }
 
+fn validate_menu_position(x: Option<f64>, y: Option<f64>, width: f64, height: f64) -> Result<tauri::LogicalPosition<f64>, String> {
+    match (x, y) {
+        (Some(x), Some(y))
+            if x.is_finite() && y.is_finite() && width.is_finite() && height.is_finite()
+                && width > 0.0 && height > 0.0 && x >= 0.0 && y >= 0.0 && x <= width && y <= height =>
+        {
+            Ok(tauri::LogicalPosition::new(x, y))
+        }
+        _ => Err("the menu position must be inside the main window".into()),
+    }
+}
+
 /// The custom title bar operates only its own main Windows window. It takes no window label,
 /// executable, path, menu contents or script from the page. Native decorations remain until `ready`.
 #[tauri::command]
-fn desktop_shell(window: tauri::WebviewWindow, action: String) -> Result<bool, String> {
-    match validate_desktop_action(cfg!(target_os = "windows"), window.label(), &action)? {
+fn desktop_shell(window: tauri::WebviewWindow, action: String, x: Option<f64>, y: Option<f64>) -> Result<bool, String> {
+    let action = validate_desktop_action(cfg!(target_os = "windows"), window.label(), &action)?;
+    if action != DesktopAction::Menu && (x.is_some() || y.is_some()) {
+        return Err("only the menu accepts a position".into());
+    }
+    match action {
         DesktopAction::Ready => {
             window.hide_menu().map_err(|e| e.to_string())?;
             if let Err(error) = window.set_decorations(false) {
@@ -147,8 +163,11 @@ fn desktop_shell(window: tauri::WebviewWindow, action: String) -> Result<bool, S
         DesktopAction::State => {}
         DesktopAction::Menu => {
             let menu = window.menu().ok_or_else(|| "the window menu is unavailable".to_string())?;
-            // Anchor the native popup below the Planner button, including keyboard activation.
-            window.popup_menu_at(&menu, tauri::LogicalPosition::new(10.0, 42.0)).map_err(|e| e.to_string())?;
+            let size = window.inner_size().map_err(|e| e.to_string())?;
+            let scale = window.scale_factor().map_err(|e| e.to_string())?;
+            let position = validate_menu_position(x, y, f64::from(size.width) / scale, f64::from(size.height) / scale)?;
+            // The right-hand Menu button supplies its actual left edge and the header's bottom edge.
+            window.popup_menu_at(&menu, position).map_err(|e| e.to_string())?;
         }
         DesktopAction::Minimize => window.minimize().map_err(|e| e.to_string())?,
         DesktopAction::ToggleMaximize => {

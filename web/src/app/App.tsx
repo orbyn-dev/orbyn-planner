@@ -34,7 +34,7 @@ import { NAV, PHONE_MENU, SETTINGS, TABS, type NavItem } from "./nav";
 import { SyncLine, useSyncStatus, withPersistence } from "../features/sync";
 import { useSyncController, useSyncState } from "../state/sync";
 import { Link, RouterProvider, useRouter } from "../state/router";
-import { registerDesktopSearch } from "./desktopShell";
+import { registerShellNavigation } from "./desktopShell";
 
 const PAGES: Record<string, () => ReactNode> = {
   "/today": () => <TodayPage />,
@@ -226,10 +226,24 @@ function Sidebar({ due, unread }: { due: number; unread: number }) {
 }
 
 function Shell() {
-  const { path } = useRouter();
+  const { path, canGoBack, canGoForward, back, forward } = useRouter();
   const main = useRef<HTMLElement>(null);
   const ui = useUi();
-  useEffect(() => registerDesktopSearch(ui.openSearch), [ui.openSearch]);
+  const destination = path === "/completed" ? "Completed" : ([...NAV, SETTINGS].find((item) => path === item.path || path.startsWith(`${item.path}/`)) ?? NAV[0]!).label;
+  const currentNavigation = useRef({ destination, canGoBack, canGoForward, back, forward });
+  const navigationRegistration = useRef<ReturnType<typeof registerShellNavigation> | null>(null);
+  useLayoutEffect(() => {
+    currentNavigation.current = { destination, canGoBack, canGoForward, back, forward };
+    navigationRegistration.current?.update(currentNavigation.current);
+  }, [destination, canGoBack, canGoForward, back, forward]);
+  useLayoutEffect(() => {
+    const entry = registerShellNavigation(currentNavigation.current);
+    navigationRegistration.current = entry;
+    return () => {
+      entry.unregister();
+      if (navigationRegistration.current === entry) navigationRegistration.current = null;
+    };
+  }, []);
   const { tasks } = usePlanner();
   const now = useNow();
   const due = dueCount(tasks, now);

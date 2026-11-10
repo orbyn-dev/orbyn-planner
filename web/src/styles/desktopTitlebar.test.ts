@@ -5,18 +5,17 @@ const fs = await import(/* @vite-ignore */ nodeFs) as { readFileSync(path: strin
 const cwd = (globalThis as { process?: { cwd(): string } }).process!.cwd();
 const css = fs.readFileSync(`${cwd}/src/styles/app.css`, "utf8");
 
-describe("the selected option C titlebar geometry", () => {
-  it("centres the actual search field rather than an app-title label", () => {
-    const search = /\.desktop-titlebar \.desktop-search \{([^}]+)\}/.exec(css)?.[1] ?? "";
-    expect(search).toContain("left: 50%");
-    expect(search).toContain("translateX(-50%)");
-    expect(search).toContain("width: var(--sp-230)");
-    expect(search).toContain("height: var(--sp-28)");
-    expect(search).toContain("border-radius: var(--r-5)");
+describe("the selected navigation-first D titlebar geometry", () => {
+  it("groups navigation and breadcrumb on the left and Menu on the right", () => {
+    expect(css).toMatch(/\.desktop-navigation \{[^}]*display: flex;[^}]*gap: var\(--sp-3\)/);
+    expect(css).toMatch(/\.desktop-breadcrumb \{[^}]*gap: var\(--sp-8\);[^}]*margin-left: var\(--sp-4\)/);
+    expect(css).toMatch(/\.desktop-titlebar \.desktop-menu \{[^}]*margin-left: auto;[^}]*margin-right: var\(--sp-6\)/);
+    expect(css).not.toContain(".desktop-search");
   });
 
-  it("retains the original mock's 42px header and responsive 350px search", () => {
+  it("retains D's 42px bar, compact navigation and Windows caption geometry", () => {
     expect(css).toContain(':root[data-titlebar="windows"] { --titlebar: var(--sp-42); }');
-    expect(css).toMatch(/@media \(min-width: 850px\)\s*\{\s*\.desktop-titlebar \.desktop-search\s*\{\s*width: var\(--sp-350\)/);
+    expect(css).toMatch(/\.desktop-titlebar \.desktop-chrome \{[^}]*height: var\(--sp-28\);[^}]*min-width: var\(--sp-29\)/);
+    expect(css).toMatch(/\.desktop-caption button \{[^}]*width: var\(--sp-46\)/);
   });
 });
