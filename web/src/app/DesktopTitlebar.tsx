@@ -69,15 +69,15 @@ export function DesktopTitlebar() {
   return (
     <header className="desktop-titlebar" aria-label="Window" onMouseDown={drag}>
       <button ref={menuButton} type="button" className="desktop-menu" aria-label="Planner menu" aria-haspopup="menu" aria-expanded={menuOpen} onMouseDown={(event) => { event.preventDefault(); }} onClick={() => { void showMenu(); }}>
-        <svg className="desktop-brand" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5" /><circle cx="12" cy="12" r="5" /></svg><span>Planner</span><Icon name="down" small />
+        <svg className="desktop-brand" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5" /><circle cx="12" cy="12" r="5" /></svg><span>Planner</span><svg className="desktop-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4" /></svg>
       </button>
       <button type="button" className="desktop-search" aria-label="Search or add" aria-keyshortcuts="Control+K" disabled={!searchAvailable || modalOpen} onClick={openDesktopSearch}>
         <Icon name="search" small /><span>Search or jump to…</span><kbd>Ctrl+K</kbd>
       </button>
       <div className="desktop-caption">
         <button type="button" aria-label="Minimize window" onClick={() => { void run("minimize"); }}><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1 6h10" /></svg></button>
-        <button type="button" aria-label={maximized ? "Restore window" : "Maximize window"} onClick={() => { void run("toggle_maximize"); }}><svg viewBox="0 0 12 12" aria-hidden="true">{maximized ? <path d="M3 3V1h8v8H9M1 3h8v8H1Z" /> : <path d="M1 1h10v10H1Z" />}</svg></button>
-        <button type="button" className="desktop-close" aria-label="Close window" onClick={() => { void run("close"); }}><svg viewBox="0 0 12 12" aria-hidden="true"><path d="m1 1 10 10M1 11 11 1" /></svg></button>
+        <button type="button" aria-label={maximized ? "Restore window" : "Maximize window"} onClick={() => { void run("toggle_maximize"); }}><svg viewBox="0 0 12 12" aria-hidden="true">{maximized ? <path d="M3 3V1h8v8H9M1 3h8v8H1Z" /> : <rect x="1.5" y="1.5" width="9" height="9" />}</svg></button>
+        <button type="button" className="desktop-close" aria-label="Close window" onClick={() => { void run("close"); }}><svg viewBox="0 0 12 12" aria-hidden="true"><path d="m1.5 1.5 9 9m0-9-9 9" /></svg></button>
       </div>
       {failed && <div className="desktop-window-error" role="alert">Window controls unavailable.<button type="button" onClick={() => { void run("ready"); }}>Retry</button></div>}
     </header>

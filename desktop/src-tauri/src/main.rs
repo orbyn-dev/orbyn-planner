@@ -148,7 +148,7 @@ fn desktop_shell(window: tauri::WebviewWindow, action: String) -> Result<bool, S
         DesktopAction::Menu => {
             let menu = window.menu().ok_or_else(|| "the window menu is unavailable".to_string())?;
             // Anchor the native popup below the Planner button, including keyboard activation.
-            window.popup_menu_at(&menu, tauri::LogicalPosition::new(8.0, 40.0)).map_err(|e| e.to_string())?;
+            window.popup_menu_at(&menu, tauri::LogicalPosition::new(10.0, 42.0)).map_err(|e| e.to_string())?;
         }
         DesktopAction::Minimize => window.minimize().map_err(|e| e.to_string())?,
         DesktopAction::ToggleMaximize => {
