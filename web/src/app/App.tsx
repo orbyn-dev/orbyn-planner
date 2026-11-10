@@ -73,8 +73,8 @@ function QuickFind() {
   return (
     <button type="button" className="search" onClick={openSearch} aria-keyshortcuts="Control+K Meta+K" aria-label="Search or add">
       <Icon name="search" small />
-      <span className="side-label">Search or add</span>
-      <kbd className="side-label">{typeof navigator !== "undefined" && /Mac|iPhone|iPad/i.test(`${navigator.platform} ${navigator.userAgent}`) ? "⌘K" : "Ctrl+K"}</kbd>
+      <span>Search or add</span>
+      <kbd>{typeof navigator !== "undefined" && /Mac|iPhone|iPad/i.test(`${navigator.platform} ${navigator.userAgent}`) ? "⌘K" : "Ctrl+K"}</kbd>
     </button>
   );
 }

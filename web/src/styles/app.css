@@ -48,8 +48,8 @@ button { cursor: pointer; }
 .side .side-toggle { margin-bottom: var(--sp-8); background: transparent; text-align: left; }
 .side .side-toggle:hover { background: var(--raise); }
 .side .ic, .side .ic.sm { width: var(--sp-18); height: var(--sp-18); }
-.side .side-label { opacity: 0; transition: opacity var(--m-fast) var(--m-out); }
-.side[data-expanded="true"] .side-label { opacity: 1; }
+.side :is(.side-label, .search > span, .search > kbd) { opacity: 0; transition: opacity var(--m-fast) var(--m-out); }
+.side[data-expanded="true"] :is(.side-label, .search > span, .search > kbd) { opacity: 1; }
 .side .nav[data-badge="true"] { position: relative; }
 .side[data-expanded="false"] .nav[data-badge="true"]::after { content: ""; position: absolute; top: var(--sp-4); right: var(--sp-4); width: var(--sp-6); height: var(--sp-6); border-radius: var(--r-round); background: var(--t3); }
 .side[data-expanded="false"] .nav[data-badge="true"]:has(.amber)::after { background: var(--amber); }
