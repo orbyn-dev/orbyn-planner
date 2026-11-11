@@ -14,7 +14,7 @@ html, body, #root { height: 100%; }
 :root[data-titlebar="overlay"] { --titlebar: var(--sp-44); }
 .titlebar { position: fixed; inset: 0 0 auto 0; height: var(--sp-20); z-index: 200; }
 .titlerow { position: fixed; inset: 0 0 auto 0; height: var(--sp-44); z-index: 210; pointer-events: none; }
-.tr-drag { position: absolute; inset: 0 auto 0 0; width: var(--sp-224); pointer-events: auto; }
+.tr-drag { position: absolute; inset: 0 auto 0 0; width: var(--side-w, var(--sp-224)); pointer-events: auto; }
 .tr-buttons { position: absolute; top: var(--sp-8); left: var(--sp-80); display: flex; gap: var(--sp-2); pointer-events: auto; }
 .tbi { display: grid; place-items: center; width: var(--sp-28); height: var(--sp-28); padding: 0; border: 0; border-radius: var(--r-7); background: none; color: var(--t3); }
 .tbi .ic { width: var(--sp-16); height: var(--sp-16); }
@@ -42,16 +42,21 @@ button { cursor: pointer; }
 .ic.sm { width: var(--sp-13); height: var(--sp-13); }
 
 /* Shell */
-.app { height: 100dvh; display: grid; grid-template-columns: var(--sp-224) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); min-height: 0; }
+.app { height: 100dvh; display: grid; grid-template-columns: var(--side-w, var(--sp-224)) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); min-height: 0; }
 /* Live regions and other helpers stay out of the grid, so the sidebar and the
    sheet always fill the window. */
 .toast-live { position: fixed; right: var(--sp-12); bottom: var(--sp-12); z-index: 50; width: var(--sp-340); max-width: calc(100vw - var(--sp-24)); display: flex; flex-direction: column; align-items: stretch; gap: var(--sp-8); pointer-events: none; }
 .toast-live > * { pointer-events: auto; }
-.side { display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-12) var(--sp-10) var(--sp-10); min-width: 0; }
+.side { position: relative; display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-12) var(--sp-10) var(--sp-10); min-width: 0; }
 :root[data-titlebar="overlay"] .side { padding-top: var(--sp-56); }
 :root[data-titlebar="overlay"] .sheet { border-top: 0; border-radius: 0; } /* the unified window: the sheet runs to the top edge, no top border and no top radius */
 .app.side-hidden { grid-template-columns: minmax(0, 1fr); }
 .app.side-hidden .side { display: none; }
+/* The resize rail on the sidebar's right edge, as in Engineering: 16 px to grab, a 2 px line while hovered, focused or dragged. */
+.side-rail { position: absolute; z-index: 3; top: 0; right: calc(var(--sp-8) * -1); bottom: 0; width: var(--sp-16); cursor: col-resize; touch-action: none; }
+.side-rail::after { content: ""; position: absolute; top: 0; bottom: 0; left: var(--sp-7); width: var(--sp-2); background: var(--t1); opacity: 0; transition: opacity var(--m-fast) var(--m-io); }
+.side-rail:hover::after, .side-rail:focus-visible::after, .side-rail[data-dragging]::after { opacity: .6; }
+.side-rail:focus-visible { outline: none; }
 .app.side-hidden .tr-drag { display: none; }
 .app.side-hidden .sheet { padding-top: var(--sp-44); }
 .side .primary { display: flex; flex-direction: column; gap: var(--sp-1); flex: 1; min-height: 0; }
