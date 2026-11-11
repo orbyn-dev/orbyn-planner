@@ -1123,3 +1123,6 @@ button.pillx { border: 0; }
 .reauth-note { display: flex; align-items: center; gap: var(--sp-8); background: var(--raise); border-radius: var(--r-8); padding: var(--sp-8) var(--sp-10); color: var(--t2); font-size: var(--fs-12-5); }
 .reauth-note.bad { background: var(--red-bg); color: var(--red); }
 .field.bad { box-shadow: inset 0 0 0 var(--bw) var(--red); }
+.so-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-16); }
+.so-cols b { font-weight: var(--fw-medium); }
+.so-cols ul { padding-left: var(--sp-16); list-style: disc; color: var(--t3); font-size: var(--fs-12); margin-top: var(--sp-4); }
