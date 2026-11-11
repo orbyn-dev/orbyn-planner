@@ -6,6 +6,7 @@ export type IconShape =
   | { t: "rect"; x: string; y: string; width: string; height: string; rx?: string };
 
 export const ICONS = {
+  sidebar: [{"t":"rect","x":"3.5","y":"4.5","width":"17","height":"15","rx":"2.5"},{"t":"path","d":"M9.5 4.5v15"}],
   search: [{"t":"circle","cx":"11","cy":"11","r":"6.5"},{"t":"path","d":"M16 16l4.5 4.5"}],
   home: [{"t":"path","d":"M4 11l8-6.5 8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19z"},{"t":"path","d":"M9.5 20.5v-6h5v6"}],
   check: [{"t":"rect","x":"4","y":"4","width":"16","height":"16","rx":"3.5"},{"t":"path","d":"M8.5 12.5l2.5 2.5 4.5-5"}],

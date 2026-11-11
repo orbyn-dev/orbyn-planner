@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "The window can call two commands: open_link, which opens an http(s) address in the system browser, and save_export, which asks the person where to save an export (a .json or .ics file) and writes it there. The page may also start dragging the window, from the strip at the top of the macOS window that stands in for the title bar. No plugin is reachable from the page.",
+  "description": "The window can call two commands: open_link, which opens an http(s) address in the system browser, and save_export, which asks the person where to save an export (a .json or .ics file) and writes it there. The page may also start dragging the window and zoom it on a double click, from the title row at the top of the macOS window that stands in for the title bar. No plugin is reachable from the page.",
   "windows": ["main"],
   "local": true,
-  "permissions": ["allow-open-link", "allow-save-export", "core:window:allow-start-dragging"]
+  "permissions": ["allow-open-link", "allow-save-export", "core:window:allow-start-dragging", "core:window:allow-internal-toggle-maximize"]
 }

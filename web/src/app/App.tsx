@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Icon } from "../ui/primitives/Icon";
 import { Portal } from "../ui/primitives/Portal";
 import { useDialog } from "../ui/primitives/useDialog";
@@ -31,6 +31,8 @@ import { NAV, PHONE_MENU, SETTINGS, TABS, type NavItem } from "./nav";
 import { SyncLine, useSyncStatus, withPersistence } from "../features/sync";
 import { useSyncController, useSyncState } from "../state/sync";
 import { Link, RouterProvider, useRouter } from "../state/router";
+import { TitleRow } from "../ui/product/TitleRow";
+import { isMacShell } from "./titlebar";
 
 const PAGES: Record<string, () => ReactNode> = {
   "/today": () => <TodayPage />,
@@ -121,8 +123,34 @@ function PhoneMenu({ onClose, unread }: { onClose: () => void; unread: number })
   );
 }
 
+const SIDEBAR_KEY = "orbyn-planner.sidebar-hidden";
+
+/** Whether the sidebar is collapsed from the title row's toggle; kept on this device. */
+function useSidebarHidden(): [boolean, () => void] {
+  const [hidden, setHidden] = useState(() => {
+    try {
+      return window.localStorage.getItem(SIDEBAR_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const toggle = useCallback(() => {
+    setHidden((was) => {
+      try {
+        window.localStorage.setItem(SIDEBAR_KEY, was ? "0" : "1");
+      } catch {
+        /* kept for this session only */
+      }
+      return !was;
+    });
+  }, []);
+  return [hidden, toggle];
+}
+
 function Shell() {
-  const { path } = useRouter();
+  const { path, back, forward, canBack, canForward } = useRouter();
+  const mac = useMemo(() => isMacShell(), []);
+  const [sideHidden, toggleSide] = useSidebarHidden();
   const main = useRef<HTMLElement>(null);
   const ui = useUi();
   const { tasks } = usePlanner();
@@ -138,7 +166,8 @@ function Shell() {
   const page = project ? () => <ProjectPage id={decodeURIComponent(project[1]!)} /> : (PAGES[path === "/" ? "/today" : path] ?? PAGES["/today"]!);
 
   return (
-    <div className="app">
+    <div className={mac && sideHidden ? "app side-hidden" : "app"}>
+      {mac && <TitleRow sideHidden={sideHidden} onToggle={toggleSide} canBack={canBack} canForward={canForward} onBack={back} onForward={forward} />}
       <a
         className="skip"
         href="#content"
