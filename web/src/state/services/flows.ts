@@ -355,9 +355,10 @@ export async function signIn(services: AuthServices, input: { email: string; pas
   let known = null as DeviceKeys | null;
   /** True while a code step holds this attempt's keys: they are released when it finishes or is cancelled. */
   let holding = false;
+  let password: Uint8Array | null = null;
   try {
     const email = emailOrFail(crypto, input.email);
-    const password = utf8(input.password);
+    password = utf8(input.password);
     const saved = await services.keys.loadKeys();
     const identity = saved ? await services.keys.loadIdentity() : null;
     const foreign = saved !== null && identity?.email !== email;
@@ -435,9 +436,22 @@ export async function signIn(services: AuthServices, input: { email: string; pas
   } catch (error) {
     return asFailure(error);
   } finally {
+    // The password's bytes are not kept past the sign-in; a code step that follows needs only the keys.
+    password?.fill(0);
     // Whichever keys this attempt held (the saved ones opened, or new ones), they go back to the module.
     if (!holding) (keys ?? known)?.free();
   }
+}
+
+/**
+ * "Confirm it's you" (Planner Designs v73 p-reauth): the engine answers `reauthentication_required` to removing a device, signing
+ * out everywhere, turning two-factor off and changing protection unless this session's password sign-in finished in the last ten
+ * minutes. The answer does not use up the signed request, so the recovery is a new sign-in with the same device keys (a trusted start,
+ * so it needs only the password: no approval and no second-factor code) and then the same request again. The new session replaces
+ * this one; the password's bytes are zeroed when the sign-in is done, win or lose.
+ */
+export async function confirmIdentity(services: AuthServices, session: StoredSession, password: string): Promise<StoredSession> {
+  return signIn(services, { email: session.email, password, name: session.name });
 }
 
 /**

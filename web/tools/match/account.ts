@@ -15,6 +15,18 @@ export async function pretendAccount(): Promise<AuthServices> {
   registerAuthCrypto(realAuthCrypto()); // the planner syncs only when its crypto module is there
   const rig = await createSyncRig({ third: true });
   await rig.a.services.tokens.set({ ...rig.a.session, name: ACCOUNT.name, email: ACCOUNT.email });
+  // The keys belong to the email the person is signed in with, so a password sign-in again ("Confirm it’s you") is the same account, not another one.
+  await rig.a.keys.saveIdentity({ accountId: rig.a.session.accountId, deviceId: rig.a.session.deviceId, email: ACCOUNT.email });
+  // A frame's steps can set the pretend engine up through this, as on the signed-out page: age the sign-in, refuse or hold a request, lose the connection.
+  const offline = {
+    get value() {
+      return rig.network.down;
+    },
+    set value(down: boolean) {
+      rig.network.down = down;
+    },
+  };
+  (window as unknown as { __matchEngine: unknown }).__matchEngine = { engine: rig.engine, hold: rig.network.hold, offline } satisfies MatchEngineControls;
   return rig.a.services;
 }
 
