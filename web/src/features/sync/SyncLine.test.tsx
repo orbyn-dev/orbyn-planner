@@ -1,7 +1,7 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { SYNC_STATE_MIN_MS, SyncLine, healthDelay, useSyncStatus, withPersistence, type SyncStatus } from "./SyncLine";
+import { SYNC_STATE_MIN_MS, SyncLine, useSyncStatus, withPersistence, type SyncStatus } from "./SyncLine";
 
 const cases: [SyncStatus, string][] = [
   [{ kind: "synced", devices: 2 }, "Synced · 2 devices"],
@@ -72,15 +72,6 @@ describe("SyncLine", () => {
   });
 });
 
-describe("healthDelay", () => {
-  it("slows down while healthy, to five minutes", () => {
-    expect([0, 1, 2, 3, 4, 9].map((n) => healthDelay(true, n))).toEqual([15, 30, 60, 120, 300, 300]);
-  });
-  it("retries a failure quickly, then no slower than a minute", () => {
-    expect([0, 1, 2, 3, 4, 9].map((n) => healthDelay(false, n))).toEqual([5, 10, 20, 40, 60, 60]);
-  });
-});
-
 function Probe() {
   const { status } = useSyncStatus();
   return <SyncLine status={status} />;
@@ -94,39 +85,29 @@ afterEach(() => {
 });
 
 describe("useSyncStatus", () => {
-  it("says On this device when no account is syncing and the engine answers", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => ok()));
+  it("says On this device when no account is syncing, and never asks the engine anything", async () => {
+    const fetchMock = vi.fn(async () => ok());
+    vi.stubGlobal("fetch", fetchMock);
     render(<Probe />);
-    expect(screen.getByRole("status")).toHaveTextContent("On this device"); // at once: nothing syncs, so there is no Syncing flash
-    expect(await screen.findByText("On this device", {}, { timeout: 3000 })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("On this device");
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("ends in the error state when the check times out, never stuck on Syncing", async () => {
-    vi.spyOn(AbortSignal, "timeout").mockReturnValue(AbortSignal.abort());
-    vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => (init?.signal?.aborted ? Promise.reject(new Error("timeout")) : Promise.resolve(ok()))));
+  it("an engine that cannot be reached is not a sync error for a planner with no account", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("unreachable"); }));
     render(<Probe />);
-    expect(await screen.findByText(/Couldn’t sync/, {}, { timeout: 3000 })).toBeInTheDocument();
-    vi.restoreAllMocks();
+    expect(screen.getByRole("status")).toHaveTextContent("On this device");
+    expect(screen.queryByText(/Couldn’t sync/)).toBeNull();
   });
 
-  it("checks again when the tab becomes visible and when the network returns", async () => {
-    // Fake time, because a change of state waits SYNC_STATE_MIN_MS before it shows: in real time that wait raced the test's own timeouts.
+  it("reads Offline when the browser is, and On this device when it returns", async () => {
     vi.useFakeTimers();
     try {
-      const fetchMock = vi.fn(async () => ok());
-      vi.stubGlobal("fetch", fetchMock);
       const tick = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
       render(<Probe />);
-      await tick(SYNC_STATE_MIN_MS);
-      expect(screen.getByText("On this device")).toBeInTheDocument();
-      expect(fetchMock).toHaveBeenCalledTimes(1);
-
-      act(() => {
-        document.dispatchEvent(new Event("visibilitychange"));
-      });
-      await tick(0);
-      expect(fetchMock).toHaveBeenCalledTimes(2);
-
       act(() => {
         window.dispatchEvent(new Event("offline"));
       });
@@ -135,52 +116,11 @@ describe("useSyncStatus", () => {
       act(() => {
         window.dispatchEvent(new Event("online"));
       });
-      await tick(0);
-      expect(fetchMock).toHaveBeenCalledTimes(3);
       await tick(SYNC_STATE_MIN_MS);
       expect(screen.getByText("On this device")).toBeInTheDocument();
     } finally {
       vi.useRealTimers();
     }
-  });
-
-  it("never runs two checks at once, so focus changes cannot stack timer loops", async () => {
-    let release: (() => void) | undefined;
-    const fetchMock = vi.fn(
-      () =>
-        new Promise<Response>((resolve) => {
-          release = () => resolve(ok());
-        }),
-    );
-    vi.stubGlobal("fetch", fetchMock);
-    render(<Probe />);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    act(() => {
-      document.dispatchEvent(new Event("visibilitychange"));
-      document.dispatchEvent(new Event("visibilitychange"));
-    });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    await act(async () => {
-      release?.();
-    });
-    expect(await screen.findByText("On this device", {}, { timeout: 3000 })).toBeInTheDocument();
-    act(() => {
-      document.dispatchEvent(new Event("visibilitychange"));
-    });
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-  });
-
-  it("keeps checking on a schedule and recovers after a failure", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    const fetchMock = vi.fn().mockRejectedValueOnce(new Error("down")).mockImplementation(async () => ok());
-    vi.stubGlobal("fetch", fetchMock);
-    render(<Probe />);
-    expect(await screen.findByText(/Couldn’t sync/, {}, { timeout: 3000 })).toBeInTheDocument();
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(5_100);
-    });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(await screen.findByText("On this device", {}, { timeout: 3000 })).toBeInTheDocument();
   });
 });
 
