@@ -1985,5 +1985,32 @@
       "height": 600,
       "side": 420
     }
+  },
+  "p-narrow-settings-480": {
+    "kind": "desktop",
+    "design": "p-narrow-settings-480",
+    "route": "/settings",
+    "scenario": "today",
+    "window": {
+      "width": 902,
+      "height": 760,
+      "side": 420
+    }
+  },
+  "p-narrow-settings-480-list": {
+    "kind": "desktop",
+    "design": "p-narrow-settings-480-list",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.catrow"
+      }
+    ],
+    "window": {
+      "width": 902,
+      "height": 560,
+      "side": 420
+    }
   }
 }
