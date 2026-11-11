@@ -35,6 +35,7 @@ import { TitleRow } from "../ui/product/TitleRow";
 import { SidebarRail } from "../ui/product/SidebarRail";
 import { useSidebarWidth } from "../ui/product/sidebarWidth";
 import { isMacShell } from "./titlebar";
+import { useContentWidth } from "../lib/contentWidth";
 
 const PAGES: Record<string, () => ReactNode> = {
   "/today": () => <TodayPage />,
@@ -155,6 +156,9 @@ function Shell() {
   const [sideHidden, toggleSide] = useSidebarHidden();
   const [sideWidth, setSideWidth] = useSidebarWidth();
   const main = useRef<HTMLElement>(null);
+  const sheetGrid = useRef<HTMLDivElement>(null);
+  const sheetMain = useRef<HTMLDivElement>(null);
+  useContentWidth(sheetGrid, sheetMain);
   const ui = useUi();
   const { tasks } = usePlanner();
   const now = useNow();
@@ -193,8 +197,8 @@ function Shell() {
       </aside>
       <main id="content" ref={main} tabIndex={-1} className="sheet">
         <DeletionBanner />
-        <div className={ui.taskId || ui.eventKey ? "sheet-grid has-panel" : "sheet-grid"}>
-          <div className="sheet-main">{showFirstRun ? <FirstRun onDone={firstRun.finish} /> : page()}</div>
+        <div ref={sheetGrid} className={ui.taskId || ui.eventKey ? "sheet-grid has-panel" : "sheet-grid"}>
+          <div ref={sheetMain} className="sheet-main">{showFirstRun ? <FirstRun onDone={firstRun.finish} /> : page()}</div>
           <TaskPanel />
           <EventPanel />
         </div>

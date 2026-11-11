@@ -93,6 +93,14 @@ button { cursor: pointer; }
 .ph h1, .ph h2, .ph h3 { font-size: var(--fs-22); font-weight: var(--fw-medium); letter-spacing: var(--ls-title); color: var(--t1); }
 .ph .sub { color: var(--t3); }
 .ph .acts { margin-left: auto; display: flex; gap: var(--sp-6); align-self: center; }
+/* Narrow pages (a window at its 900 px minimum next to a wide sidebar leaves about 480 px): a heading and a label never wrap, the date line shortens
+   with an ellipsis, and the actions drop to a line of their own instead of squeezing the heading. Nothing changes while everything fits. */
+.btn, .ghost, .danger, .pill { white-space: nowrap; }
+.ph { flex-wrap: wrap; row-gap: var(--sp-6); }
+.ph h1, .ph h2, .ph h3 { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ph .sub { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ph .acts { flex-wrap: wrap; }
+.ph .acts > * { flex: none; }
 
 .btn {
   display: inline-flex; align-items: center; gap: var(--sp-6); height: var(--sp-30); padding: 0 var(--sp-13); border: 0; border-radius: var(--r-9);
@@ -156,6 +164,9 @@ button { cursor: pointer; }
   .today-cols { flex: 1; overflow: hidden; }
   .today-cols > .blk:first-child { overflow: auto; min-height: 0; padding-right: var(--sp-10); }
 }
+/* Narrow Today: the week at a glance goes under the day, and the page scrolls as one. */
+.sheet-main[data-narrow] .today-cols { grid-template-columns: minmax(0, 1fr); flex: none; overflow: visible; }
+.sheet-main[data-narrow] .today-cols > .blk:first-child { overflow: visible; padding-right: 0; }
 .card.red-ring { max-width: var(--sp-520); box-shadow: inset 0 0 0 var(--bw) var(--red-bg); }
 .row .meta.amber { color: var(--amber-text); font-weight: var(--fw-medium); }
 .sw { width: var(--sp-8); height: var(--sp-8); border-radius: var(--r-3); display: inline-block; }
@@ -793,7 +804,7 @@ button.pillx { border: 0; }
 @media (min-width: 768px) {
   .ph:has(.pills) { flex-wrap: nowrap; }
   .ph:has(.pills) h1, .ph:has(.pills) h2 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .ph:has(.pills) .sub { white-space: nowrap; }
+  .ph:has(.pills) .sub { flex: none; white-space: nowrap; }
   .ph:has(.pills) .acts { flex: none; flex-wrap: nowrap; }
 }
 @media (max-width: 1240px) {
