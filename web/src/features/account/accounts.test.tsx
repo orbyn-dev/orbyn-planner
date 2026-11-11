@@ -1121,6 +1121,73 @@ describe("keys the browser will not store", () => {
   });
 });
 
+describe("sign out everywhere (Planner Designs v73)", () => {
+  /** Signed up on one browser, with Settings · Account open. */
+  async function signedInAccount() {
+    const a = services();
+    const first = await mount(a);
+    await fillSignUp();
+    await todayShown();
+    first.unmount();
+    await mount(a, "/settings");
+    await openAccount();
+    return { a, account: [...engine.accounts.values()][0]! };
+  }
+
+  it("says what stays and what stops, defaults to Cancel, ends every session and lands on the signed-out state with a notice", async () => {
+    const { a } = await signedInAccount();
+    await userEvent.click(await screen.findByRole("button", { name: "Sign out everywhere" }));
+    const dialog = screen.getByRole("dialog", { name: "Sign out everywhere" });
+    expect(within(dialog).getByText("Sign out everywhere?")).toBeInTheDocument();
+    expect(within(dialog).getByText("Tasks, lists and calendars on each device")).toBeInTheDocument();
+    expect(within(dialog).getByText("Every session of your account, this one too")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Cancel" })).toHaveFocus();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Sign out everywhere" }));
+    await waitFor(() => expect(engine.sessions.size).toBe(0));
+    expect(await screen.findByText("Signed out everywhere.")).toBeInTheDocument();
+    expect(a.tokens.getSession()).toBeNull();
+    // This device keeps its keys: it stays in the device list and signing in again is the same trusted device.
+    expect(await a.keys.loadKeys()).not.toBeNull();
+  });
+
+  it("Cancel ends nothing", async () => {
+    const { a } = await signedInAccount();
+    await userEvent.click(await screen.findByRole("button", { name: "Sign out everywhere" }));
+    await userEvent.click(within(screen.getByRole("dialog", { name: "Sign out everywhere" })).getByRole("button", { name: "Cancel" }));
+    expect(engine.sessions.size).toBeGreaterThan(0);
+    expect(a.tokens.getSession()).not.toBeNull();
+  });
+
+  it("an old sign-in asks “Confirm it’s you” first (p-reauth-before-signout-everywhere), and nothing ends until the password is right", async () => {
+    const { a } = await signedInAccount();
+    engine.ageSessions();
+    await userEvent.click(await screen.findByRole("button", { name: "Sign out everywhere" }));
+    await userEvent.click(within(screen.getByRole("dialog", { name: "Sign out everywhere" })).getByRole("button", { name: "Sign out everywhere" }));
+    const ask = await screen.findByRole("dialog", { name: "Confirm it’s you" });
+    expect(within(ask).getByText("To sign out every device")).toBeInTheDocument();
+    expect(a.tokens.getSession()).not.toBeNull();
+    await userEvent.type(within(ask).getByLabelText("Password"), SAM.password);
+    await userEvent.click(within(ask).getByRole("button", { name: "Confirm" }));
+    await waitFor(() => expect(a.tokens.getSession()).toBeNull());
+    expect(await screen.findByText("Signed out everywhere.")).toBeInTheDocument();
+  });
+
+  it("is refused while a deletion is scheduled: “Deletion is scheduled”, with a way to sign out of this device only", async () => {
+    const { a, account } = await signedInAccount();
+    account.deletion = { at: nowMs + 7 * 86_400_000, token: "cancel-token-x" };
+    await userEvent.click(await screen.findByRole("button", { name: "Sign out everywhere" }));
+    // Either the page already knew (the blocked dialog comes at once) or the engine's refusal brings it.
+    const confirm = screen.queryByRole("dialog", { name: "Sign out everywhere" });
+    if (confirm) await userEvent.click(within(confirm).getByRole("button", { name: "Sign out everywhere" }));
+    const blocked = await screen.findByRole("dialog", { name: "Deletion is scheduled" });
+    expect(within(blocked).getByText("Orbyn can’t sign out every session right now.")).toBeInTheDocument();
+    expect(within(blocked).getByRole("button", { name: "Sign out of this device only" })).toBeInTheDocument();
+    expect(a.tokens.getSession()).not.toBeNull();
+    await userEvent.click(within(blocked).getByRole("button", { name: "OK" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
+
 describe("removing a device and approving one again", () => {
   /** A is signed up; C is a device the server lists as trusted but A never approved (stranded), with a session of its own. */
   async function withStranded() {

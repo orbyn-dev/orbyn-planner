@@ -2384,5 +2384,82 @@
         "wait": 600
       }
     ]
+  },
+  "p-signout-everywhere": {
+    "kind": "desktop",
+    "design": "p-signout-everywhere",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Account\")"
+      },
+      {
+        "click": "main button:text-is(\"Sign out everywhere\")"
+      }
+    ]
+  },
+  "p-reauth-before-signout-everywhere": {
+    "kind": "desktop",
+    "design": "p-reauth-before-signout-everywhere",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Account\")"
+      },
+      {
+        "eval": "window.__matchEngine.engine.ageSessions()"
+      },
+      {
+        "click": "main button:text-is(\"Sign out everywhere\")"
+      },
+      {
+        "click": "[role=dialog] .btn"
+      }
+    ]
+  },
+  "p-signout-everywhere-blocked": {
+    "kind": "desktop",
+    "design": "p-signout-everywhere-blocked",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Account\")"
+      },
+      {
+        "eval": "(() => { const e = window.__matchEngine.engine; [...e.accounts.values()][0].deletion = { at: Date.UTC(2026, 10, 14), token: 'x' }; })()"
+      },
+      {
+        "wait": 10500
+      },
+      {
+        "click": "main button:text-is(\"Sign out everywhere\")"
+      },
+      {
+        "wait": 600
+      }
+    ]
+  },
+  "p-signout-everywhere-done": {
+    "kind": "desktop",
+    "design": "p-signout-everywhere-done",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Account\")"
+      },
+      {
+        "click": "main button:text-is(\"Sign out everywhere\")"
+      },
+      {
+        "click": "[role=dialog] .btn"
+      },
+      {
+        "wait": 1500
+      }
+    ]
   }
 }

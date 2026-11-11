@@ -543,6 +543,15 @@ export async function removeDevice(services: AuthServices, session: StoredSessio
   }
 }
 
+/**
+ * Ends every session of the account, this one too (`DELETE /v1/sessions`). The engine asks for a password sign-in from the last ten minutes
+ * (`reauthentication_required`, answered by "Confirm it’s you"), refuses a pending device (`device_not_trusted`) and refuses with
+ * `deletion_scheduled` during the seven days of a scheduled deletion. The device itself is not touched: the caller signs out locally and keeps its data.
+ */
+export async function signOutEverywhere(services: AuthServices): Promise<void> {
+  await services.api.signOutEverywhere();
+}
+
 /** The ids of the devices this device itself verifies (never the server's word), or null if it can't tell. */
 export async function verifiedDevices(services: AuthServices, session: StoredSession, list: DeviceList): Promise<Set<string> | null> {
   try {

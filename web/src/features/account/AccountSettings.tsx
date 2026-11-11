@@ -11,9 +11,11 @@ import { Modal } from "../../ui/primitives/Modal";
 import { TwoFactorRow } from "./TwoFactor";
 import type { Device } from "../../generated/Device";
 import { useAuth } from "../../state/account";
-import { removeDevice, verifiedDevices } from "../../state/services/flows";
+import { removeDevice, signOutEverywhere, verifiedDevices } from "../../state/services/flows";
+import { setSettingsTarget } from "../../state/settingsTarget";
+import { signedOutEverywhere, useSignedOutEverywhere } from "../../state/signedOutEverywhere";
 import { ReauthCancelled, useReauth } from "./ConfirmIdentity";
-import { PAUSED_HINT, useDeletionPaused } from "../../state/deletionNotice";
+import { PAUSED_HINT, deletionDay, useDeletionPaused, useDeletionScheduledAt } from "../../state/deletionNotice";
 import { useCancelDeletion } from "./DeletionBanner";
 import { useApprover } from "../../state/useApprover";
 import { describeError } from "./messages";
@@ -127,6 +129,84 @@ function SignOutDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
+/** The refusal while a deletion is scheduled (Planner Designs v73 p-signout-everywhere-blocked). */
+function SignOutBlockedDialog({ onClose, onThisDevice }: { onClose: () => void; onThisDevice: () => void }) {
+  const scheduledAt = useDeletionScheduledAt();
+  return (
+    <Modal label="Deletion is scheduled" onClose={onClose}>
+      <b className="card-title">Deletion is scheduled</b>
+      <p className="t2">Orbyn can’t sign out every session right now.</p>
+      <p className="reauth-note">
+        <Icon name="info" small /> Sign out everywhere is off while your account is waiting to be deleted.
+        {scheduledAt ? ` The deletion is scheduled for ${deletionDay(scheduledAt)}.` : ""} Signing out of this device only still works.
+      </p>
+      <div className="dialog-actions">
+        <button type="button" className="ghost" onClick={onThisDevice}>Sign out of this device only</button>
+        <button type="button" className="btn" data-autofocus onClick={onClose}>OK</button>
+      </div>
+    </Modal>
+  );
+}
+
+/** Sign out everywhere (Planner Designs v73 p-signout-everywhere): what stays and what stops, with Cancel as the default. It asks for the password again if the sign-in is old. */
+function SignOutEverywhereDialog({ devices, onClose, onThisDevice }: { devices: number; onClose: () => void; onThisDevice: () => void }) {
+  const auth = useAuth()!;
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState(false);
+  const { run, prompt } = useReauth();
+
+  const go = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await run("To sign out every device", () => signOutEverywhere(auth.services));
+    } catch (e) {
+      setBusy(false);
+      if (e instanceof ReauthCancelled) onClose();
+      else if (e instanceof ApiFailure && e.code === "deletion_scheduled") setBlocked(true);
+      else setError(describeError(e));
+      return;
+    }
+    // Every session ended, this one too: this device lands on the signed-out state and keeps its data.
+    signedOutEverywhere.set(true);
+    setSettingsTarget("Account"); // Settings reopens on the Account page, where the notice is
+    onClose();
+    // The planner stays open on this device's own data; the Account page says what happened.
+    void auth.signOut({ keepDevice: true }).then(() => auth.useWithoutAccount());
+  };
+
+  if (prompt) return <>{prompt}</>;
+  if (blocked) return <SignOutBlockedDialog onClose={onClose} onThisDevice={onThisDevice} />;
+  return (
+    <Modal label="Sign out everywhere" onClose={busy ? () => undefined : onClose}>
+      <b className="card-title">Sign out everywhere?</b>
+      <p className="t2">Every session of your account ends, this one too, and this device goes back to the signed-out state. Each device keeps its own data and works without an account.</p>
+      <div className="so-cols">
+        <div>
+          <b>Stays</b>
+          <ul>
+            <li>Tasks, lists and calendars on each device</li>
+            <li>Each device in your device list, until someone removes it</li>
+          </ul>
+        </div>
+        <div>
+          <b>Stops</b>
+          <ul>
+            <li>Every session of your account, this one too</li>
+            <li>Sync on all {devices} devices</li>
+          </ul>
+        </div>
+      </div>
+      {error && <p className="err" role="alert">{error}</p>}
+      <div className="dialog-actions">
+        <button type="button" className="ghost" data-autofocus onClick={onClose}>Cancel</button>
+        <button type="button" className="btn" disabled={busy} onClick={() => void go()}>Sign out everywhere</button>
+      </div>
+    </Modal>
+  );
+}
+
 function RemoveDialog({ device, onClose, onDone }: { device: Device; onClose: () => void; onDone: () => void }) {
   const auth = useAuth()!;
   const [error, setError] = useState<string | null>(null);
@@ -204,6 +284,7 @@ function EngineNotice() {
 
 function SignedInAccount({ onOpenPrivacy }: { onOpenPrivacy?: () => void }) {
   const auth = useAuth()!;
+  useEffect(() => signedOutEverywhere.set(false), []);
   const { session, services } = auth;
   const [devices, setDevices] = useState<Device[] | null>(null);
   /** The devices this device itself verifies; null until known. Approving is offered from this, never from the server's `state`. */
@@ -213,6 +294,7 @@ function SignedInAccount({ onOpenPrivacy }: { onOpenPrivacy?: () => void }) {
   const [removing, setRemoving] = useState<Device | null>(null);
   const [adding, setAdding] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [everywhere, setEverywhere] = useState<"confirm" | "blocked" | null>(null);
   const paused = useDeletionPaused();
   const { cancel: cancelDeletion, busy: cancelling } = useCancelDeletion();
 
@@ -317,7 +399,19 @@ function SignedInAccount({ onOpenPrivacy }: { onOpenPrivacy?: () => void }) {
         </button>
       </div>
 
+      <div className="bh"><b>Sessions</b><span></span></div>
+      <div className="card" style={{ gap: 0, padding: "0 var(--sp-14)" }}>
+        <div className="kv" style={{ height: "var(--sp-52)" }}>
+          <span>Ends every session, including this one.</span>
+          <b className="ctl">
+            <button type="button" className="ghost" onClick={() => setEverywhere(paused ? "blocked" : "confirm")}>Sign out everywhere</button>
+          </b>
+        </div>
+      </div>
+
       {signingOut && <SignOutDialog onClose={() => setSigningOut(false)} />}
+      {everywhere === "confirm" && <SignOutEverywhereDialog devices={devices?.filter((d) => d.state === "trusted").length ?? 0} onClose={() => setEverywhere(null)} onThisDevice={() => { setEverywhere(null); setSigningOut(true); }} />}
+      {everywhere === "blocked" && <SignOutBlockedDialog onClose={() => setEverywhere(null)} onThisDevice={() => { setEverywhere(null); setSigningOut(true); }} />}
       {approving && (
         <ApproveDialog
           device={approving}
@@ -346,10 +440,18 @@ function SignedInAccount({ onOpenPrivacy }: { onOpenPrivacy?: () => void }) {
 /** Settings · Account: who is signed in and which devices, or how to sign in. */
 export function AccountSettings({ onOpenPrivacy }: { onOpenPrivacy?: () => void } = {}) {
   const auth = useAuth();
+  const endedEverywhere = useSignedOutEverywhere();
   if (!auth) return <p className="quiet">Accounts aren’t part of this build.</p>;
   if (auth.status === "signedIn") return <SignedInAccount onOpenPrivacy={onOpenPrivacy} />;
   return (
     <>
+      {endedEverywhere && (
+        <div className="card" role="status" style={{ gap: "var(--sp-6)" }}>
+          <b style={{ fontWeight: "var(--fw-medium)" }}><Icon name="ok" small /> Signed out everywhere.</b>
+          <span className="t3">Every session of your account ended, this one too. Your tasks, lists and calendars are still on this device. This device stays in your device list until someone removes it from another device.</span>
+          <span><button type="button" className="ghost sm" onClick={() => signedOutEverywhere.set(false)}>Dismiss</button></span>
+        </div>
+      )}
       <div className="card" style={{ gap: "var(--sp-6)" }}>
         <b style={{ fontWeight: "var(--fw-medium)" }}>This device only</b>
         <span className="t3">Your planner is saved on this device. An account keeps it on your other devices too.</span>
