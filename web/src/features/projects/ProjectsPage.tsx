@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNow } from "../../state/clock";
+import { useContentFlags } from "../../lib/contentWidth";
 import { useRouter } from "../../state/router";
 import { EmptyState, PageHeader } from "../../ui/primitives/EmptyState";
 import { Icon } from "../../ui/primitives/Icon";
@@ -14,6 +15,7 @@ const COLS = "minmax(0,1.4fr) minmax(0,1.2fr) var(--sp-110) var(--sp-120)";
 export function ProjectsPage() {
   const { projects, tasks } = usePlanner();
   const { navigate } = useRouter();
+  const { table } = useContentFlags();
   const now = useNow();
   const [show, setShow] = useState<"active" | "done">("active");
   const [find, setFind] = useState("");
@@ -68,11 +70,12 @@ export function ProjectsPage() {
               const act = !p.archived && p.goal !== null && (isOverdue(p.goal, now) || isDueToday(p.goal, now));
               return (
                 <li key={p.id} className="tr projects" style={{ gridTemplateColumns: COLS }} data-row-id={p.id}>
-                  <span>
+                  <span className="tcell">
                     <button type="button" className="tag link-btn" style={{ color: "var(--t1)" }} onClick={() => navigate(`/projects/${p.id}`)}>
                       <Swatch colour={p.colour} />
                       {p.name}
                     </button>
+                    {table && <span className="lst">{stats.next ? `Next · ${stats.next.title}` : "Nothing open"}</span>}
                   </span>
                   <span className="clip">{stats.next?.title ?? <span className="t3">Nothing open</span>}</span>
                   <span style={act ? { color: "var(--amber-text)", fontWeight: "var(--fw-medium)" } : undefined}>{p.goal ? formatDue(p.goal, now) : <span className="t3">No date</span>}</span>

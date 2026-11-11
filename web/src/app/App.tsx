@@ -35,7 +35,7 @@ import { TitleRow } from "../ui/product/TitleRow";
 import { SidebarRail } from "../ui/product/SidebarRail";
 import { useSidebarWidth } from "../ui/product/sidebarWidth";
 import { isMacShell } from "./titlebar";
-import { useContentWidth, useSheetOverlay } from "../lib/contentWidth";
+import { ContentWidthContext, useContentWidth, useSheetOverlay } from "../lib/contentWidth";
 
 const PAGES: Record<string, () => ReactNode> = {
   "/today": () => <TodayPage />,
@@ -158,7 +158,7 @@ function Shell() {
   const main = useRef<HTMLElement>(null);
   const sheetGrid = useRef<HTMLDivElement>(null);
   const sheetMain = useRef<HTMLDivElement>(null);
-  useContentWidth(sheetGrid, sheetMain);
+  const widthFlags = useContentWidth(sheetGrid, sheetMain);
   useSheetOverlay(sheetGrid);
   const ui = useUi();
   const { tasks } = usePlanner();
@@ -199,7 +199,7 @@ function Shell() {
       <main id="content" ref={main} tabIndex={-1} className="sheet">
         <DeletionBanner />
         <div ref={sheetGrid} className={ui.taskId || ui.eventKey ? "sheet-grid has-panel" : "sheet-grid"}>
-          <div ref={sheetMain} className="sheet-main">{showFirstRun ? <FirstRun onDone={firstRun.finish} /> : page()}</div>
+          <div ref={sheetMain} className="sheet-main"><ContentWidthContext.Provider value={widthFlags}>{showFirstRun ? <FirstRun onDone={firstRun.finish} /> : page()}</ContentWidthContext.Provider></div>
           <TaskPanel />
           <EventPanel />
         </div>

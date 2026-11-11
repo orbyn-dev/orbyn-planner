@@ -10,9 +10,9 @@ const rule = (selector: string) => {
 };
 
 describe("narrow Projects", () => {
-  it("the Projects table drops its Next column so a project name stays on one line", () => {
-    expect(rule(".sheet-main[data-narrow] .tr.projects {")).toContain("minmax(0, 1fr) var(--sp-110) var(--sp-120)");
-    expect(rule(".sheet-main[data-narrow] .tr.projects > :nth-child(2)")).toContain("display: none");
+  it("the Projects table drops its Next column below 640 px and shows the next task under the name", () => {
+    expect(rule(".sheet-main[data-table] .tr.projects { grid")).toContain("minmax(0, 1fr) var(--sp-110) var(--sp-120)");
+    expect(rule(".sheet-main[data-table] .tr.projects > :nth-child(2)")).toContain("display: none");
   });
 
   it("tag chips wait for room in a tight row", () => {
