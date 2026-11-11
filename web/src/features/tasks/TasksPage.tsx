@@ -7,7 +7,10 @@ import { Icon } from "../../ui/primitives/Icon";
 import { formatDue } from "../../core/planner/dates";
 import { usePlanner, useStore } from "../../state/store";
 import { describeParse, parseQuickAdd } from "./quickAdd";
-import { DUE_FILTERS, activeTasks, completedGroups, isLive, isOpen, matchesDue, type DueFilter } from "./selectors";
+import { DUE_FILTERS, completedGroups, isOpen, type DueFilter } from "./selectors";
+import { NO_FILTERS, applyFilters, filterCount, type TaskFilters } from "./taskFilters";
+import { FiltersSheet, ActiveFilters, matchesQuery } from "./FiltersSheet";
+import { useContentFlags } from "../../lib/contentWidth";
 import { FilterChip } from "./FilterChip";
 import { LANES, LANE_LABELS, laneOf, type Lane } from "../../core/planner/taskStatus";
 import { focusCard } from "../../lib/focus";
@@ -129,18 +132,31 @@ export function TasksPage() {
     setOptions(next);
     saveViewOptions(next);
   };
-  const [due, setDue] = useState<DueFilter>("any");
-  const [priority, setPriority] = useState<Priority | "any">("any");
-  const [listId, setListId] = useState("");
-  const [tagId, setTagId] = useState("");
+  const [filters, setFilters] = useState<TaskFilters>(NO_FILTERS);
+  // The chips of a wide page take one choice each; the Filters sheet of a narrow one takes several (Planner Designs v70).
+  const firstDue = filters.dues[0];
+  const due: DueFilter = firstDue === undefined || firstDue === "none" ? "any" : firstDue;
+  const priority: Priority | "any" = filters.priorities[0] ?? "any";
+  const listId = filters.lists[0] ?? "";
+  const tagId = filters.tags[0] ?? "";
+  const setDue = (v: DueFilter) => setFilters((f) => ({ ...f, dues: v === "any" ? [] : [v] }));
+  const setPriority = (v: Priority | "any") => setFilters((f) => ({ ...f, priorities: v === "any" ? [] : [v] }));
+  const setListId = (v: string) => setFilters((f) => ({ ...f, lists: v === "" ? [] : [v] }));
+  const setTagId = (v: string) => setFilters((f) => ({ ...f, tags: v === "" ? [] : [v] }));
+  const { table } = useContentFlags();
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [query, setQuery] = useState("");
+  const typed = table && searching ? query.trim() : "";
+  const count = filterCount(filters);
   const liveTags = tags.filter((t) => t.deletedAt === null);
   const labels = tagLabels(tags);
 
   // Off (the default): open tasks, and tasks finished today staying where they were. On: every completed task too.
-  const shown = useMemo(
-    () => (options.showCompleted ? tasks.filter(isLive) : activeTasks(tasks, now)).filter((t) => matchesDue(t, due, now) && (priority === "any" || t.priority === priority) && (listId === "" || t.listId === listId) && (tagId === "" || t.tags.includes(tagId))),
-    [tasks, now, due, priority, listId, tagId, options.showCompleted],
-  );
+  const shown = useMemo(() => {
+    const base = applyFilters(tasks, filters, now, options.showCompleted);
+    return typed === "" ? base : base.filter((t) => matchesQuery(t, typed, lists, tags));
+  }, [tasks, now, filters, options.showCompleted, typed, lists, tags]);
   // On, the list keeps the finished ones apart, under Completed, by the day they were finished.
   const groups = useMemo(() => groupFor(options.showCompleted ? shown.filter((t) => !t.done) : shown, lists, now, options), [shown, lists, now, options]);
   const completed = useMemo(() => (options.showCompleted ? completedGroups(shown, now) : []), [shown, now, options.showCompleted]);
@@ -153,14 +169,37 @@ export function TasksPage() {
 
   return (
     <>
-      <PageHeader title="Tasks" sub={view === "board" ? "Board" : `${openCount} open`}>
-        <ViewOptionsButton view={view} options={options} onChange={change} />
-        <button type="button" className="btn" onClick={() => ui.openNewTask()}>
-          <Icon name="plus" small />
-          Add a task
-        </button>
-      </PageHeader>
+      {table && searching ? (
+        <>
+          <div className="srow-bar">
+            <button type="button" className="ghost icon" aria-label="Back" onClick={() => { setSearching(false); setQuery(""); }}>
+              <Icon name="left" small />
+            </button>
+            <label className="field srch">
+              <Icon name="search" small />
+              <input aria-label="Search tasks" placeholder="Search tasks" value={query} autoFocus onChange={(e) => setQuery(e.target.value)} />
+              {query !== "" && (
+                <button type="button" className="chip-x" aria-label="Clear" onClick={() => setQuery("")}>
+                  <Icon name="x" small />
+                </button>
+              )}
+            </label>
+            <button type="button" className="ghost" onClick={() => { setSearching(false); setQuery(""); }}>Cancel</button>
+          </div>
+          {typed !== "" && shown.length > 0 && <div className="nwhint" role="status">{shown.length} {shown.length === 1 ? "task matches" : "tasks match"} “{typed}”</div>}
+        </>
+      ) : (
+        <PageHeader title="Tasks" sub={view === "board" ? "Board" : count > 0 ? `${shown.length} of ${openCount} open` : `${openCount} open`}>
+          <ViewOptionsButton view={view} options={options} onChange={change} />
+          <button type="button" className="btn" onClick={() => ui.openNewTask()}>
+            <Icon name="plus" small />
+            Add a task
+          </button>
+        </PageHeader>
+      )}
 
+      {!(table && searching) && (
+        <>
       <div className="filters">
         <div role="radiogroup" aria-label="View" className="pills">
           {(["list", "board"] as const).map((v) => (
@@ -169,6 +208,18 @@ export function TasksPage() {
             </button>
           ))}
         </div>
+        {table ? (
+          <>
+            <span style={{ flex: 1 }} />
+            <button type="button" className={count > 0 ? "pill on" : "pill"} aria-haspopup="dialog" onClick={() => setSheetOpen(true)}>
+              {count > 0 ? `Filters · ${count}` : "Filters"}
+            </button>
+            <button type="button" className="pill" aria-label="Search tasks" onClick={() => setSearching(true)}>
+              <Icon name="search" small />
+            </button>
+          </>
+        ) : (
+          <>
         <span style={{ width: "var(--sp-12)" }} />
         <FilterChip label="Due date" value={due} options={DUE_FILTERS.map((f) => ({ value: f.id, label: f.label }))} onChange={setDue} />
         <FilterChip
@@ -196,13 +247,27 @@ export function TasksPage() {
           <Icon name="search" small />
           Search tasks
         </button>
+          </>
+        )}
       </div>
+      {table && <ActiveFilters filters={filters} onChange={setFilters} lists={lists} tags={tags} />}
+        </>
+      )}
+      {sheetOpen && <FiltersSheet filters={filters} onChange={setFilters} lists={lists} tags={tags} onClose={() => setSheetOpen(false)} />}
 
       {shown.length === 0 ? (
-        <EmptyState
-          title={anyTask ? "No tasks match" : "No tasks yet"}
-          body={anyTask ? "Try another filter." : "Add one below, or use Add a task."}
-        />
+        typed !== "" ? (
+          <div className="nores">
+            <b>No tasks match “{typed}”</b>
+            <span>Try a task name, a list or a tag.</span>
+            <button type="button" className="ghost" onClick={() => setQuery("")}>Clear search</button>
+          </div>
+        ) : (
+          <EmptyState
+            title={anyTask ? "No tasks match" : "No tasks yet"}
+            body={anyTask ? "Try another filter." : "Add one below, or use Add a task."}
+          />
+        )
       ) : view === "list" ? (
         <div className="tbl-wrap">
           <ul className="tbl">
@@ -220,7 +285,7 @@ export function TasksPage() {
               )}
               <MotionList className="tbl">
                 {g.tasks.map((t) => (
-                  <TaskRow key={t.id} task={t} />
+                  <TaskRow key={t.id} task={t} query={typed} />
                 ))}
               </MotionList>
             </section>
@@ -238,7 +303,7 @@ export function TasksPage() {
                   </div>
                   <MotionList className="tbl">
                     {g.tasks.map((t) => (
-                      <TaskRow key={t.id} task={t} />
+                      <TaskRow key={t.id} task={t} query={typed} />
                     ))}
                   </MotionList>
                 </div>

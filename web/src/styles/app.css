@@ -548,6 +548,24 @@ button.pillx { border: 0; }
 .sheet-main[data-narrow] .board:not(.scroll) { grid-auto-flow: column; grid-auto-columns: var(--sp-260); grid-template-columns: none !important; align-items: start; flex: 1 1 auto; min-height: 0; overflow: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--sp-28); }
 .sheet-main[data-narrow] .board:not(.scroll) .lane { scroll-snap-align: start; }
 .sheet-main[data-narrow] .board:not(.scroll) .lane-h { position: sticky; top: 0; z-index: 1; background: var(--raise); }
+/* Narrow Tasks (Planner Designs v70 p-narrow-tasks-filters-480, -active-480, -search-480, -search-empty-480): a Filters sheet, a row of the filters that are on, and an inline search. */
+.actv { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-6); padding: 0 var(--sp-28) var(--sp-8); }
+.actv .pill.sm { gap: var(--sp-4); }
+.srow-bar { display: flex; align-items: center; gap: var(--sp-8); padding: var(--sp-22) var(--sp-28) var(--sp-8); }
+.srow-bar .srch { flex: 1; display: flex; align-items: center; gap: var(--sp-8); min-width: 0; }
+.srow-bar .srch input { flex: 1; min-width: 0; border: 0; background: transparent; font: inherit; color: var(--t1); outline: none; }
+.srow-bar + .nwhint { padding: 0 var(--sp-28) var(--sp-6); }
+.hl { background: var(--sel); border-radius: var(--r-3); }
+.nores { display: flex; flex-direction: column; align-items: center; gap: var(--sp-8); padding: var(--sp-40) var(--sp-28); text-align: center; color: var(--t3); }
+.nores b { color: var(--t1); font-weight: var(--fw-medium); }
+.modal-back.sheet-back { align-items: flex-end; padding: 0; }
+.filter-sheet { width: 100%; max-width: none; max-height: 90%; overflow: auto; border-radius: var(--r-16) var(--r-16) 0 0; padding: var(--sp-10) var(--sp-20) var(--sp-20); gap: var(--sp-8); }
+.filter-sheet .grab { align-self: center; width: var(--sp-36); height: var(--sp-4); border-radius: var(--r-pill); background: var(--line2); }
+.filter-sheet .fh { display: flex; align-items: baseline; justify-content: space-between; }
+.filter-sheet .fh span { color: var(--t3); font-size: var(--fs-12); }
+.filter-sheet .cg { display: flex; flex-wrap: wrap; gap: var(--sp-6); }
+.filter-sheet .fa { display: flex; justify-content: space-between; gap: var(--sp-8); padding-top: var(--sp-8); }
+.sheet-main[data-narrow] .board:not(.scroll) { grid-auto-flow: column; grid-auto-columns: minmax(var(--sp-176), 1fr); grid-template-columns: none !important; overflow-x: auto; }
 .project-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .month-row { display: contents; }
 .md:focus-visible, .slot:focus-visible { outline: var(--bw-2) solid var(--t1); outline-offset: var(--sp-n2); }

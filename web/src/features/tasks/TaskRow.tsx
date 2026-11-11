@@ -1,5 +1,6 @@
 import { useNow } from "../../state/clock";
 import { useContentFlags } from "../../lib/contentWidth";
+import { Highlighted } from "./FiltersSheet";
 import { useUi } from "../../ui/product/UiProvider";
 import { formatTime, parseDue } from "../../core/planner/dates";
 import { usePlanner } from "../../state/store";
@@ -37,7 +38,7 @@ const LIST_COLS = "var(--sp-22) minmax(0,1fr) var(--sp-110)";
 const priorityLabel = (t: Task) => (t.priority === "none" ? "" : t.priority[0]!.toUpperCase() + t.priority.slice(1));
 
 /** One aligned table row: Tasks (list, due, priority), a list's own tasks, or Completed. */
-export function TaskRow({ task, layout = "tasks", extra, unsynced = false }: { task: Task; layout?: "tasks" | "list" | "completed"; extra?: string; /** The change to it has not left this device yet (offline). */ unsynced?: boolean }) {
+export function TaskRow({ task, layout = "tasks", extra, unsynced = false, query = "" }: { task: Task; /** The words typed in the narrow search: picked out in the title. */ query?: string; layout?: "tasks" | "list" | "completed"; extra?: string; /** The change to it has not left this device yet (offline). */ unsynced?: boolean }) {
   const { lists, tags } = usePlanner();
   const { table } = useContentFlags();
   const { open } = useTaskActions(task);
@@ -61,7 +62,7 @@ export function TaskRow({ task, layout = "tasks", extra, unsynced = false }: { t
       <span><Check task={task} /></span>
       <span className="tcell">
         <span className="ttwrap">
-          <button type="button" className="tt link-btn" onClick={open}>{task.title}</button>
+          <button type="button" className="tt link-btn" onClick={open}>{query === "" ? task.title : <Highlighted text={task.title} query={query} />}</button>
           {!table && !task.done && statusOf(task) === "blocked" && <span className="t3 status-word"> · Blocked</span>}
           {chips.length > 0 && <span className="tagchips">{chips.map((t) => <TagChip key={t.id} tag={t} label={labels.get(t.id)} />)}</span>}
         </span>
