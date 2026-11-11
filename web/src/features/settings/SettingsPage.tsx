@@ -11,7 +11,6 @@ import { NotificationsSettings } from "../notifications";
 import { DeleteAccountRow } from "../account";
 import { ExportSettings } from "../export";
 import { TagsSettings } from "../tasks";
-import { InstallHint } from "../../ui/product/InstallHint";
 import { useContentFlags } from "../../lib/contentWidth";
 import { OptionMenu, type MenuOption } from "../../ui/primitives/OptionMenu";
 import { PopoverRow } from "../../ui/primitives/PopoverRow";
