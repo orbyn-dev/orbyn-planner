@@ -10,9 +10,11 @@ const rule = (selector: string) => {
 };
 
 describe("narrow Settings and Lists", () => {
-  it("the category or list column shrinks, then stacks above the page", () => {
+  it("the category column shrinks, then becomes one Category row that opens the list", () => {
     expect(rule(".sheet-main[data-narrow] .split {")).toContain("var(--sp-200) minmax(0, 1fr)");
     expect(rule(".sheet-main[data-tight] .split {")).toContain("grid-template-columns: minmax(0, 1fr)");
+    expect(rule(".catrow {")).toContain("justify-content: space-between");
+    expect(rule(".catlist .nav {")).toContain("height: var(--sp-40)");
   });
 
   it("a row grows and wraps its controls instead of overlapping the next row", () => {

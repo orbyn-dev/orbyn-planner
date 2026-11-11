@@ -206,10 +206,13 @@ button { cursor: pointer; }
 /* Narrow Settings and Lists: the category or list column shrinks, then (under 560 px, as on the phone) goes above the page; rows may wrap and grow instead of
    overlapping, and their controls wrap onto the next line. */
 .sheet-main[data-narrow] .split { grid-template-columns: var(--sp-200) minmax(0, 1fr); }
-.sheet-main[data-tight] .split { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
-.sheet-main[data-tight] .split > .l { border-right: 0; border-bottom: var(--bw) solid var(--line); flex-direction: row; flex-wrap: wrap; align-content: flex-start; }
-.sheet-main[data-tight] .split > .l .search { flex: 1 0 100%; }
-.sheet-main[data-tight] .split > .l .nav { width: auto; }
+.sheet-main[data-tight] .split { grid-template-columns: minmax(0, 1fr); }
+/* Settings under 560 px: one Category row above the page opens the list of categories (Planner Designs v69 p-narrow-settings-480). */
+.catrow { display: flex; align-items: center; justify-content: space-between; width: 100%; height: var(--sp-40); text-align: left; }
+.catrow > span:last-child { display: inline-flex; align-items: center; gap: var(--sp-4); color: var(--t1); }
+.catlist { display: flex; flex-direction: column; }
+.catlist .nav { width: 100%; height: var(--sp-40); justify-content: space-between; border: 0; background: transparent; text-align: left; }
+.catlist .nav.on { background: var(--sel); }
 .sheet-main[data-narrow] .kv { height: auto; min-height: var(--sp-26); flex-wrap: wrap; row-gap: var(--sp-4); }
 .sheet-main[data-narrow] .kv[style*="height"] { height: auto !important; min-height: var(--sp-40); }
 .sheet-main[data-narrow] .ctl { flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
