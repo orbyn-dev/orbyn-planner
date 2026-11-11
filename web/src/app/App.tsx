@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Icon } from "../ui/primitives/Icon";
 import { Portal } from "../ui/primitives/Portal";
 import { useDialog } from "../ui/primitives/useDialog";
@@ -32,6 +32,8 @@ import { SyncLine, useSyncStatus, withPersistence } from "../features/sync";
 import { useSyncController, useSyncState } from "../state/sync";
 import { Link, RouterProvider, useRouter } from "../state/router";
 import { TitleRow } from "../ui/product/TitleRow";
+import { SidebarRail } from "../ui/product/SidebarRail";
+import { useSidebarWidth } from "../ui/product/sidebarWidth";
 import { isMacShell } from "./titlebar";
 
 const PAGES: Record<string, () => ReactNode> = {
@@ -49,7 +51,7 @@ function NavLink({ item, className = "nav", onNavigate, badge, amberBadge = fals
   return (
     <Link to={item.path} className={className} onClick={onNavigate}>
       <Icon name={item.icon} />
-      <span>{item.label}</span>
+      <span className="lbl">{item.label}</span>
       {badge && <span className={amberBadge ? "n amber" : "n"}>{badge}</span>}
     </Link>
   );
@@ -151,6 +153,7 @@ function Shell() {
   const { path, back, forward, canBack, canForward } = useRouter();
   const mac = useMemo(() => isMacShell(), []);
   const [sideHidden, toggleSide] = useSidebarHidden();
+  const [sideWidth, setSideWidth] = useSidebarWidth();
   const main = useRef<HTMLElement>(null);
   const ui = useUi();
   const { tasks } = usePlanner();
@@ -166,7 +169,7 @@ function Shell() {
   const page = project ? () => <ProjectPage id={decodeURIComponent(project[1]!)} /> : (PAGES[path === "/" ? "/today" : path] ?? PAGES["/today"]!);
 
   return (
-    <div className={mac && sideHidden ? "app side-hidden" : "app"}>
+    <div className={mac && sideHidden ? "app side-hidden" : "app"} style={{ "--side-w": `${sideWidth}px` } as CSSProperties}>
       {mac && <TitleRow sideHidden={sideHidden} onToggle={toggleSide} canBack={canBack} canForward={canForward} onBack={back} onForward={forward} />}
       <a
         className="skip"
@@ -179,6 +182,7 @@ function Shell() {
         Skip to content
       </a>
       <aside className="side">
+        <SidebarRail width={sideWidth} onChange={setSideWidth} />
         <QuickFind />
         <nav aria-label="Primary" className="primary">
           {NAV.map((item) => (
