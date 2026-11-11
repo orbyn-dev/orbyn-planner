@@ -35,7 +35,7 @@ import { TitleRow } from "../ui/product/TitleRow";
 import { SidebarRail } from "../ui/product/SidebarRail";
 import { useSidebarWidth } from "../ui/product/sidebarWidth";
 import { isMacShell } from "./titlebar";
-import { useContentWidth } from "../lib/contentWidth";
+import { useContentWidth, useSheetOverlay } from "../lib/contentWidth";
 
 const PAGES: Record<string, () => ReactNode> = {
   "/today": () => <TodayPage />,
@@ -159,6 +159,7 @@ function Shell() {
   const sheetGrid = useRef<HTMLDivElement>(null);
   const sheetMain = useRef<HTMLDivElement>(null);
   useContentWidth(sheetGrid, sheetMain);
+  useSheetOverlay(sheetGrid);
   const ui = useUi();
   const { tasks } = usePlanner();
   const now = useNow();

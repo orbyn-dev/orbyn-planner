@@ -265,6 +265,13 @@ button { cursor: pointer; }
 .sheet-grid { display: grid; grid-template-columns: minmax(0, 1fr); flex: 1; min-height: 0; }
 .sheet-grid.has-panel { grid-template-columns: minmax(0, 1fr) var(--sp-420); }
 .sheet-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: auto; }
+/* A sheet under 880 px has no room for the 420 px panel beside a usable page (a narrow window, or a wide sidebar): the panel covers the page, as it does on the phone. */
+@media (min-width: 768px) {
+  .sheet-grid[data-overlay] { position: relative; }
+  .sheet-grid[data-overlay].has-panel { grid-template-columns: minmax(0, 1fr); }
+  .sheet-grid[data-overlay] .task-panel { position: absolute; inset: 0; z-index: 5; border-left: 0; }
+  .sheet-grid[data-overlay].has-panel .sheet-main { visibility: hidden; }
+}
 .visually-hidden { position: absolute; width: var(--sp-1); height: var(--sp-1); overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .link-btn { background: none; border: 0; padding: 0; text-align: left; color: inherit; font: inherit; }
 .note { font-size: var(--fs-12-5); }
