@@ -1123,3 +1123,10 @@ button.pillx { border: 0; }
 .reauth-note { display: flex; align-items: center; gap: var(--sp-8); background: var(--raise); border-radius: var(--r-8); padding: var(--sp-8) var(--sp-10); color: var(--t2); font-size: var(--fs-12-5); }
 .reauth-note.bad { background: var(--red-bg); color: var(--red); }
 .field.bad { box-shadow: inset 0 0 0 var(--bw) var(--red); }
+/* The account site's shell (Account Designs v72): the same app on the account host, with its own sidebar. */
+.acct-id { display: flex; align-items: center; gap: var(--sp-10); padding: var(--sp-8) var(--sp-8) var(--sp-12); min-width: 0; }
+.acct-id > div { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
+.acct-id b { font-weight: var(--fw-medium); color: var(--t1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acct-id small { font-size: var(--fs-11-5); }
+.account-site .primary { flex: 1; }
+.account-site button.nav { border: 0; background: transparent; width: 100%; text-align: left; }

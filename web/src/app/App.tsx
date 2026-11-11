@@ -31,6 +31,7 @@ import { NAV, PHONE_MENU, SETTINGS, TABS, type NavItem } from "./nav";
 import { SyncLine, useSyncStatus, withPersistence } from "../features/sync";
 import { useSyncController, useSyncState } from "../state/sync";
 import { Link, RouterProvider, useRouter } from "../state/router";
+import { AccountSite, isAccountSitePath } from "../features/accountSite";
 import { TitleRow } from "../ui/product/TitleRow";
 import { SidebarRail } from "../ui/product/SidebarRail";
 import { useSidebarWidth } from "../ui/product/sidebarWidth";
@@ -151,6 +152,12 @@ function useSidebarHidden(): [boolean, () => void] {
   return [hidden, toggle];
 }
 
+/** The planner, or (on the account paths) the account site's own shell. */
+function Routes() {
+  const { path } = useRouter();
+  return isAccountSitePath(path) ? <AccountSite /> : <Shell />;
+}
+
 function Shell() {
   const { path, back, forward, canBack, canForward } = useRouter();
   const mac = useMemo(() => isMacShell(), []);
@@ -239,7 +246,7 @@ export function App({ store, auth }: { store?: PlannerStore; auth?: AuthServices
               <SyncProvider>
                 <RouterProvider>
                   <NotificationsProvider>
-                    <Shell />
+                    <Routes />
                   </NotificationsProvider>
                 </RouterProvider>
               </SyncProvider>

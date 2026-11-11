@@ -2384,5 +2384,13 @@
         "wait": 600
       }
     ]
+  },
+  "ar-protection": {
+    "kind": "desktop",
+    "design": "protection",
+    "designPage": "account",
+    "route": "/protection",
+    "scenario": "today",
+    "fit": "app"
   }
 }
