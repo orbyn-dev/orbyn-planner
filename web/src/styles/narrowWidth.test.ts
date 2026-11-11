@@ -20,17 +20,21 @@ describe("narrow pages", () => {
     expect(rule(".ph .sub { min-width")).toContain("text-overflow: ellipsis");
   });
 
-  it("Today puts the week under the day once the page is narrow", () => {
-    expect(rule(".sheet-main[data-narrow] .today-cols {")).toContain("grid-template-columns: minmax(0, 1fr)");
+  it("Today puts the week under the day once the page is tight (under 560 px)", () => {
+    expect(rule(".sheet-main[data-tight] .today-cols {")).toContain("grid-template-columns: minmax(0, 1fr)");
   });
 
   it("the Calendar toolbar's own sub title keeps its width: the title gives way first", () => {
     expect(rule(".ph:has(.pills) .sub {")).toContain("flex: none");
   });
 
-  it("the Tasks table drops List and then Priority, and the Board scrolls sideways, instead of squeezing the title", () => {
-    expect(rule(".sheet-main[data-narrow] .tr.tasks {")).toContain("var(--sp-22) minmax(0, 1fr) var(--sp-110) var(--sp-70)");
-    expect(rule(".sheet-main[data-tight] .tr.tasks {")).toContain("var(--sp-22) minmax(0, 1fr) var(--sp-110)");
+  it("the Tasks table drops List and Priority below 640 px and shows the list under the title; the Board scrolls sideways", () => {
+    expect(rule(".sheet-main[data-table] .tr.tasks {")).toContain("var(--sp-22) minmax(0, 1fr) var(--sp-84)");
+    expect(rule(".tcell .lst { display: none")).toContain("color: var(--t3)");
     expect(rule(".sheet-main[data-narrow] .board:not(.scroll) {")).toContain("overflow-x: auto");
+  });
+
+  it("Today's counts sit two by two when tight", () => {
+    expect(rule(".sheet-main[data-tight] .today-stats {")).toContain("repeat(2, minmax(0, 1fr))");
   });
 });

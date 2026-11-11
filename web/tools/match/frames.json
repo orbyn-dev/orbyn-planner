@@ -1924,5 +1924,49 @@
         "wait": 300
       }
     ]
+  },
+  "p-narrow-today-480": {
+    "kind": "desktop",
+    "design": "p-narrow-today-480",
+    "route": "/today",
+    "scenario": "today",
+    "window": {
+      "width": 902,
+      "height": 980,
+      "side": 420
+    }
+  },
+  "p-narrow-tasks-480": {
+    "kind": "desktop",
+    "design": "p-narrow-tasks-480",
+    "route": "/tasks",
+    "scenario": "tasks",
+    "window": {
+      "width": 902,
+      "height": 740,
+      "side": 420
+    }
+  },
+  "p-narrow-tasks-600": {
+    "kind": "desktop",
+    "design": "p-narrow-tasks-600",
+    "route": "/tasks",
+    "scenario": "tasks",
+    "window": {
+      "width": 902,
+      "height": 740,
+      "side": 300
+    }
+  },
+  "p-narrow-projects-480": {
+    "kind": "desktop",
+    "design": "p-narrow-projects-480",
+    "route": "/projects",
+    "scenario": "project-board",
+    "window": {
+      "width": 902,
+      "height": 520,
+      "side": 420
+    }
   }
 }

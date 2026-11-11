@@ -164,9 +164,12 @@ button { cursor: pointer; }
   .today-cols { flex: 1; overflow: hidden; }
   .today-cols > .blk:first-child { overflow: auto; min-height: 0; padding-right: var(--sp-10); }
 }
-/* Narrow Today: the week at a glance goes under the day, and the page scrolls as one. */
-.sheet-main[data-narrow] .today-cols { grid-template-columns: minmax(0, 1fr); flex: none; overflow: visible; }
-.sheet-main[data-narrow] .today-cols > .blk:first-child { overflow: visible; padding-right: 0; }
+/* Narrow Today (Planner Designs v69 p-narrow-today-480): under 560 px the counts sit two by two, the week at a glance goes under the day, the page scrolls as one, and the date shortens. */
+@media (min-width: 768px) {
+  .sheet-main[data-tight] .today-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.sheet-main[data-tight] .today-cols { grid-template-columns: minmax(0, 1fr); flex: none; overflow: visible; }
+.sheet-main[data-tight] .today-cols > .blk:first-child { overflow: visible; padding-right: 0; }
 .card.red-ring { max-width: var(--sp-520); box-shadow: inset 0 0 0 var(--bw) var(--red-bg); }
 .row .meta.amber { color: var(--amber-text); font-weight: var(--fw-medium); }
 .sw { width: var(--sp-8); height: var(--sp-8); border-radius: var(--r-3); display: inline-block; }
@@ -528,10 +531,16 @@ button.pillx { border: 0; }
 .move-btn { align-self: flex-start; padding: 0; border: 0; background: none; color: var(--t3); font-size: var(--fs-11-5); text-decoration: underline; text-underline-offset: var(--sp-2); }
 .board.scroll { overflow-x: auto; }
 /* Narrow Tasks: the List column goes first, then Priority (as on the phone), so the title keeps room; the Board's lanes keep a readable width and the board scrolls sideways. */
-.sheet-main[data-narrow] .tr.tasks { grid-template-columns: var(--sp-22) minmax(0, 1fr) var(--sp-110) var(--sp-70) !important; }
-.sheet-main[data-narrow] .tr.tasks > :nth-child(3) { display: none; }
-.sheet-main[data-tight] .tr.tasks { grid-template-columns: var(--sp-22) minmax(0, 1fr) var(--sp-110) !important; }
-.sheet-main[data-tight] .tr.tasks > :nth-child(5) { display: none; }
+@media (min-width: 768px) {
+  .sheet-main[data-table] .tr.tasks { grid-template-columns: var(--sp-22) minmax(0, 1fr) var(--sp-84) !important; }
+  .sheet-main[data-table] .tr.tasks > :nth-child(3), .sheet-main[data-table] .tr.tasks > :nth-child(5) { display: none; }
+  .sheet-main[data-table] .tr.tasks, .sheet-main[data-table] .tr.projects { min-height: var(--sp-46); }
+}
+.tcell { display: flex; flex-direction: column; min-width: 0; }
+/* Under a task's (or project's) title in a narrow table: its list (or next task) in muted text. */
+.tcell .lst { display: none; align-items: center; gap: var(--sp-5); color: var(--t3); font-size: var(--fs-12); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tcell .lst .sw { flex: none; }
+@media (min-width: 768px) { .tcell .lst { display: flex; } }
 .sheet-main[data-narrow] .board:not(.scroll) { grid-auto-flow: column; grid-auto-columns: minmax(var(--sp-176), 1fr); grid-template-columns: none !important; overflow-x: auto; }
 .project-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .month-row { display: contents; }
@@ -1016,8 +1025,10 @@ button.pillx { border: 0; }
 /* Lists (Planner Designs lists, p-lists-offline): rows 38 px apart; the offline notice is a banner above them. */
 .tr.list { min-height: var(--sp-38); }
 /* Narrow Projects: the Next column goes first, so the project name stays on one line; tag chips in a tight Tasks row would only show their first letters, so they wait for room. */
-.sheet-main[data-narrow] .tr.projects { grid-template-columns: minmax(0, 1fr) var(--sp-110) var(--sp-120) !important; }
-.sheet-main[data-narrow] .tr.projects > :nth-child(2) { display: none; }
+@media (min-width: 768px) {
+  .sheet-main[data-table] .tr.projects { grid-template-columns: minmax(0, 1fr) var(--sp-110) var(--sp-120) !important; }
+  .sheet-main[data-table] .tr.projects > :nth-child(2) { display: none; }
+}
 .sheet-main[data-tight] .ttwrap .tagchips { display: none; }
 .offline-banner { padding: var(--sp-4) var(--sp-28) var(--sp-10); }
 

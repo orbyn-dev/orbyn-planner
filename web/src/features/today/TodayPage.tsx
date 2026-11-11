@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { MotionList } from "../../ui/primitives/MotionList";
+import { useContentFlags } from "../../lib/contentWidth";
 import { useNow } from "../../state/clock";
 import { useRouter } from "../../state/router";
 import { useUi } from "../../ui/product/UiProvider";
@@ -155,6 +156,7 @@ export function TodayPage() {
   const { navigate } = useRouter();
   const auth = useAuth();
   const phone = useMediaQuery(PHONE_QUERY);
+  const { tight } = useContentFlags();
   const [weekOpen, setWeekOpen] = useState(false);
   const clockNow = useNow();
   // Everything below reads the day and the time to the minute, so the page is worked out once a minute, not on every render (the
@@ -292,7 +294,7 @@ export function TodayPage() {
 
   return (
     <>
-      <PageHeader title={title} sub={`${dayName} ${now.getDate()} ${MONTHS[now.getMonth()]} · ${status.kind === "offline" ? "offline" : summary}`}>
+      <PageHeader title={title} sub={`${tight ? dateLabel : `${dayName} ${now.getDate()} ${MONTHS[now.getMonth()]}`} · ${status.kind === "offline" ? "offline" : summary}`}>
         {!(phone && status.kind === "synced") && <SyncLine status={status} onRetry={retry} waiting={waiting} />}
         {phone && (
           <button type="button" className="avatar menu-btn" aria-label="Menu" aria-haspopup="dialog" onClick={ui.openMenu}>
