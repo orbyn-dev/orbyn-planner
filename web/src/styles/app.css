@@ -514,7 +514,7 @@ button.pillx { border: 0; }
 .sheet-main[data-narrow] .tr.tasks > :nth-child(3) { display: none; }
 .sheet-main[data-tight] .tr.tasks { grid-template-columns: var(--sp-22) minmax(0, 1fr) var(--sp-110) !important; }
 .sheet-main[data-tight] .tr.tasks > :nth-child(5) { display: none; }
-.sheet-main[data-narrow] .board { grid-auto-flow: column; grid-auto-columns: minmax(var(--sp-176), 1fr); grid-template-columns: none !important; overflow-x: auto; }
+.sheet-main[data-narrow] .board:not(.scroll) { grid-auto-flow: column; grid-auto-columns: minmax(var(--sp-176), 1fr); grid-template-columns: none !important; overflow-x: auto; }
 .project-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .month-row { display: contents; }
 .md:focus-visible, .slot:focus-visible { outline: var(--bw-2) solid var(--t1); outline-offset: var(--sp-n2); }

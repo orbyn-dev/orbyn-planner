@@ -31,6 +31,6 @@ describe("narrow pages", () => {
   it("the Tasks table drops List and then Priority, and the Board scrolls sideways, instead of squeezing the title", () => {
     expect(rule(".sheet-main[data-narrow] .tr.tasks {")).toContain("var(--sp-22) minmax(0, 1fr) var(--sp-110) var(--sp-70)");
     expect(rule(".sheet-main[data-tight] .tr.tasks {")).toContain("var(--sp-22) minmax(0, 1fr) var(--sp-110)");
-    expect(rule(".sheet-main[data-narrow] .board {")).toContain("overflow-x: auto");
+    expect(rule(".sheet-main[data-narrow] .board:not(.scroll) {")).toContain("overflow-x: auto");
   });
 });
