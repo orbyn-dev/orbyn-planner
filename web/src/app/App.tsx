@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { Icon } from "../ui/primitives/Icon";
 import { Portal } from "../ui/primitives/Portal";
 import { useDialog } from "../ui/primitives/useDialog";
-import { CalendarPage, EventPanel, NewEventDialog } from "../features/calendar";
+import { CalendarPage, DayPanel, EventPanel, NewEventDialog } from "../features/calendar";
 import { ListsPage } from "../features/lists";
 import { AuthGate, DeletionBanner, DeviceDataOffer, MemoryOnlyGuard } from "../features/account";
 import { NotificationsPage } from "../features/notifications";
@@ -198,8 +198,9 @@ function Shell() {
       </aside>
       <main id="content" ref={main} tabIndex={-1} className="sheet">
         <DeletionBanner />
-        <div ref={sheetGrid} className={ui.taskId || ui.eventKey ? "sheet-grid has-panel" : "sheet-grid"}>
+        <div ref={sheetGrid} className={ui.taskId || ui.eventKey || ui.dayKey ? "sheet-grid has-panel" : "sheet-grid"}>
           <div ref={sheetMain} className="sheet-main"><ContentWidthContext.Provider value={widthFlags}>{showFirstRun ? <FirstRun onDone={firstRun.finish} /> : page()}</ContentWidthContext.Provider></div>
+          <DayPanel />
           <TaskPanel />
           <EventPanel />
         </div>

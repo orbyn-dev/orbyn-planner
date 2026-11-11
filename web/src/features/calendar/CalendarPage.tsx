@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNow } from "../../state/clock";
 import { usePrefs } from "../../state/prefs";
 import { useUi } from "../../ui/product/UiProvider";
@@ -114,8 +114,17 @@ function CalendarGrid() {
   const { prefs } = usePrefs();
   const [view, setView] = useState<View>("week");
   const [anchor, setAnchor] = useState(() => dateKey(now));
-  const { week3 } = useContentFlags();
+  const { week3, dots } = useContentFlags();
   const threeDays = week3 && view === "week";
+  // The day agenda belongs to the narrow month: it goes when the view or the width changes, and with the page.
+  const closeDay = useRef(ui.closeDay);
+  useEffect(() => {
+    closeDay.current = ui.closeDay;
+  });
+  useEffect(() => {
+    if (view !== "month" || !dots) closeDay.current();
+  }, [view, dots]);
+  useEffect(() => () => closeDay.current(), []);
 
   const days = useMemo(() => viewDays(view, anchor, prefs.weekStart, prefs.weekDays, threeDays), [view, anchor, prefs.weekStart, prefs.weekDays, threeDays]);
   const shown = useMemo(() => {

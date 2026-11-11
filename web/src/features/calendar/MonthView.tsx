@@ -64,7 +64,7 @@ export function MonthView({ days, anchor, occurrences, today, weekStart, onDay }
             const inMonth = date.getMonth() === month;
             if (day > lastOfMonth) return <div className="md after" role="gridcell" aria-hidden="true" key={day} />;
             const here = occurrences.filter((o) => touchesDay(o, day));
-            const classes = ["md", day === today ? "today" : "", inMonth ? "" : "out"].filter(Boolean).join(" ");
+            const classes = ["md", day === today ? "today" : "", inMonth ? "" : "out", dots && ui.dayKey === day ? "sel" : ""].filter(Boolean).join(" ");
             return (
               <div
                 className={classes}
@@ -75,7 +75,7 @@ export function MonthView({ days, anchor, occurrences, today, weekStart, onDay }
                 aria-label={`${WEEKDAYS[date.getDay()]} ${date.getDate()}. Enter adds an event.`}
                 onFocus={(e) => e.target === e.currentTarget && setFocusDay(day)}
                 onKeyDown={(e) => onKey(e, day)}
-                onClick={dots ? () => onDay(day) : undefined}
+                onClick={dots ? () => ui.openDay(day) : undefined}
               >
                 <button type="button" className="n" aria-label={`${date.getDate()} ${WEEKDAYS[date.getDay()]}`} onClick={() => onDay(day)}>{date.getDate()}</button>
                 {dots ? (
