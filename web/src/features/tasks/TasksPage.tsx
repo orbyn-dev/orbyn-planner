@@ -206,7 +206,7 @@ export function TasksPage() {
       ) : view === "list" ? (
         <div className="tbl-wrap">
           <ul className="tbl">
-            <li className="tr h" aria-hidden="true" style={{ gridTemplateColumns: "var(--sp-22) minmax(0,1fr) var(--sp-120) var(--sp-110) var(--sp-70)" }}>
+            <li className="tr h tasks" aria-hidden="true" style={{ gridTemplateColumns: "var(--sp-22) minmax(0,1fr) var(--sp-120) var(--sp-110) var(--sp-70)" }}>
               <span /><span>Task</span><span>List</span><span>Due</span><span>Priority</span>
             </li>
           </ul>
