@@ -3,6 +3,7 @@ export * from "./CalendarList";
 export * from "./CalendarPage";
 export * from "./CalendarRow";
 export * from "./CalendarsMenu";
+export * from "./DayPanel";
 export * from "./EventPanel";
 export * from "./EventScopeDialog";
 export * from "./MonthView";
