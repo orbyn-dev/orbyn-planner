@@ -4,7 +4,8 @@ import { createMemoryKeyStore } from "../../data/account/keyStore";
 import { FakeAuthCrypto } from "../../testing/FakeAuthCrypto";
 import { createMockEngine, type MockEngine } from "../../testing/MockEngine";
 import { signedUp } from "../../testing/signedUp";
-import { confirmIdentity, removeDevice } from "./flows";
+import { MOCK_TOTP_CODE } from "../../testing/MockEngine";
+import { confirmIdentity, confirmTotp, disableTotp, enrolTotp, removeDevice } from "./flows";
 import { createAuthServices, type AuthServices } from "./auth";
 
 const crypto = new FakeAuthCrypto();
@@ -73,5 +74,24 @@ describe("Confirm it’s you: the sign-in the engine asks for", () => {
     const offline = browser(engine, () => Promise.reject(new TypeError("offline")));
     const down = (await confirmIdentity(offline, session, SAM.password).catch((e: unknown) => e)) as ApiFailure;
     expect(down.code).toBe("network");
+  });
+});
+
+describe("two-factor needs the same sign-in", () => {
+  it("starting set-up and turning it off are asked to sign in again after ten minutes, and go through after one", async () => {
+    const { engine, services, session } = await twoDevices();
+    engine.ageSessions();
+    expect(((await enrolTotp(services, session).catch((e: unknown) => e)) as ApiFailure).code).toBe("reauthentication_required");
+    const fresh = await confirmIdentity(services, session, SAM.password);
+    await enrolTotp(services, fresh);
+    await confirmTotp(services, fresh, MOCK_TOTP_CODE);
+    expect(engine.accounts.get(SAM.email)!.totp?.enabled).toBe(true);
+
+    engine.ageSessions();
+    expect(((await disableTotp(services, fresh).catch((e: unknown) => e)) as ApiFailure).code).toBe("reauthentication_required");
+    expect(engine.accounts.get(SAM.email)!.totp?.enabled).toBe(true); // refused: still on
+    const again = await confirmIdentity(services, fresh, SAM.password);
+    await disableTotp(services, again); // the same signed request goes through
+    expect(engine.accounts.get(SAM.email)!.totp).toBeUndefined();
   });
 });

@@ -1574,6 +1574,20 @@ describe("two-factor", () => {
     return auth;
   }
 
+  it("starting set-up with an old sign-in asks “Confirm it’s you” first, and then starts it", async () => {
+    await signedIn();
+    const row = await screen.findByText("Two-factor");
+    await waitFor(() => expect(within(row.parentElement!).getByText("Off")).toBeInTheDocument());
+    engine.ageSessions();
+    await userEvent.click(within(row.parentElement!).getByRole("button", { name: "Turn on…" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Continue" }));
+    const ask = await screen.findByRole("dialog", { name: "Confirm it’s you" });
+    expect(within(ask).getByText("To turn on two-factor")).toBeInTheDocument();
+    await userEvent.type(within(ask).getByLabelText("Password"), SAM.password);
+    await userEvent.click(within(ask).getByRole("button", { name: "Confirm" }));
+    expect(await screen.findByRole("img", { name: "QR code for your authenticator app" })).toBeInTheDocument();
+  });
+
   it("Settings turns it on with a QR code made here, the secret as text and a code, shows ten recovery codes once to copy or download, and turns it off with no code", async () => {
     await signedIn();
     const row = await screen.findByText("Two-factor");

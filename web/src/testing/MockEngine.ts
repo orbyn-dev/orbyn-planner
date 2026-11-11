@@ -428,8 +428,8 @@ export function createMockEngine(now: () => number = () => Date.now()) {
       // Accepted once: each signature must be strictly later than the last one this device had accepted for the action.
       const slot = `${device.id}:${action}`;
       if (!proven || signedAt <= (state.lastManage.get(slot) ?? 0)) return fail(401, "device_proof_required", "This request needs the device's signature.");
-      // Turning two-factor off needs a password sign-in from the last ten minutes; the refusal does not use up the signature.
-      if (action === "disable" && !fresh()) return fail(401, "reauthentication_required", "Sign in again to do this.");
+      // Starting two-factor set-up and turning it off need a password sign-in from the last ten minutes; the refusal does not use up the signature.
+      if ((action === "disable" || action === "enrol") && !fresh()) return fail(401, "reauthentication_required", "Sign in again to do this.");
       state.lastManage.set(slot, signedAt);
       if (action === "enrol") {
         if (account.totp?.enabled) return fail(409, "totp_already_enabled", "Two-factor is already on.");

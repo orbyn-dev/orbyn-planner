@@ -71,17 +71,22 @@ function EnrolDialog({ onClose, onDone }: { onClose: () => void; onDone: () => v
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [started, setStarted] = useState(false);
+  const { run, prompt } = useReauth();
 
   const start = async () => {
     setBusy(true);
     setError(null);
     try {
-      setEnrolment(await enrolTotp(auth.services, auth.session!));
+      // Starting set-up is gated by a recent sign-in too: if the engine asks, "Confirm it’s you" comes first and the start is sent again.
+      setEnrolment(await run("To turn on two-factor", () => enrolTotp(auth.services, auth.session!)));
       setStarted(true);
     } catch (e) {
-      // The engine says it is already on: the row is out of date, so it is refreshed.
-      if (e instanceof ApiFailure && e.code === "totp_already_enabled") onDone();
-      setError(describeError(e));
+      if (e instanceof ReauthCancelled) onClose();
+      else {
+        // The engine says it is already on: the row is out of date, so it is refreshed.
+        if (e instanceof ApiFailure && e.code === "totp_already_enabled") onDone();
+        setError(describeError(e));
+      }
     } finally {
       setBusy(false);
     }
@@ -101,6 +106,7 @@ function EnrolDialog({ onClose, onDone }: { onClose: () => void; onDone: () => v
     }
   };
 
+  if (prompt) return <>{prompt}</>;
   return (
     <Modal label="Turn on two-factor" onClose={codes ? () => undefined : onClose}>
       {codes ? (
