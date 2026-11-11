@@ -292,7 +292,10 @@ function SignedInAccount({ onOpenPrivacy }: { onOpenPrivacy?: () => void }) {
                 </button>
               )}
               {!d.current && (
-                <button type="button" className="ghost" disabled={paused} title={paused ? PAUSED_HINT : undefined} aria-label={`Remove ${d.name}`} onClick={() => setRemoving(d)}>Remove</button>
+                <span className="t3">·</span>
+              )}
+              {!d.current && (
+                <button type="button" className="link-btn" disabled={paused} title={paused ? PAUSED_HINT : undefined} aria-label={`Remove ${d.name}`} onClick={() => setRemoving(d)}>Remove</button>
               )}
             </b>
           </li>

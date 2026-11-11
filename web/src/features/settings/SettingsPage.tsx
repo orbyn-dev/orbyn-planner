@@ -3,6 +3,7 @@ import { ProtectionSettings } from "../account";
 import { useState } from "react";
 import { applyChoice, chooseTheme, readDarkTheme, readStoredChoice, setDarkTheme, type DarkTheme, type ThemeChoice } from "../../ui/theme";
 import { usePrefs } from "../../state/prefs";
+import { InstallHint } from "../../ui/product/InstallHint";
 import { Icon } from "../../ui/primitives/Icon";
 import { CalendarForms, CalendarList, UnsupportedRepeats } from "../calendar";
 import { AccountSettings } from "../account";
@@ -10,12 +11,23 @@ import { NotificationsSettings } from "../notifications";
 import { DeleteAccountRow } from "../account";
 import { ExportSettings } from "../export";
 import { TagsSettings } from "../tasks";
-import { InstallHint } from "../../ui/product/InstallHint";
 import { useContentFlags } from "../../lib/contentWidth";
+import { OptionMenu, type MenuOption } from "../../ui/primitives/OptionMenu";
+import { PopoverRow } from "../../ui/primitives/PopoverRow";
+import type { WeekStart } from "../../core/planner/dates";
 
 const THEME_ROWS = [["system", "System"], ["light", "Light"], ["dark", "Dark"]] as const;
 const DARK_ROWS = [["dark", "Dark"], ["dim", "Dim"]] as const;
+const WEEK_START_ROWS = [["mon", "Monday"], ["sun", "Sunday"], ["sat", "Saturday"]] as const;
+const WEEK_START_OPTIONS: readonly MenuOption<WeekStart>[] = WEEK_START_ROWS.map(([value, label]) => ({ value, label }));
+const WEEK_DAYS_OPTIONS: readonly MenuOption<5 | 7>[] = [{ value: 5, label: "5 days" }, { value: 7, label: "7 days" }];
+const THEME_OPTIONS: readonly MenuOption<ThemeChoice>[] = THEME_ROWS.map(([value, label]) => ({ value, label }));
+const DARK_OPTIONS: readonly MenuOption<DarkTheme>[] = DARK_ROWS.map(([value, label]) => ({ value, label }));
+/** The Theme row says Dark for either dark theme; the Dark theme row says which one (Planner Designs settings). */
+const themeValue = (choice: ThemeChoice) => (choice === "dark" || choice === "dim" ? "Dark" : choice === "light" ? "Light" : "System");
 const CATEGORIES = ["Account", "Planning", "Notifications", "Connected apps", "Calendars", "Tags", "Privacy"] as const;
+/** A settings row is the design's 44px row with a divider under it (Planner Designs settings). */
+const SETTING_ROW = { height: "var(--sp-44)", borderBottom: "var(--bw) solid var(--line)" } as const;
 
 export function SettingsPage() {
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]>(() => {
@@ -100,76 +112,65 @@ export function SettingsPage() {
             <>
               <div className="bh"><b>Your week</b><span></span></div>
               <div className="card" style={{ gap: 0, padding: "0 var(--sp-14)" }}>
-                <div className="kv" style={{ height: "var(--sp-44)", borderBottom: "var(--bw) solid var(--line)" }}>
-                  <span id="week-start-label">Week starts on</span>
-                  <div role="radiogroup" aria-labelledby="week-start-label" className="pills">
-                    {(["mon", "sun", "sat"] as const).map((d) => (
-                      <button key={d} type="button" role="radio" aria-checked={prefs.weekStart === d} className="pill" onClick={() => setPrefs({ weekStart: d })}>
-                        {d === "mon" ? "Monday" : d === "sun" ? "Sunday" : "Saturday"}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="kv" style={{ height: "var(--sp-44)" }}>
-                  <span id="week-days-label">Days in the week view</span>
-                  <div role="radiogroup" aria-labelledby="week-days-label" className="pills">
-                    {([5, 7] as const).map((n) => (
-                      <button key={n} type="button" role="radio" aria-checked={prefs.weekDays === n} className="pill" onClick={() => setPrefs({ weekDays: n })}>
-                        {n} days
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <PopoverRow
+                  label="Week starts on"
+                  value={WEEK_START_ROWS.find(([d]) => d === prefs.weekStart)![1]}
+                  rowStyle={SETTING_ROW}
+                  note={false}
+                >
+                  {({ close }) => (
+                    <OptionMenu label="Week starts on" options={WEEK_START_OPTIONS} selected={prefs.weekStart} onPick={(d) => { setPrefs({ weekStart: d }); close(); }} />
+                  )}
+                </PopoverRow>
+                <PopoverRow
+                  label="Days in the week view"
+                  value={`${prefs.weekDays} days`}
+                  rowStyle={{ ...SETTING_ROW, borderBottom: undefined }}
+                  note={false}
+                >
+                  {({ close }) => (
+                    <OptionMenu label="Days in the week view" options={WEEK_DAYS_OPTIONS} selected={prefs.weekDays} onPick={(n) => { setPrefs({ weekDays: n }); close(); }} />
+                  )}
+                </PopoverRow>
               </div>
               <div className="bh"><b>Appearance</b><span></span></div>
               <div className="card" style={{ gap: 0, padding: "0 var(--sp-14)" }}>
-                <div className="kv" style={{ height: "var(--sp-44)", borderBottom: "var(--bw) solid var(--line)" }}>
-                  <span id="theme-label">Theme</span>
-                  <div role="radiogroup" aria-labelledby="theme-label" className="pills">
-                    {THEME_ROWS.map(([c, label]) => (
-                      <button
-                        key={c}
-                        type="button"
-                        role="radio"
-                        aria-checked={c === "dark" ? choice === "dark" || choice === "dim" : choice === c}
-                        className="pill"
-                        onClick={() => {
-                          // Dark uses the dark theme chosen below.
-                          const next: ThemeChoice = c === "dark" ? darkTheme : c;
-                          setChoice(next);
-                          chooseTheme(next);
-                        }}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="kv" style={{ height: "var(--sp-44)" }}>
-                  <span id="dark-theme-label">Dark theme</span>
-                  <div role="radiogroup" aria-labelledby="dark-theme-label" className="pills">
-                    {DARK_ROWS.map(([d, label]) => (
-                      <button
-                        key={d}
-                        type="button"
-                        role="radio"
-                        aria-checked={darkTheme === d}
-                        className="pill"
-                        onClick={() => {
-                          setDark(d);
-                          setDarkTheme(d);
-                          // Chosen Dark now follows it; System follows it when the system is dark.
-                          if (choice === "dark" || choice === "dim") {
-                            setChoice(d);
-                            chooseTheme(d);
-                          } else applyChoice(choice);
-                        }}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <PopoverRow label="Theme" value={themeValue(choice)} rowStyle={SETTING_ROW} note={false}>
+                  {({ close }) => (
+                    <OptionMenu
+                      label="Theme"
+                      options={THEME_OPTIONS}
+                      selected={choice === "dim" ? "dark" : choice}
+                      onPick={(c) => {
+                        // Dark uses the dark theme chosen below.
+                        const next: ThemeChoice = c === "dark" ? darkTheme : c;
+                        setChoice(next);
+                        chooseTheme(next);
+                        close();
+                      }}
+                    />
+                  )}
+                </PopoverRow>
+                {/* The frame names both dark themes rather than the chosen one (Planner Designs settings); the menu marks the choice. */}
+                <PopoverRow label="Dark theme" value="Dark · Dim" rowStyle={{ ...SETTING_ROW, borderBottom: undefined }} note={false}>
+                  {({ close }) => (
+                    <OptionMenu
+                      label="Dark theme"
+                      options={DARK_OPTIONS}
+                      selected={darkTheme}
+                      onPick={(d) => {
+                        setDark(d);
+                        setDarkTheme(d);
+                        // Chosen Dark now follows it; System follows it when the system is dark.
+                        if (choice === "dark" || choice === "dim") {
+                          setChoice(d);
+                          chooseTheme(d);
+                        } else applyChoice(choice);
+                        close();
+                      }}
+                    />
+                  )}
+                </PopoverRow>
               </div>
               <InstallHint />
             </>

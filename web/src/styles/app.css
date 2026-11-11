@@ -200,7 +200,8 @@ button { cursor: pointer; }
 
 .split { display: grid; grid-template-columns: var(--sp-260) minmax(0, 1fr); min-height: 0; flex: 1; }
 .split > .l { border-right: var(--bw) solid var(--line); padding: var(--sp-12) var(--sp-10); display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
-.split > .l .nav { width: 100%; border: 0; background: transparent; text-align: left; font-size: var(--fs-13); }
+/* The design's base .nav is 32px; only the global sidebar narrows it (.side .nav), so a split page's rows keep 32 (Planner Designs settings). */
+.split > .l .nav { width: 100%; height: var(--sp-32); border: 0; background: transparent; text-align: left; font-size: var(--fs-13); }
 .split > .l .nav.on { background: var(--sel); }
 .split > .r { min-width: 0; display: flex; flex-direction: column; }
 /* Narrow Settings and Lists: the category or list column shrinks, then (under 560 px, as on the phone) goes above the page; rows may wrap and grow instead of
@@ -217,7 +218,8 @@ button { cursor: pointer; }
 .sheet-main[data-narrow] .kv[style*="height"] { height: auto !important; min-height: var(--sp-40); }
 .sheet-main[data-narrow] .ctl { flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
 .sheet-main[data-narrow] .srow { flex-wrap: wrap; }
-.split .ph h1, .split .ph h2 { font-size: var(--fs-18); }
+/* A split page keeps its 22px heading; only the settings category title is smaller (Planner Designs settings). */
+.split .ph h2 { font-size: var(--fs-18); }
 
 /* Phone */
 .tabbar { display: none; }
@@ -586,6 +588,9 @@ button.pillx { border: 0; }
 .account-actions { display: flex; gap: var(--sp-8); justify-content: flex-end; flex-wrap: wrap; }
 .amber-text { color: var(--amber-text); font-weight: var(--fw-medium); }
 .device-row b { align-items: center; }
+/* A device's Remove is a word after its state, not a button box (Planner Designs settings-account). */
+.device-row .link-btn { color: var(--red); }
+.device-row .link-btn:disabled { color: var(--t3); }
 
 /* Tags: a small chip next to a task's title, and the row that manages them in the task panel */
 .ttwrap { display: flex; align-items: center; gap: var(--sp-8); min-width: 0; overflow: hidden; }
@@ -772,8 +777,8 @@ button.pillx { border: 0; }
 .pm-empty { margin: var(--sp-14) 0 0; }
 
 /* In the task and event panels and the new task and event cards a row is a label and its value; the control looks like the value until it is hovered or focused. */
-.task-panel .kv .ctl .inp, .authcard .kv .ctl .inp { border-color: transparent; background: transparent; text-align: right; }
-.task-panel .kv .ctl .inp:hover, .authcard .kv .ctl .inp:hover, .task-panel .kv .ctl .inp:focus-visible, .authcard .kv .ctl .inp:focus-visible { border-color: var(--line2); background: var(--raise); }
+.task-panel .kv .ctl .inp, .authcard .kv .ctl .inp, .split .kv .ctl .inp { border-color: transparent; background: transparent; text-align: right; }
+.task-panel .kv .ctl .inp:hover, .authcard .kv .ctl .inp:hover, .split .kv .ctl .inp:hover, .task-panel .kv .ctl .inp:focus-visible, .authcard .kv .ctl .inp:focus-visible, .split .kv .ctl .inp:focus-visible { border-color: var(--line2); background: var(--raise); }
 /* The View options popover on Tasks. */
 .view-options { display: flex; flex-direction: column; gap: var(--sp-8); width: var(--sp-280); }
 .vo-group { display: flex; flex-direction: column; gap: var(--sp-6); align-items: flex-start; }

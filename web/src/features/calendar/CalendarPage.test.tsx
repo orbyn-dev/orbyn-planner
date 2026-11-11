@@ -568,8 +568,10 @@ describe("Calendars (in Settings)", () => {
 describe("Settings · Calendars", () => {
   it("lists the calendars and lets the week be set", async () => {
     await open({ path: "/settings" });
-    expect(screen.getByRole("radio", { name: "7 days" })).toBeChecked();
-    await userEvent.click(screen.getByRole("radio", { name: "5 days" }));
+    // The row shows the current choice; the choices open from it (Planner Designs settings).
+    expect(screen.getByRole("button", { name: "Days in the week view, 7 days" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Days in the week view, 7 days" }));
+    await userEvent.click(screen.getByRole("menuitemradio", { name: "5 days" }));
     expect(JSON.parse(localStorage.getItem("orbyn-planner.prefs")!)).toMatchObject({ weekDays: 5 });
     await userEvent.click(screen.getByRole("button", { name: "Calendars" }));
     expect(screen.getByRole("list", { name: "Calendars" })).toHaveTextContent("Personal");

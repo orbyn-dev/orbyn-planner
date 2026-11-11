@@ -6,7 +6,7 @@ import { usePopover } from "./usePopover";
  * it). The popover applies changes as they are picked, so there is no Save; Escape or a click outside closes it and focus returns to the
  * row's value. `children` gets `close`, which also returns focus.
  */
-export function PopoverRow({ label, value, disabled, style, wide, children }: { label: string; value: string; disabled?: boolean; style?: CSSProperties; wide?: boolean; children: (api: { close: () => void }) => ReactNode }) {
+export function PopoverRow({ label, value, disabled, style, rowStyle, wide, note = true, children }: { label: string; value: string; disabled?: boolean; style?: CSSProperties; rowStyle?: CSSProperties; wide?: boolean; note?: boolean; children: (api: { close: () => void }) => ReactNode }) {
   const [open, setOpen] = useState(false);
   const anchor = useRef<HTMLButtonElement>(null);
   const pop = usePopover(open, () => setOpen(false), anchor);
@@ -20,7 +20,7 @@ export function PopoverRow({ label, value, disabled, style, wide, children }: { 
     setBack((n) => n + 1);
   };
   return (
-    <div className="kv">
+    <div className="kv" style={rowStyle}>
       <span>{label}</span>
       <b className="ctl sync-wrap" style={style}>
         <button ref={anchor} type="button" className="inp rowval" disabled={disabled} aria-haspopup="dialog" aria-expanded={open} aria-label={`${label}, ${value}`} onClick={() => setOpen(!open)}>
@@ -29,7 +29,7 @@ export function PopoverRow({ label, value, disabled, style, wide, children }: { 
         {open && (
           <div ref={pop} className={wide ? "card popover row-pop wide" : "card popover row-pop"} role="dialog" aria-label={label}>
             {children({ close })}
-            <p className="t3 row-pop-note">Changes apply as you pick; there is no Save. Escape or a click outside closes it and focus returns to the row.</p>
+            {note && <p className="t3 row-pop-note">Changes apply as you pick; there is no Save. Escape or a click outside closes it and focus returns to the row.</p>}
           </div>
         )}
       </b>
