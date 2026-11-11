@@ -42,7 +42,7 @@ function TaskCard({ task, now }: { task: Task; now: Date }) {
   );
 }
 
-export function TimeGrid({ days, occurrences, today, now, mode }: { days: string[]; occurrences: Occurrence[]; today: string; now: Date; mode: "week" | "day" }) {
+export function TimeGrid({ days, occurrences, today, now, mode, side = true }: { days: string[]; occurrences: Occurrence[]; today: string; now: Date; mode: "week" | "day"; /** The column beside the grid (This week, Tasks today); the 3-day narrow week leaves it out. */ side?: boolean }) {
   const { calendars, tasks } = usePlanner();
   const ui = useUi();
   const scroller = useRef<HTMLDivElement>(null);
@@ -107,7 +107,7 @@ export function TimeGrid({ days, occurrences, today, now, mode }: { days: string
   const todayTasks = tasks.filter((t) => t.deletedAt === null && t.due !== null && t.due.slice(0, 10) === first);
 
   return (
-    <div className={mode === "day" ? "calwrap day" : "calwrap"}>
+    <div className={`calwrap${mode === "day" ? " day" : ""}${side ? "" : " single"}`}>
       <div className="calmain">
         <div className="cal" style={{ gridTemplateColumns: columns }}>
           <div />
@@ -198,7 +198,7 @@ export function TimeGrid({ days, occurrences, today, now, mode }: { days: string
         </div>
       </div>
 
-      <aside className="cal-side" aria-label={mode === "day" ? "Tasks today" : "This week"}>
+      {side && <aside className="cal-side" aria-label={mode === "day" ? "Tasks today" : "This week"}>
         {mode === "week" ? (
           <>
             <div className="bh"><b>This week</b></div>
@@ -244,7 +244,7 @@ export function TimeGrid({ days, occurrences, today, now, mode }: { days: string
             )}
           </>
         )}
-      </aside>
+      </aside>}
     </div>
   );
 }
