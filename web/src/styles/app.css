@@ -813,6 +813,17 @@ button.pillx { border: 0; }
   .ph:has(.pills) .sub { flex: none; white-space: nowrap; }
   .ph:has(.pills) .acts { flex: none; flex-wrap: nowrap; }
 }
+/* Narrow Calendar on a desktop window: the toolbar wraps onto a second line instead of running off the page, the side column goes under the grid, and a
+   week keeps readable day columns (the grid scrolls sideways) instead of 60 px slivers. */
+@media (min-width: 768px) {
+  .sheet-main[data-narrow] .ph:has(.pills) { flex-wrap: wrap; }
+  .sheet-main[data-narrow] .ph:has(.pills) .acts { flex-wrap: wrap; max-width: 100%; }
+  .sheet-main[data-narrow] .calwrap, .sheet-main[data-narrow] .calwrap.day { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  .sheet-main[data-narrow] .cal-side { border-left: 0; border-top: var(--bw) solid var(--line); max-height: var(--sp-200); }
+  .sheet-main[data-narrow] .calwrap:not(.day) .calmain { overflow-x: auto; }
+  .sheet-main[data-narrow] .calwrap:not(.day) .calmain > * { min-width: var(--sp-540); }
+  .sheet-main[data-narrow] .month { padding-left: var(--sp-16); padding-right: var(--sp-16); }
+}
 @media (max-width: 1240px) {
   .cal-btn .lbl { display: none; }
   .cal-btn { padding: 0; width: var(--sp-30); justify-content: center; }
