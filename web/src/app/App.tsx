@@ -51,7 +51,7 @@ function NavLink({ item, className = "nav", onNavigate, badge, amberBadge = fals
   return (
     <Link to={item.path} className={className} onClick={onNavigate}>
       <Icon name={item.icon} />
-      <span>{item.label}</span>
+      <span className="lbl">{item.label}</span>
       {badge && <span className={amberBadge ? "n amber" : "n"}>{badge}</span>}
     </Link>
   );

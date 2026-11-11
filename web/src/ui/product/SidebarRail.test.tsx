@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { SidebarRail } from "./SidebarRail";
 import { clampSidebar, SIDEBAR_DEFAULT, SIDEBAR_MAX, SIDEBAR_MIN } from "./sidebarWidth";
@@ -33,5 +33,19 @@ describe("the sidebar resize rail (as in Engineering)", () => {
     render(<SidebarRail width={400} onChange={onChange} />);
     fireEvent.doubleClick(screen.getByRole("separator"));
     expect(onChange).toHaveBeenCalledWith(224);
+  });
+
+  it("shows the width while dragging, and the limit it stopped at", () => {
+    render(<div className="app"><SidebarRail width={224} onChange={() => {}} /></div>);
+    const rail = screen.getByRole("separator");
+    rail.setPointerCapture = () => {};
+    act(() => { fireEvent.pointerDown(rail, { pointerId: 1 }); });
+    expect(screen.queryByText("224")).not.toBeNull();
+    act(() => { fireEvent.pointerMove(rail, { clientX: 272 }); });
+    expect(screen.queryByText("272")).not.toBeNull();
+    act(() => { fireEvent.pointerMove(rail, { clientX: 50 }); });
+    expect(screen.queryByText("180 · minimum")).not.toBeNull();
+    act(() => { fireEvent.pointerMove(rail, { clientX: 900 }); });
+    expect(screen.queryByText("420 · maximum")).not.toBeNull();
   });
 });

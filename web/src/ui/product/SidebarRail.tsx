@@ -1,6 +1,13 @@
 import { useRef, useState } from "react";
 import { clampSidebar, SIDEBAR_DEFAULT, SIDEBAR_MAX, SIDEBAR_MIN, SIDEBAR_STEP } from "./sidebarWidth";
 
+/** The width pill on the rail while dragging (Components `Sidebar resize rail`): the width, and which limit it stopped at. */
+function pillText(width: number): string {
+  if (width <= SIDEBAR_MIN) return `${width} · minimum`;
+  if (width >= SIDEBAR_MAX) return `${width} · maximum`;
+  return String(width);
+}
+
 /**
  * The sidebar's resize rail, working as it does in Engineering: drag the sidebar's right edge (it resizes live through the
  * `--side-w` variable on the app and the width is saved when the drag ends), double-click for the default width, Left and Right
@@ -8,6 +15,7 @@ import { clampSidebar, SIDEBAR_DEFAULT, SIDEBAR_MAX, SIDEBAR_MIN, SIDEBAR_STEP }
  */
 export function SidebarRail({ width, onChange }: { width: number; onChange: (width: number) => void }) {
   const [dragging, setDragging] = useState(false);
+  const [live, setLive] = useState(width);
   const latest = useRef(width);
   const preview = (next: number) => document.querySelector<HTMLElement>(".app")?.style.setProperty("--side-w", `${next}px`);
   return (
@@ -25,11 +33,13 @@ export function SidebarRail({ width, onChange }: { width: number; onChange: (wid
       onPointerDown={(event) => {
         event.currentTarget.setPointerCapture(event.pointerId);
         latest.current = width;
+        setLive(width);
         setDragging(true);
       }}
       onPointerMove={(event) => {
         if (!dragging) return;
         latest.current = clampSidebar(event.clientX);
+        setLive(latest.current);
         preview(latest.current);
       }}
       onLostPointerCapture={() => {
@@ -42,6 +52,8 @@ export function SidebarRail({ width, onChange }: { width: number; onChange: (wid
         onChange(width + (event.key === "ArrowRight" ? SIDEBAR_STEP : -SIDEBAR_STEP));
       }}
       onDoubleClick={() => onChange(SIDEBAR_DEFAULT)}
-    />
+    >
+      {dragging && <span className="side-pill">{pillText(live)}</span>}
+    </div>
   );
 }
