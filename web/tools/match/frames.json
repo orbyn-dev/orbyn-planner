@@ -2070,5 +2070,84 @@
       "height": 740,
       "side": 300
     }
+  },
+  "p-narrow-tasks-filters-480": {
+    "kind": "desktop",
+    "design": "p-narrow-tasks-filters-480",
+    "route": "/tasks",
+    "scenario": "tasks",
+    "steps": [
+      {
+        "click": "button.pill:text-is(\"Filters\")"
+      }
+    ],
+    "window": {
+      "width": 902,
+      "height": 760,
+      "side": 420
+    }
+  },
+  "p-narrow-tasks-filters-active-480": {
+    "kind": "desktop",
+    "design": "p-narrow-tasks-filters-active-480",
+    "route": "/tasks",
+    "scenario": "tasks",
+    "steps": [
+      {
+        "click": "button.pill:text-is(\"Filters\")"
+      },
+      {
+        "click": "[role=dialog] button:text-is(\"Work\")"
+      },
+      {
+        "click": "[role=dialog] button:text-is(\"Today\")"
+      },
+      {
+        "click": "[role=dialog] .fa .btn"
+      }
+    ],
+    "window": {
+      "width": 902,
+      "height": 600,
+      "side": 420
+    }
+  },
+  "p-narrow-tasks-search-480": {
+    "kind": "desktop",
+    "design": "p-narrow-tasks-search-480",
+    "route": "/tasks",
+    "scenario": "tasks",
+    "steps": [
+      {
+        "click": "button[aria-label=\"Search tasks\"]"
+      },
+      {
+        "type": "launch"
+      }
+    ],
+    "window": {
+      "width": 902,
+      "height": 600,
+      "side": 420
+    }
+  },
+  "p-narrow-tasks-search-empty-480": {
+    "kind": "desktop",
+    "design": "p-narrow-tasks-search-empty-480",
+    "route": "/tasks",
+    "scenario": "tasks",
+    "steps": [
+      {
+        "click": "button[aria-label=\"Search tasks\"]"
+      },
+      {
+        "type": "invoices"
+      }
+    ],
+    "window": {
+      "width": 902,
+      "height": 520,
+      "side": 420
+    }
   }
 }
