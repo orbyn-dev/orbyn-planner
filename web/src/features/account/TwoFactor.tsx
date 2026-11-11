@@ -11,8 +11,8 @@ import { Modal } from "../../ui/primitives/Modal";
 import { describeError } from "./messages";
 import { QrCode } from "./QrCode";
 
-const groupSecret = (secret: string) => secret.replace(/\s+/g, "").replace(/(.{4})/g, "$1 ").trim();
-const digits = (value: string) => value.replace(/\D/g, "").slice(0, 6);
+export const groupSecret = (secret: string) => secret.replace(/\s+/g, "").replace(/(.{4})/g, "$1 ").trim();
+export const digits = (value: string) => value.replace(/\D/g, "").slice(0, 6);
 
 /** The one text file of recovery codes. */
 export const recoveryFile = (codes: readonly string[]) =>

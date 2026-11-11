@@ -2392,5 +2392,533 @@
     "route": "/protection",
     "scenario": "today",
     "fit": "app"
+  },
+  "ar-2fa-off": {
+    "kind": "desktop",
+    "design": "ar-2fa-off",
+    "account": "fake",
+    "designPage": "account",
+    "route": "/protection/two-factor",
+    "scenario": "today",
+    "fit": "app"
+  },
+  "ar-2fa-setup": {
+    "kind": "desktop",
+    "design": "ar-2fa-setup",
+    "account": "fake",
+    "designPage": "account",
+    "route": "/protection/two-factor",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "click": ".srow .btn"
+      },
+      {
+        "wait": 600
+      }
+    ]
+  },
+  "ar-2fa-setup-wrong-code": {
+    "kind": "desktop",
+    "design": "ar-2fa-setup-wrong-code",
+    "account": "fake",
+    "designPage": "account",
+    "route": "/protection/two-factor",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "click": ".srow .btn"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "fill": "#tf-code",
+        "value": "000000"
+      },
+      {
+        "click": "button[type=submit]"
+      },
+      {
+        "wait": 600
+      }
+    ]
+  },
+  "ar-2fa-setup-expired": {
+    "kind": "desktop",
+    "design": "ar-2fa-setup-expired",
+    "account": "fake",
+    "designPage": "account",
+    "route": "/protection/two-factor",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "click": ".srow .btn"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "eval": "window.__matchEngine.engine.refuseNext('/v1/accounts/totp/confirm',400,'totp_setup_expired','Expired.')"
+      },
+      {
+        "fill": "#tf-code",
+        "value": "123456"
+      },
+      {
+        "click": "button[type=submit]"
+      },
+      {
+        "wait": 600
+      }
+    ]
+  },
+  "ar-2fa-recovery-codes": {
+    "kind": "desktop",
+    "design": "ar-2fa-recovery-codes",
+    "account": "fake",
+    "designPage": "account",
+    "route": "/protection/two-factor",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "click": ".srow .btn"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "fill": "#tf-code",
+        "value": "123456"
+      },
+      {
+        "click": "button[type=submit]"
+      },
+      {
+        "wait": 600
+      }
+    ]
+  },
+  "ar-2fa-on": {
+    "kind": "desktop",
+    "design": "ar-2fa-on",
+    "account": "fake",
+    "designPage": "account",
+    "route": "/protection/two-factor",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "click": ".srow .btn"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "fill": "#tf-code",
+        "value": "123456"
+      },
+      {
+        "click": "button[type=submit]"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "click": "input[type=checkbox]"
+      },
+      {
+        "click": ".tf-card .btn:text-is(\"Done\")"
+      },
+      {
+        "wait": 600
+      }
+    ]
+  },
+  "ar-2fa-turn-off": {
+    "kind": "desktop",
+    "design": "ar-2fa-turn-off",
+    "account": "fake",
+    "designPage": "account",
+    "route": "/protection/two-factor",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "click": ".srow .btn"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "fill": "#tf-code",
+        "value": "123456"
+      },
+      {
+        "click": "button[type=submit]"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "click": "input[type=checkbox]"
+      },
+      {
+        "click": ".tf-card .btn:text-is(\"Done\")"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "click": ".srow .ghost"
+      },
+      {
+        "wait": 300
+      }
+    ]
+  },
+  "ar-reauth-before-2fa-off": {
+    "kind": "desktop",
+    "design": "ar-reauth-before-2fa-off",
+    "account": "fake",
+    "designPage": "account",
+    "route": "/protection/two-factor",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "click": ".srow .btn"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "fill": "#tf-code",
+        "value": "123456"
+      },
+      {
+        "click": "button[type=submit]"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "click": "input[type=checkbox]"
+      },
+      {
+        "click": ".tf-card .btn:text-is(\"Done\")"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "eval": "window.__matchEngine.engine.ageSessions()"
+      },
+      {
+        "click": ".srow .ghost"
+      },
+      {
+        "click": "[role=dialog] .btn"
+      },
+      {
+        "wait": 400
+      }
+    ]
+  },
+  "ar-reauth": {
+    "kind": "desktop",
+    "design": "ar-reauth",
+    "account": "fake",
+    "designPage": "account",
+    "route": "/protection/two-factor",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "click": ".srow .btn"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "fill": "#tf-code",
+        "value": "123456"
+      },
+      {
+        "click": "button[type=submit]"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "click": "input[type=checkbox]"
+      },
+      {
+        "click": ".tf-card .btn:text-is(\"Done\")"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "eval": "window.__matchEngine.engine.ageSessions()"
+      },
+      {
+        "click": ".srow .ghost"
+      },
+      {
+        "click": "[role=dialog] .btn"
+      },
+      {
+        "wait": 400
+      }
+    ]
+  },
+  "ar-reauth-checking": {
+    "kind": "desktop",
+    "design": "ar-reauth-checking",
+    "account": "fake",
+    "designPage": "account",
+    "route": "/protection/two-factor",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "click": ".srow .btn"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "fill": "#tf-code",
+        "value": "123456"
+      },
+      {
+        "click": "button[type=submit]"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "click": "input[type=checkbox]"
+      },
+      {
+        "click": ".tf-card .btn:text-is(\"Done\")"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "eval": "window.__matchEngine.engine.ageSessions()"
+      },
+      {
+        "click": ".srow .ghost"
+      },
+      {
+        "click": "[role=dialog] .btn"
+      },
+      {
+        "wait": 400
+      },
+      {
+        "eval": "window.__matchEngine.hold.add('/v1/sessions/login/start')"
+      },
+      {
+        "fill": "#reauth-password",
+        "value": "correct horse"
+      },
+      {
+        "click": "[role=dialog] form .btn"
+      },
+      {
+        "wait": 600
+      }
+    ]
+  },
+  "ar-reauth-wrong-password": {
+    "kind": "desktop",
+    "design": "ar-reauth-wrong-password",
+    "account": "fake",
+    "designPage": "account",
+    "route": "/protection/two-factor",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "click": ".srow .btn"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "fill": "#tf-code",
+        "value": "123456"
+      },
+      {
+        "click": "button[type=submit]"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "click": "input[type=checkbox]"
+      },
+      {
+        "click": ".tf-card .btn:text-is(\"Done\")"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "eval": "window.__matchEngine.engine.ageSessions()"
+      },
+      {
+        "click": ".srow .ghost"
+      },
+      {
+        "click": "[role=dialog] .btn"
+      },
+      {
+        "wait": 400
+      },
+      {
+        "eval": "window.__matchEngine.engine.refuseNext('/v1/sessions/login/start',401,'login_failed','Login failed.')"
+      },
+      {
+        "fill": "#reauth-password",
+        "value": "correct horse"
+      },
+      {
+        "click": "[role=dialog] form .btn"
+      },
+      {
+        "wait": 600
+      }
+    ]
+  },
+  "ar-reauth-throttled": {
+    "kind": "desktop",
+    "design": "ar-reauth-throttled",
+    "account": "fake",
+    "designPage": "account",
+    "route": "/protection/two-factor",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "click": ".srow .btn"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "fill": "#tf-code",
+        "value": "123456"
+      },
+      {
+        "click": "button[type=submit]"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "click": "input[type=checkbox]"
+      },
+      {
+        "click": ".tf-card .btn:text-is(\"Done\")"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "eval": "window.__matchEngine.engine.ageSessions()"
+      },
+      {
+        "click": ".srow .ghost"
+      },
+      {
+        "click": "[role=dialog] .btn"
+      },
+      {
+        "wait": 400
+      },
+      {
+        "eval": "window.__matchEngine.engine.refuseNext('/v1/sessions/login/start',429,'too_many_attempts','Too many attempts.',1,720)"
+      },
+      {
+        "fill": "#reauth-password",
+        "value": "correct horse"
+      },
+      {
+        "click": "[role=dialog] form .btn"
+      },
+      {
+        "wait": 600
+      }
+    ]
+  },
+  "ar-reauth-network": {
+    "kind": "desktop",
+    "design": "ar-reauth-network",
+    "account": "fake",
+    "designPage": "account",
+    "route": "/protection/two-factor",
+    "scenario": "today",
+    "fit": "app",
+    "steps": [
+      {
+        "click": ".srow .btn"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "fill": "#tf-code",
+        "value": "123456"
+      },
+      {
+        "click": "button[type=submit]"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "click": "input[type=checkbox]"
+      },
+      {
+        "click": ".tf-card .btn:text-is(\"Done\")"
+      },
+      {
+        "wait": 600
+      },
+      {
+        "eval": "window.__matchEngine.engine.ageSessions()"
+      },
+      {
+        "click": ".srow .ghost"
+      },
+      {
+        "click": "[role=dialog] .btn"
+      },
+      {
+        "wait": 400
+      },
+      {
+        "fill": "#reauth-password",
+        "value": "correct horse"
+      },
+      {
+        "eval": "window.__matchEngine.offline.value = true"
+      },
+      {
+        "click": "[role=dialog] form .btn"
+      },
+      {
+        "wait": 600
+      }
+    ]
   }
 }

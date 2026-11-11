@@ -26,5 +26,5 @@ if (query.get("page") === "delete-unused") {
   );
 } else {
   if (!isScenario(scenario)) throw new Error(`Unknown scenario "${scenario}"`);
-  void mountMatch(createRoot(document.getElementById("root")!), { scenario, route: query.get("route") ?? "/today", theme, now: query.get("now") ?? undefined, account: query.get("account") === "out" ? "out" : query.get("account") !== "0", loading: query.get("loading") === "1" });
+  void mountMatch(createRoot(document.getElementById("root")!), { scenario, route: query.get("route") ?? "/today", theme, now: query.get("now") ?? undefined, account: query.get("account") === "out" ? "out" : query.get("account") === "fake" ? "fake" : query.get("account") !== "0", loading: query.get("loading") === "1" });
 }

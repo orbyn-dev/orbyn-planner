@@ -9,6 +9,7 @@ import { createSyncRig } from "../../src/testing/syncRig";
 import { createMemoryKeyStore } from "../../src/data/account/keyStore";
 import { createMockEngine } from "../../src/testing/MockEngine";
 import { ACCOUNT } from "./fixture";
+import { signedUp } from "../../src/testing/signedUp";
 
 /** Services of a trusted device of an account with two more trusted devices, named Sam Arden. */
 export async function pretendAccount(): Promise<AuthServices> {
@@ -28,6 +29,17 @@ export async function pretendAccount(): Promise<AuthServices> {
   };
   (window as unknown as { __matchEngine: unknown }).__matchEngine = { engine: rig.engine, hold: rig.network.hold, offline } satisfies MatchEngineControls;
   return rig.a.services;
+}
+
+/**
+ * Signed in to an account on the stand-in crypto and the in-page mock engine, with the same controls as the signed-out page. The signed-in pretend
+ * account above uses the engine's real module, whose signatures the mock engine does not check, so the frames that make signed requests use this one.
+ */
+export async function fakeSignedInAccount(): Promise<AuthServices> {
+  const { services, controls } = signedOutAccount();
+  await signedUp(controls.engine, services, { name: ACCOUNT.name, email: ACCOUNT.email, password: ACCOUNT.password });
+  (window as unknown as { __matchEngine: unknown }).__matchEngine = controls;
+  return services;
 }
 
 /** What a frame's steps can do to the signed-out page's pretend engine (see `signedOutAccount`). */

@@ -17,6 +17,7 @@ const MESSAGES: Record<string, string> = {
   deletion_scheduled: "Your account is scheduled for deletion. Cancel the deletion first to do this.",
   invalid_cancel_token: "This cancel link isn’t valid any more. It may have been used already, or the deletion may be past its time.",
   device_proof_required: "This device couldn’t prove the request. Try again, and check that this device’s clock is right.",
+  totp_setup_expired: "This key has expired. Start again to get a new one.",
   totp_already_enabled: "Two-factor is already on for this account.",
   totp_not_enabled: "Two-factor isn’t on for this account.",
   device_not_trusted: "This device hasn’t been approved yet. Approve it from a device you already trust.",

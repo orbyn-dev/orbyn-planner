@@ -44,7 +44,7 @@ interface Account {
   removals?: Removal[];
   records?: MockRecords;
   /** Two-factor, as the engine keeps it: a pending or enabled secret and the unused recovery codes. */
-  totp?: { enabled: boolean; recovery: string[] };
+  totp?: { enabled: boolean; recovery: string[]; /** When a pending secret was made (ms): it expires after ten minutes. */ startedAt?: number };
   /** The signed protection settings, oldest first. */
   protection?: ProtectionLink[];
   /** A server that serves the chain from sequence 1 whatever `?from=` asks (how an old chain is shown again). */
@@ -433,11 +433,13 @@ export function createMockEngine(now: () => number = () => Date.now()) {
       state.lastManage.set(slot, signedAt);
       if (action === "enrol") {
         if (account.totp?.enabled) return fail(409, "totp_already_enabled", "Two-factor is already on.");
-        account.totp = { enabled: false, recovery: [] };
+        account.totp = { enabled: false, recovery: [], startedAt: now() };
         return json(200, { secret: MOCK_TOTP_SECRET, uri: `otpauth://totp/Orbyn:${account.email}?secret=${MOCK_TOTP_SECRET}&issuer=Orbyn&algorithm=SHA1&digits=6&period=30` });
       }
       if (action === "confirm") {
         if (account.totp?.enabled) return fail(409, "totp_already_enabled", "Two-factor is already on.");
+        // A pending secret expires ten minutes after it was made, and a confirm on an older one is refused before its code is looked at.
+        if (account.totp && !account.totp.enabled && now() - (account.totp.startedAt ?? now()) > 600_000) return fail(400, "totp_setup_expired", "That set-up has expired. Start again.");
         if (!account.totp || b.code !== MOCK_TOTP_CODE) return fail(401, "second_factor_failed", "That code didn't work.");
         account.totp = { enabled: true, recovery: Array.from({ length: 10 }, (_, i) => `RECOV-${String(i + 1).padStart(5, "0")}`) };
         return json(200, { recovery_codes: [...account.totp.recovery] });

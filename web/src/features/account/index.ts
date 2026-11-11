@@ -2,6 +2,7 @@ export * from "./AccountSettings";
 export * from "./AuthGate";
 export * from "./AuthScreens";
 export * from "./CancelDeletionPage";
+export * from "./ConfirmIdentity";
 export * from "./CryptoProblem";
 export * from "./DeleteAccount";
 export * from "./DeleteUnusedPage";

@@ -1130,3 +1130,18 @@ button.pillx { border: 0; }
 .acct-id small { font-size: var(--fs-11-5); }
 .account-site .primary { flex: 1; }
 .account-site button.nav { border: 0; background: transparent; width: 100%; text-align: left; }
+
+/* Two-factor sign-in on the account site (Account Designs v72 ar-2fa-*). */
+.tf-card { gap: var(--sp-14); padding: var(--sp-18) var(--sp-20); align-items: stretch; }
+.tf-key { display: flex; gap: var(--sp-20); align-items: flex-start; flex-wrap: wrap; }
+.tf-key-text { flex: 1; min-width: var(--sp-220); display: flex; flex-direction: column; gap: var(--sp-8); }
+.tf-key-text b { font-weight: var(--fw-medium); color: var(--t1); }
+.tf-secret { display: flex; gap: var(--sp-8); align-items: center; }
+.tf-secret code { font-size: var(--fs-14); letter-spacing: .08em; color: var(--t1); }
+.tf-actions { display: flex; gap: var(--sp-8); }
+.tf-codes { list-style: none; margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-8) var(--sp-24); padding: var(--sp-12) var(--sp-14); border-radius: var(--r-10); background: var(--raise); font-size: var(--fs-13-5); letter-spacing: .06em; color: var(--t1); }
+.tf-saved { display: flex; gap: var(--sp-8); align-items: center; }
+@media (max-width: 767px) {
+  .tf-actions > * { flex: 1; justify-content: center; }
+  .tf-codes { grid-template-columns: minmax(0, 1fr); }
+}

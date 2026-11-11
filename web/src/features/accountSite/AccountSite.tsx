@@ -3,6 +3,7 @@ import { Icon } from "../../ui/primitives/Icon";
 import { Link, useRouter } from "../../state/router";
 import { useAuth } from "../../state/account";
 import { ProtectionOverview } from "./ProtectionOverview";
+import { TwoFactorPage } from "./TwoFactorPage";
 
 /** The account site is this app on the account host: these paths show its own shell instead of the planner's (Account Designs v72). */
 export const ACCOUNT_SITE_ROOT = "/protection";
@@ -12,8 +13,7 @@ export const isAccountSitePath = (path: string): boolean => path === ACCOUNT_SIT
 
 /** The account site's page for a path. Paths this build has no page for (everything Planned) show the Protection overview. */
 function page(path: string): ReactNode {
-  void path;
-  return <ProtectionOverview />;
+  return path === TWO_FACTOR_PATH ? <TwoFactorPage /> : <ProtectionOverview />;
 }
 
 /**

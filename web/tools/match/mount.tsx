@@ -7,7 +7,7 @@ import { applyChoice, type Theme } from "../../src/ui/theme";
 import { LocalStore } from "../../src/data/local/LocalStore";
 import { MemoryPersistence } from "../../src/data/local/persistence";
 import type { AuthServices } from "../../src/state/services/auth";
-import { pretendAccount, signedOutAccount } from "./account";
+import { fakeSignedInAccount, pretendAccount, signedOutAccount } from "./account";
 import { PINNED_NOW, seed, type Scenario } from "./fixture";
 
 export interface MatchOptions {
@@ -17,7 +17,8 @@ export interface MatchOptions {
   /** An ISO time to pin instead of the fixture's, for a frame drawn at another time of day. */
   now?: string;
   /** Draw the planner signed in to the pretend account (the default); false is the planner of this device alone. */
-  account?: boolean | "out";
+  /** `"fake"`: signed in to an account on the stand-in crypto, so a frame can make requests the mock engine accepts (two-factor, protection). */
+  account?: boolean | "out" | "fake";
   /** Draw the planner while it is still opening (a store that is not ready), for the loading frames. */
   loading?: boolean;
 }
@@ -53,7 +54,8 @@ export async function mountMatch(root: Root, { scenario, route, theme, now = PIN
     auth = out.services;
     // A frame's steps set the pretend engine up through this (an invite code, a refused call, a held request).
     (window as unknown as { __matchEngine: unknown }).__matchEngine = out.controls;
-  } else if (account) auth = await pretendAccount();
+  } else if (account === "fake") auth = await fakeSignedInAccount();
+  else if (account) auth = await pretendAccount();
   applyChoice(theme);
   window.history.replaceState(null, "", route);
   root.render(

@@ -229,7 +229,7 @@ async function ours(theme, size = sizeOf(), suffix = "") {
   // The sidebar's width (180 to 420 px) is kept on the device; a narrow-content frame sets it.
   if (frame.window?.side) await page.addInitScript((w) => localStorage.setItem("orbyn-planner.sidebar-width", String(w)), frame.window.side);
   if (frame.prefs) await page.addInitScript((prefs) => localStorage.setItem("orbyn-planner.prefs", JSON.stringify(prefs)), frame.prefs);
-  const query = new URLSearchParams({ scenario: frame.scenario, route: frame.route, theme, ...(frame.now ? { now: frame.now } : {}), ...(frame.page ? { page: frame.page } : {}), ...(frame.loading ? { loading: "1" } : {}), ...(frame.account === false ? { account: "0" } : frame.account === "out" ? { account: "out" } : {}) });
+  const query = new URLSearchParams({ scenario: frame.scenario, route: frame.route, theme, ...(frame.now ? { now: frame.now } : {}), ...(frame.page ? { page: frame.page } : {}), ...(frame.loading ? { loading: "1" } : {}), ...(frame.account === false ? { account: "0" } : frame.account === "out" ? { account: "out" } : frame.account === "fake" ? { account: "fake" } : {}) });
   await page.goto(`${origin}/tools/match/index.html?${query}${frame.hash ? `#${frame.hash}` : ""}`);
   await page.waitForSelector(".app, .authcard, h1", { timeout: 20000 });
   if (frame.offline) await context.setOffline(true);

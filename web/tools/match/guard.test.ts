@@ -27,7 +27,7 @@ describe("the match kit stays out of the app", () => {
     expect(files.map(([p]) => p)).toEqual(expect.arrayContaining(["/tools/match/fixture.ts", "/tools/match/mount.tsx", "/tools/match/main.tsx", "/tools/match/account.ts", "/tools/match/noSocket.ts"]));
     // The only engine-side modules the kit may import: the crypto registry, the in-memory key store, the in-process mock engine, the engine's module as the sync tests load it, the tests' stand-in crypto (the mock engine checks signatures with it), the
     // service type, and the sync tests' mock-engine rig. Everything else (the real engine address, session, sockets) stays out.
-    const allowed = new Set(["../../src/core/account/authCrypto", "../../src/data/account/keyStore", "../../src/testing/MockEngine", "../../src/testing/FakeAuthCrypto", "../../src/testing/realModule", "../../src/testing/syncRig", "../../src/state/services/auth", "../../src/features/account/DeleteUnusedPage"]);
+    const allowed = new Set(["../../src/core/account/authCrypto", "../../src/data/account/keyStore", "../../src/testing/MockEngine", "../../src/testing/FakeAuthCrypto", "../../src/testing/realModule", "../../src/testing/signedUp", "../../src/testing/syncRig", "../../src/state/services/auth", "../../src/features/account/DeleteUnusedPage"]);
     const offenders: string[] = [];
     for (const [path, code] of files) {
       const imports = [...code.matchAll(/from\s+["']([^"']+)["']/g)].map((m) => m[1]!);
