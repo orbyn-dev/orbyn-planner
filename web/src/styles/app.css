@@ -804,7 +804,7 @@ button.pillx { border: 0; }
 @media (min-width: 768px) {
   .ph:has(.pills) { flex-wrap: nowrap; }
   .ph:has(.pills) h1, .ph:has(.pills) h2 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .ph:has(.pills) .sub { white-space: nowrap; }
+  .ph:has(.pills) .sub { flex: none; white-space: nowrap; }
   .ph:has(.pills) .acts { flex: none; flex-wrap: nowrap; }
 }
 @media (max-width: 1240px) {

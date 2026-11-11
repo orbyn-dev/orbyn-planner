@@ -23,4 +23,8 @@ describe("narrow pages", () => {
   it("Today puts the week under the day once the page is narrow", () => {
     expect(rule(".sheet-main[data-narrow] .today-cols {")).toContain("grid-template-columns: minmax(0, 1fr)");
   });
+
+  it("the Calendar toolbar's own sub title keeps its width: the title gives way first", () => {
+    expect(rule(".ph:has(.pills) .sub {")).toContain("flex: none");
+  });
 });
