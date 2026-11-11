@@ -1015,6 +1015,10 @@ button.pillx { border: 0; }
 .cal-banners { display: flex; flex-direction: column; gap: var(--sp-6); padding: var(--sp-4) var(--sp-28) 0; }
 /* Lists (Planner Designs lists, p-lists-offline): rows 38 px apart; the offline notice is a banner above them. */
 .tr.list { min-height: var(--sp-38); }
+/* Narrow Projects: the Next column goes first, so the project name stays on one line; tag chips in a tight Tasks row would only show their first letters, so they wait for room. */
+.sheet-main[data-narrow] .tr.projects { grid-template-columns: minmax(0, 1fr) var(--sp-110) var(--sp-120) !important; }
+.sheet-main[data-narrow] .tr.projects > :nth-child(2) { display: none; }
+.sheet-main[data-tight] .ttwrap .tagchips { display: none; }
 .offline-banner { padding: var(--sp-4) var(--sp-28) var(--sp-10); }
 
 /* Quiet hours (Planner Designs settings-notifications): the times are plain 64 x 28 px boxes, no picker icon. */
