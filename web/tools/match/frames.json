@@ -2012,5 +2012,63 @@
       "height": 560,
       "side": 420
     }
+  },
+  "p-narrow-week-480": {
+    "kind": "desktop",
+    "design": "p-narrow-week-480",
+    "route": "/calendar",
+    "scenario": "week",
+    "now": "2026-11-07T11:40:00.000Z",
+    "window": {
+      "width": 902,
+      "height": 800,
+      "side": 420
+    }
+  },
+  "p-narrow-week-600": {
+    "kind": "desktop",
+    "design": "p-narrow-week-600",
+    "route": "/calendar",
+    "scenario": "week",
+    "now": "2026-11-07T11:40:00.000Z",
+    "window": {
+      "width": 902,
+      "height": 800,
+      "side": 300
+    }
+  },
+  "p-narrow-month-480": {
+    "kind": "desktop",
+    "design": "p-narrow-month-480",
+    "route": "/calendar",
+    "scenario": "month",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Month"
+      }
+    ],
+    "window": {
+      "width": 902,
+      "height": 740,
+      "side": 420
+    }
+  },
+  "p-narrow-month-600": {
+    "kind": "desktop",
+    "design": "p-narrow-month-600",
+    "route": "/calendar",
+    "scenario": "month",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Month"
+      }
+    ],
+    "window": {
+      "width": 902,
+      "height": 740,
+      "side": 300
+    }
   }
 }

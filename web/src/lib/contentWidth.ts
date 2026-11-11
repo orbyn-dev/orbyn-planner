@@ -9,18 +9,22 @@ export const NARROW_BELOW = 720;
 export const TIGHT_BELOW = 560;
 /** Tables drop their secondary columns below this and show the detail under the title (`data-table`). */
 export const TABLE_BELOW = 640;
+/** Calendar week shows 3 days below this, and the toolbar moves to a second row (`week3`). */
+export const WEEK3_BELOW = 760;
+/** A month cell is under 90 px wide below this, so it shows colour dots instead of text chips (`dots`). */
+export const DOTS_BELOW = 670;
 /** A sheet narrower than this (420 px for the panel and at least 460 px for the page) has no room for the side panel beside a usable page, so the panel covers the page (`data-overlay`). */
 export const OVERLAY_BELOW = 880;
 
-export interface WidthFlags { narrow: boolean; tight: boolean; table: boolean }
+export interface WidthFlags { narrow: boolean; tight: boolean; table: boolean; week3: boolean; dots: boolean }
 
 export function widthFlags(width: number): WidthFlags {
-  return { narrow: width < NARROW_BELOW, tight: width < TIGHT_BELOW, table: width < TABLE_BELOW };
+  return { narrow: width < NARROW_BELOW, tight: width < TIGHT_BELOW, table: width < TABLE_BELOW, week3: width < WEEK3_BELOW, dots: width < DOTS_BELOW };
 }
 
 export const overlayFlag = (width: number): boolean => width < OVERLAY_BELOW;
 
-const WIDE: WidthFlags = { narrow: false, tight: false, table: false };
+const WIDE: WidthFlags = { narrow: false, tight: false, table: false, week3: false, dots: false };
 /** The flags for pages that change what they render (not just how it looks) when narrow. Without a provider (tests, the first paint) the page is wide. */
 export const ContentWidthContext = createContext<WidthFlags>(WIDE);
 export const useContentFlags = (): WidthFlags => useContext(ContentWidthContext);
@@ -40,7 +44,7 @@ export function useContentWidth(measure: RefObject<HTMLElement | null>, target: 
       // The phone has its own layouts: pages that render differently when narrow only do so on a desktop window.
       const desktop = typeof window.matchMedia !== "function" || window.matchMedia("(min-width: 768px)").matches;
       const shown = desktop ? next : WIDE;
-      setFlags((cur) => (cur.narrow === shown.narrow && cur.tight === shown.tight && cur.table === shown.table ? cur : shown));
+      setFlags((cur) => (cur.narrow === shown.narrow && cur.tight === shown.tight && cur.table === shown.table && cur.week3 === shown.week3 && cur.dots === shown.dots ? cur : shown));
     };
     apply(el.getBoundingClientRect().width);
     const watch = new ResizeObserver((entries) => {
