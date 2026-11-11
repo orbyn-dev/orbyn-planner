@@ -15,8 +15,9 @@ describe("narrow Calendar", () => {
     expect(rule(".sheet-main[data-narrow] .ph:has(.pills) .acts {")).toContain("flex-wrap: wrap");
   });
 
-  it("the side column goes under the grid, and a week scrolls sideways at a readable column width", () => {
+  it("the side column goes under the grid, and the toolbar bar and month dots are styled", () => {
     expect(rule(".sheet-main[data-narrow] .calwrap, .sheet-main[data-narrow] .calwrap.day {")).toContain("grid-template-columns: minmax(0, 1fr)");
-    expect(rule(".sheet-main[data-narrow] .calwrap:not(.day) .calmain > * {")).toContain("min-width: var(--sp-540)");
+    expect(rule(".nwbar {")).toContain("display: flex");
+    expect(rule(".dots i {")).toContain("border-radius: var(--r-round)");
   });
 });

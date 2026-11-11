@@ -9,6 +9,7 @@ import { addDays, dateKey, dateOf, formatTime, isoWeek, MONTHS, WEEKDAYS, type W
 import { setSettingsTarget } from "../../state/settingsTarget";
 import { useRouter } from "../../state/router";
 import { useSlow } from "../../lib/useSlow";
+import { useContentFlags } from "../../lib/contentWidth";
 import { usePlanner, useStore } from "../../state/store";
 import { expandEvents } from "../../core/planner/occurrences";
 import { AgendaView } from "./AgendaView";
@@ -27,10 +28,12 @@ const VIEWS: readonly { id: View; label: string }[] = [
 ];
 
 /** The days a view shows around `anchor`. */
-export function viewDays(view: View, anchor: string, weekStart: WeekStart, weekDays: 5 | 7): string[] {
+export function viewDays(view: View, anchor: string, weekStart: WeekStart, weekDays: 5 | 7, threeDays = false): string[] {
   const a = dateOf(anchor);
   if (view === "day") return [anchor];
   if (view === "agenda") return Array.from({ length: 7 }, (_, i) => dateKey(addDays(a, i)));
+  // Below 760 px of page the week is three days from the anchor (today and the next two), so the grid never scrolls sideways (Planner Designs v69 p-narrow-week-480).
+  if (view === "week" && threeDays) return Array.from({ length: 3 }, (_, i) => dateKey(addDays(a, i)));
   if (view === "week") {
     // The full week from the week-start setting, with as many columns as "days shown" says (all seven, or the first five).
     // It never ends on today and is never centred on a day; today is marked only if it falls inside.
@@ -59,9 +62,9 @@ export function dayRange(first: string, last: string): string {
   return a.getMonth() === b.getMonth() ? `${w(a)} ${a.getDate()} – ${w(b)} ${b.getDate()} ${m(b)}` : `${w(a)} ${a.getDate()} ${m(a)} – ${w(b)} ${b.getDate()} ${m(b)}`;
 }
 
-function shift(view: View, anchor: string, direction: 1 | -1): string {
+function shift(view: View, anchor: string, direction: 1 | -1, threeDays = false): string {
   const a = dateOf(anchor);
-  if (view === "day") return dateKey(addDays(a, direction));
+  if (view === "day" || (view === "week" && threeDays)) return dateKey(addDays(a, direction));
   if (view === "month") return dateKey(new Date(a.getFullYear(), a.getMonth() + direction, 1));
   return dateKey(addDays(a, 7 * direction));
 }
@@ -111,8 +114,10 @@ function CalendarGrid() {
   const { prefs } = usePrefs();
   const [view, setView] = useState<View>("week");
   const [anchor, setAnchor] = useState(() => dateKey(now));
+  const { week3 } = useContentFlags();
+  const threeDays = week3 && view === "week";
 
-  const days = useMemo(() => viewDays(view, anchor, prefs.weekStart, prefs.weekDays), [view, anchor, prefs.weekStart, prefs.weekDays]);
+  const days = useMemo(() => viewDays(view, anchor, prefs.weekStart, prefs.weekDays, threeDays), [view, anchor, prefs.weekStart, prefs.weekDays, threeDays]);
   const shown = useMemo(() => {
     const visible = new Set(calendars.filter((c) => c.visible).map((c) => c.id));
     return events.filter((e) => visible.has(e.calendarId));
@@ -126,7 +131,8 @@ function CalendarGrid() {
   const today = dateKey(now);
   // Today comes back only when another period than the current one is showing.
   const elsewhere =
-    view === "week" ? dateKey(weekStartOf(a, prefs.weekStart)) !== dateKey(weekStartOf(dateOf(today), prefs.weekStart))
+    threeDays ? anchor !== today
+    : view === "week" ? dateKey(weekStartOf(a, prefs.weekStart)) !== dateKey(weekStartOf(dateOf(today), prefs.weekStart))
     : view === "month" ? anchor.slice(0, 7) !== today.slice(0, 7)
     : anchor !== today;
 
@@ -138,37 +144,67 @@ function CalendarGrid() {
       const active = document.activeElement;
       if (active && active !== document.body) return;
       if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
-      setAnchor((cur) => shift("week", cur, e.key === "ArrowLeft" ? -1 : 1));
+      setAnchor((cur) => shift("week", cur, e.key === "ArrowLeft" ? -1 : 1, threeDays));
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [view]);
+  }, [view, threeDays]);
+
+  const views = (small: boolean) => (
+    <div role="radiogroup" aria-label="View" className="pills">
+      {VIEWS.map((v) => (
+        <button key={v.id} type="button" role="radio" aria-checked={view === v.id} className={small ? "pill sm" : "pill"} onClick={() => setView(v.id)}>
+          {v.label}
+        </button>
+      ))}
+    </div>
+  );
+  const range = threeDays || view === "day" || view === "agenda" ? dayRange(days[0]!, days.at(-1)!) : view === "week" ? weekRange(anchor, prefs.weekStart) : "";
 
   return (
     <>
-      <PageHeader title={title} sub={sub}>
-        <button type="button" className="ghost icon" aria-label="Previous" onClick={() => setAnchor(shift(view, anchor, -1))}>
-          <Icon name="left" small />
-        </button>
-        {elsewhere && <button type="button" className="ghost" onClick={() => setAnchor(today)}>Today</button>}
-        {view === "week" && <span className="range">{weekRange(anchor, prefs.weekStart)}</span>}
-        {(view === "day" || view === "agenda") && <span className="range">{dayRange(days[0]!, days.at(-1)!)}</span>}
-        <button type="button" className="ghost icon" aria-label="Next" onClick={() => setAnchor(shift(view, anchor, 1))}>
-          <Icon name="right" small />
-        </button>
-        <div role="radiogroup" aria-label="View" className="pills">
-          {VIEWS.map((v) => (
-            <button key={v.id} type="button" role="radio" aria-checked={view === v.id} className="pill" onClick={() => setView(v.id)}>
-              {v.label}
+      {week3 ? (
+        <>
+          <PageHeader title={title} sub={sub}>
+            <CalendarsMenu />
+            <button type="button" className="btn keep" onClick={() => ui.openNewEvent(view === "day" ? anchor : today)}>
+              <Icon name="plus" small />
+              New event
             </button>
-          ))}
-        </div>
-        <CalendarsMenu />
-        <button type="button" className="btn keep" onClick={() => ui.openNewEvent(view === "day" ? anchor : today)}>
-          <Icon name="plus" small />
-          New event
-        </button>
-      </PageHeader>
+          </PageHeader>
+          <div className="nwbar">
+            <button type="button" className="ghost icon" aria-label="Previous" onClick={() => setAnchor(shift(view, anchor, -1, threeDays))}>
+              <Icon name="left" small />
+            </button>
+            {elsewhere && <button type="button" className="ghost" onClick={() => setAnchor(today)}>Today</button>}
+            {range && <span className="rng">{range}</span>}
+            <button type="button" className="ghost icon" aria-label="Next" onClick={() => setAnchor(shift(view, anchor, 1, threeDays))}>
+              <Icon name="right" small />
+            </button>
+            <span className="sp" />
+            {views(true)}
+          </div>
+          {threeDays && <div className="nwhint">Showing 3 days. The full week appears when the page is 760 px wide or more.</div>}
+        </>
+      ) : (
+        <PageHeader title={title} sub={sub}>
+          <button type="button" className="ghost icon" aria-label="Previous" onClick={() => setAnchor(shift(view, anchor, -1))}>
+            <Icon name="left" small />
+          </button>
+          {elsewhere && <button type="button" className="ghost" onClick={() => setAnchor(today)}>Today</button>}
+          {view === "week" && <span className="range">{weekRange(anchor, prefs.weekStart)}</span>}
+          {(view === "day" || view === "agenda") && <span className="range">{dayRange(days[0]!, days.at(-1)!)}</span>}
+          <button type="button" className="ghost icon" aria-label="Next" onClick={() => setAnchor(shift(view, anchor, 1))}>
+            <Icon name="right" small />
+          </button>
+          {views(false)}
+          <CalendarsMenu />
+          <button type="button" className="btn keep" onClick={() => ui.openNewEvent(view === "day" ? anchor : today)}>
+            <Icon name="plus" small />
+            New event
+          </button>
+        </PageHeader>
+      )}
 
       {loading && (
         <div className="cal-loading">
@@ -181,7 +217,7 @@ function CalendarGrid() {
       ) : view === "agenda" ? (
         <AgendaView days={days} occurrences={occurrences} today={today} />
       ) : (
-        <TimeGrid days={days} occurrences={occurrences} today={today} now={now} mode={view} />
+        <TimeGrid days={days} occurrences={occurrences} today={today} now={now} mode={view} side={!threeDays} />
       )}
     </>
   );

@@ -5,6 +5,7 @@ import { touchesDay } from "../../core/planner/wall";
 import { usePlanner } from "../../state/store";
 import type { Occurrence } from "../../core/planner/occurrences";
 import { colourOf } from "./TimeGrid";
+import { useContentFlags } from "../../lib/contentWidth";
 
 const MAX_CHIPS = 3;
 
@@ -18,6 +19,8 @@ export function MonthView({ days, anchor, occurrences, today, weekStart, onDay }
 }) {
   const { calendars } = usePlanner();
   const ui = useUi();
+  // Under 670 px a cell is under 90 px wide: up to three colour dots and "+n" replace the text chips (Planner Designs v69 p-narrow-month-480).
+  const { dots } = useContentFlags();
   const month = dateOf(anchor).getMonth();
   const order = weekOrder(weekStart);
   /** The days after the month's last day are drawn as empty cells: only the days before the first one show their numbers (Planner Designs v49 calendar-month). */
@@ -72,16 +75,30 @@ export function MonthView({ days, anchor, occurrences, today, weekStart, onDay }
                 aria-label={`${WEEKDAYS[date.getDay()]} ${date.getDate()}. Enter adds an event.`}
                 onFocus={(e) => e.target === e.currentTarget && setFocusDay(day)}
                 onKeyDown={(e) => onKey(e, day)}
+                onClick={dots ? () => onDay(day) : undefined}
               >
                 <button type="button" className="n" aria-label={`${date.getDate()} ${WEEKDAYS[date.getDay()]}`} onClick={() => onDay(day)}>{date.getDate()}</button>
-                {here.slice(0, MAX_CHIPS).map((o) => (
-                  <button key={`${o.event.id}-${o.date}-${day}`} type="button" data-row-id={o.event.id} className="chipx" onClick={() => ui.openEvent(o.event.id, o.date)}>
-                    <span className="sw" style={{ background: colourOf(calendars, o.event) }} aria-hidden="true" />
-                    {o.event.title}
-                  </button>
-                ))}
-                {here.length > MAX_CHIPS && (
-                  <button type="button" className="more-link" onClick={() => onDay(day)}>+{here.length - MAX_CHIPS} more</button>
+                {dots ? (
+                  here.length > 0 && (
+                    <span className="dots" aria-hidden="true">
+                      {here.slice(0, MAX_CHIPS).map((o) => (
+                        <i key={`${o.event.id}-${o.date}-${day}`} style={{ background: colourOf(calendars, o.event) }} />
+                      ))}
+                      {here.length > MAX_CHIPS && <em>+{here.length - MAX_CHIPS}</em>}
+                    </span>
+                  )
+                ) : (
+                  <>
+                  {here.slice(0, MAX_CHIPS).map((o) => (
+                    <button key={`${o.event.id}-${o.date}-${day}`} type="button" data-row-id={o.event.id} className="chipx" onClick={() => ui.openEvent(o.event.id, o.date)}>
+                      <span className="sw" style={{ background: colourOf(calendars, o.event) }} aria-hidden="true" />
+                      {o.event.title}
+                    </button>
+                  ))}
+                  {here.length > MAX_CHIPS && (
+                    <button type="button" className="more-link" onClick={() => onDay(day)}>+{here.length - MAX_CHIPS} more</button>
+                  )}
+                  </>
                 )}
               </div>
             );
