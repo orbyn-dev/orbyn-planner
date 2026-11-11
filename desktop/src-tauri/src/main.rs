@@ -20,6 +20,12 @@ const WIDTH: f64 = 1280.0;
 const HEIGHT: f64 = 820.0;
 const MIN_WIDTH: f64 = 900.0;
 const MIN_HEIGHT: f64 = 600.0;
+/// Where the traffic lights sit on macOS: 16 px in from the left, and centred on the 44 px title row (the y is the offset Tauri
+/// wants for that: measured, a plain 16 put the lights 8 px too high).
+#[cfg(target_os = "macos")]
+const TRAFFIC_LIGHT_X: f64 = 16.0;
+#[cfg(target_os = "macos")]
+const TRAFFIC_LIGHT_Y: f64 = 24.0;
 /// Where `npm run dev` serves the web app; `tauri.conf.json` has the same address.
 const DEV_URL: &str = "http://localhost:5173";
 
@@ -190,10 +196,13 @@ fn main() {
                 .on_navigation(move |url| may_show(url, debug))
                 // A link that wants a new window gets none: the shell opens no other windows.
                 .on_new_window(|_, _| NewWindowResponse::Deny);
-            // macOS: the page draws up to the top edge and the traffic lights sit over it, so the title bar is
-            // the app's own surface instead of a separate grey band. The page marks the top strip as draggable.
+            // macOS: the page draws up to the top edge and the traffic lights sit over it (Components `window-title-row`):
+            // 16 px from the left edge, centred on the 44 px row. The page marks the draggable parts of the row.
             #[cfg(target_os = "macos")]
-            let window = window.title_bar_style(TitleBarStyle::Overlay).hidden_title(true);
+            let window = window
+                .title_bar_style(TitleBarStyle::Overlay)
+                .hidden_title(true)
+                .traffic_light_position(tauri::LogicalPosition::new(TRAFFIC_LIGHT_X, TRAFFIC_LIGHT_Y));
             window.build()?;
             let _ = app.get_webview_window("main");
             Ok(())

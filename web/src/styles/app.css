@@ -8,12 +8,20 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 html, body, #root { height: 100%; }
-/* The macOS desktop shell draws up to the top edge; --titlebar is the height it keeps clear for the traffic lights (src/app/titlebar.ts). */
+/* The macOS desktop shell draws up to the top edge and the traffic lights sit over it (src/app/titlebar.ts, Components `window-title-row`):
+   a 44 px row, no band. --titlebar is what single-pane screens keep clear under it; the sidebar starts its first control 56 px down. */
 :root { --titlebar: calc(var(--sp-28) * 0); }
-:root[data-titlebar="overlay"] { --titlebar: var(--sp-28); }
-.titlebar { position: fixed; inset: 0 0 auto 0; height: var(--titlebar); z-index: 200; }
+:root[data-titlebar="overlay"] { --titlebar: var(--sp-44); }
+.titlebar { position: fixed; inset: 0 0 auto 0; height: var(--sp-20); z-index: 200; }
+.titlerow { position: fixed; inset: 0 0 auto 0; height: var(--sp-44); z-index: 210; pointer-events: none; }
+.tr-drag { position: absolute; inset: 0 auto 0 0; width: var(--sp-224); pointer-events: auto; }
+.tr-buttons { position: absolute; top: var(--sp-8); left: var(--sp-80); display: flex; gap: var(--sp-2); pointer-events: auto; }
+.tbi { display: grid; place-items: center; width: var(--sp-28); height: var(--sp-28); padding: 0; border: 0; border-radius: var(--r-7); background: none; color: var(--t3); }
+.tbi .ic { width: var(--sp-16); height: var(--sp-16); }
+.tbi:hover:not(.dim) { background: var(--raise); color: var(--t1); }
+/* Dimmed: the design's t4 at 55% (about 24% ink); the repo keeps t4 out of text colours, so it is t3 at the same strength. */
+.tbi.dim { opacity: .43; cursor: default; }
 body {
-  padding-top: var(--titlebar);
   margin: 0; background: var(--bg); color: var(--t1);
   font: var(--fw-regular) var(--fs-13)/1.45 var(--sans); -webkit-font-smoothing: antialiased;
 }
@@ -34,12 +42,18 @@ button { cursor: pointer; }
 .ic.sm { width: var(--sp-13); height: var(--sp-13); }
 
 /* Shell */
-.app { height: calc(100dvh - var(--titlebar)); display: grid; grid-template-columns: var(--sp-224) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); min-height: 0; }
+.app { height: 100dvh; display: grid; grid-template-columns: var(--sp-224) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); min-height: 0; }
 /* Live regions and other helpers stay out of the grid, so the sidebar and the
    sheet always fill the window. */
 .toast-live { position: fixed; right: var(--sp-12); bottom: var(--sp-12); z-index: 50; width: var(--sp-340); max-width: calc(100vw - var(--sp-24)); display: flex; flex-direction: column; align-items: stretch; gap: var(--sp-8); pointer-events: none; }
 .toast-live > * { pointer-events: auto; }
 .side { display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-12) var(--sp-10) var(--sp-10); min-width: 0; }
+:root[data-titlebar="overlay"] .side { padding-top: var(--sp-56); }
+:root[data-titlebar="overlay"] .sheet { border-top: 0; border-radius: 0; } /* the unified window: the sheet runs to the top edge, no top border and no top radius */
+.app.side-hidden { grid-template-columns: minmax(0, 1fr); }
+.app.side-hidden .side { display: none; }
+.app.side-hidden .tr-drag { display: none; }
+.app.side-hidden .sheet { padding-top: var(--sp-44); }
 .side .primary { display: flex; flex-direction: column; gap: var(--sp-1); flex: 1; min-height: 0; }
 .search {
   display: flex; align-items: center; gap: var(--sp-8); height: var(--sp-32); margin-bottom: var(--sp-4); padding: 0 var(--sp-10);
@@ -480,7 +494,7 @@ button.pillx { border: 0; }
 .md:focus-visible, .slot:focus-visible { outline: var(--bw-2) solid var(--t1); outline-offset: var(--sp-n2); }
 
 /* Accounts: the public pages, the approval screen, the devices list */
-.public-page { min-height: calc(100dvh - var(--titlebar)); display: flex; align-items: center; justify-content: center; padding: var(--sp-24) var(--sp-16); background: var(--bg); }
+.public-page { min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: calc(var(--sp-24) + var(--titlebar)) var(--sp-16) var(--sp-24); background: var(--bg); }
 .public { display: flex; flex-direction: column; align-items: center; gap: var(--sp-16); max-width: var(--sp-640); text-align: center; }
 .public h1 { font-size: var(--fs-30); font-weight: var(--fw-medium); letter-spacing: var(--ls-heading); color: var(--t1); }
 .public p { color: var(--t3); max-width: 46ch; }
