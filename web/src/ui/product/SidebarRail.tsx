@@ -35,6 +35,7 @@ export function SidebarRail({ width, onChange }: { width: number; onChange: (wid
         latest.current = width;
         setLive(width);
         setDragging(true);
+        document.documentElement.classList.add("resizing");
       }}
       onPointerMove={(event) => {
         if (!dragging) return;
@@ -43,6 +44,7 @@ export function SidebarRail({ width, onChange }: { width: number; onChange: (wid
         preview(latest.current);
       }}
       onLostPointerCapture={() => {
+        document.documentElement.classList.remove("resizing");
         setDragging(false);
         onChange(latest.current);
       }}

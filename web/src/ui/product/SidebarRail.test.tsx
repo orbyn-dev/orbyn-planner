@@ -47,5 +47,9 @@ describe("the sidebar resize rail (as in Engineering)", () => {
     expect(screen.queryByText("180 · minimum")).not.toBeNull();
     act(() => { fireEvent.pointerMove(rail, { clientX: 900 }); });
     expect(screen.queryByText("420 · maximum")).not.toBeNull();
+    expect(document.documentElement.classList.contains("resizing")).toBe(true);
+    act(() => { fireEvent.lostPointerCapture(rail, { pointerId: 1 }); });
+    expect(document.documentElement.classList.contains("resizing")).toBe(false);
+    expect(screen.queryByText("420 · maximum")).toBeNull();
   });
 });
