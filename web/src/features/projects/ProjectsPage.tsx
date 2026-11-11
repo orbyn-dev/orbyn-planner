@@ -60,14 +60,14 @@ export function ProjectsPage() {
       ) : (
         <div className="tbl-wrap">
           <ul className="tbl">
-            <li className="tr h" aria-hidden="true" style={{ gridTemplateColumns: COLS }}>
+            <li className="tr h projects" aria-hidden="true" style={{ gridTemplateColumns: COLS }}>
               <span>Project</span><span>Next</span><span>Due</span><span>Done</span>
             </li>
             {shown.map((p) => {
               const stats = projectStats(tasks, p.id);
               const act = !p.archived && p.goal !== null && (isOverdue(p.goal, now) || isDueToday(p.goal, now));
               return (
-                <li key={p.id} className="tr" style={{ gridTemplateColumns: COLS }} data-row-id={p.id}>
+                <li key={p.id} className="tr projects" style={{ gridTemplateColumns: COLS }} data-row-id={p.id}>
                   <span>
                     <button type="button" className="tag link-btn" style={{ color: "var(--t1)" }} onClick={() => navigate(`/projects/${p.id}`)}>
                       <Swatch colour={p.colour} />
