@@ -31,7 +31,10 @@ describe("narrow pages", () => {
   it("the Tasks table drops List and Priority below 640 px and shows the list under the title; the Board scrolls sideways", () => {
     expect(rule(".sheet-main[data-table] .tr.tasks {")).toContain("var(--sp-22) minmax(0, 1fr) var(--sp-84)");
     expect(rule(".tcell .lst { display: none")).toContain("color: var(--t3)");
-    expect(rule(".sheet-main[data-narrow] .board:not(.scroll) {")).toContain("overflow-x: auto");
+    const board = rule(".sheet-main[data-narrow] .board:not(.scroll) {");
+    expect(board).toContain("grid-auto-columns: var(--sp-260)");
+    expect(board).toContain("scroll-snap-type: x mandatory");
+    expect(rule(".sheet-main[data-narrow] .board:not(.scroll) .lane-h {")).toContain("position: sticky");
   });
 
   it("Today's counts sit two by two when tight", () => {

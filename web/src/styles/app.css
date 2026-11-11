@@ -541,7 +541,10 @@ button.pillx { border: 0; }
 .tcell .lst { display: none; align-items: center; gap: var(--sp-5); color: var(--t3); font-size: var(--fs-12); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tcell .lst .sw { flex: none; }
 @media (min-width: 768px) { .tcell .lst { display: flex; } }
-.sheet-main[data-narrow] .board:not(.scroll) { grid-auto-flow: column; grid-auto-columns: minmax(var(--sp-176), 1fr); grid-template-columns: none !important; overflow-x: auto; }
+/* Narrow Board (Planner Designs v69 p-narrow-board-480): lanes keep 260 px and scroll sideways with snap, the next lane peeks in, and a lane's header stays at the top of its lane. Only the board scrolls sideways. */
+.sheet-main[data-narrow] .board:not(.scroll) { grid-auto-flow: column; grid-auto-columns: var(--sp-260); grid-template-columns: none !important; align-items: start; flex: 1 1 auto; min-height: 0; overflow: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--sp-28); }
+.sheet-main[data-narrow] .board:not(.scroll) .lane { scroll-snap-align: start; }
+.sheet-main[data-narrow] .board:not(.scroll) .lane-h { position: sticky; top: 0; z-index: 1; background: var(--raise); }
 .project-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .month-row { display: contents; }
 .md:focus-visible, .slot:focus-visible { outline: var(--bw-2) solid var(--t1); outline-offset: var(--sp-n2); }
