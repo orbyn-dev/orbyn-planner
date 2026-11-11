@@ -72,7 +72,8 @@ export function TimeGrid({ days, occurrences, today, now, mode, side = true }: {
 
   useEffect(() => {
     const el = scroller.current;
-    if (el) el.scrollTop = px(days.includes(today) ? Math.max(nowMinutes - 120, 0) : 7 * 60);
+    // The 3-day narrow week starts at 07:00 whatever the time (Planner Designs v69 p-narrow-week-480).
+    if (el) el.scrollTop = px(side && days.includes(today) ? Math.max(nowMinutes - 120, 0) : 7 * 60);
     // Scroll once per set of days, not on every tick of the clock.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [days.join(",")]);
