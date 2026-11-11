@@ -216,13 +216,18 @@ function textBoxes([originX, originY]) {
   return out;
 }
 
-async function ours(theme, size = frame.fit === "app" ? { width: 1160, height: 656 } : SIZE[frame.kind], suffix = "") {
+/** The size a frame is drawn at: a frame can set its own window (the narrow-content frames are a 900 px window with the sidebar at 300 or 420 px). */
+const sizeOf = () => (frame.window ? { width: frame.window.width, height: frame.window.height } : frame.fit === "app" ? { width: 1160, height: 656 } : SIZE[frame.kind]);
+
+async function ours(theme, size = sizeOf(), suffix = "") {
   const context = await browser.newContext({ viewport: size, timezoneId: TIME_ZONE, locale: LOCALE, reducedMotion: "reduce", deviceScaleFactor: 1 });
   await guardNetwork(context, "ours");
   const page = await context.newPage();
   await page.clock.setFixedTime(new Date(frame.now ?? PINNED_NOW));
   // A frame's own preferences (for example days shown), set before the page starts.
   if (frame.init) await page.addInitScript(frame.init);
+  // The sidebar's width (180 to 420 px) is kept on the device; a narrow-content frame sets it.
+  if (frame.window?.side) await page.addInitScript((w) => localStorage.setItem("orbyn-planner.sidebar-width", String(w)), frame.window.side);
   if (frame.prefs) await page.addInitScript((prefs) => localStorage.setItem("orbyn-planner.prefs", JSON.stringify(prefs)), frame.prefs);
   const query = new URLSearchParams({ scenario: frame.scenario, route: frame.route, theme, ...(frame.now ? { now: frame.now } : {}), ...(frame.page ? { page: frame.page } : {}), ...(frame.loading ? { loading: "1" } : {}), ...(frame.account === false ? { account: "0" } : frame.account === "out" ? { account: "out" } : {}) });
   await page.goto(`${origin}/tools/match/index.html?${query}${frame.hash ? `#${frame.hash}` : ""}`);
@@ -267,7 +272,7 @@ async function design(theme) {
   await app.scrollIntoViewIfNeeded();
   await page.waitForTimeout(frame.fit === "app" ? 1500 : 250); // the sign-in cards of the design fade in
   const box = await app.boundingBox();
-  const size = frame.fit === "app" ? { width: 1160, height: 656 } : SIZE[frame.kind];
+  const size = sizeOf();
   const top = frame.fit === "app" ? 45 : frame.kind === "phone" ? 51 : 1; // the phone's status bar is device chrome; the desktop title bar is hidden
   const png = join(outDir, `${name.replace("@", "-")}-${theme}-design.png`);
   // A frame that is not a window with a sidebar (the sign-in screens) is taken whole.

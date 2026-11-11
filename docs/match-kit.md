@@ -27,6 +27,10 @@ Ours is 1160x700 (desktop) or 390x730 (phone). The design is cropped to the same
 2. Add the frame to `web/tools/match/frames.json`: `design` (section id), `app` (which phone, when a section has several), `kind` (`desktop` or `phone`), `route`, `scenario`, and `steps` to click first (`{ "role": "radio", "name": "Day" }`). Use `id@n` as the key for the n-th frame of a section.
 3. Run it for all three themes and look at each image.
 
+## A frame's own window
+
+A frame can set `"window": { "width": 902, "height": 800, "side": 420 }`: ours is drawn in a window of that size with the sidebar at `side` px (180 to 420), and the design is cropped to the same size. The narrow-content frames use it (a 900 px window with the sidebar at 300 or 420 px leaves 600 or 480 px of page).
+
 ## Matched
 
 A frame is matched when layout, copy, sizes and colours agree in light, dark and Dim and someone looked at all three images. Otherwise it is partial, and each remaining difference is listed with `file:line`.
