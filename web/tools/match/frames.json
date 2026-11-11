@@ -1968,5 +1968,22 @@
       "height": 520,
       "side": 420
     }
+  },
+  "p-narrow-board-480": {
+    "kind": "desktop",
+    "design": "p-narrow-board-480",
+    "route": "/tasks",
+    "scenario": "board",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Board"
+      }
+    ],
+    "window": {
+      "width": 902,
+      "height": 600,
+      "side": 420
+    }
   }
 }
