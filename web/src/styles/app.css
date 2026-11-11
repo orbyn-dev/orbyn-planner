@@ -509,6 +509,12 @@ button.pillx { border: 0; }
 .menu button:hover, .menu button:focus-visible { background: var(--sel); }
 .move-btn { align-self: flex-start; padding: 0; border: 0; background: none; color: var(--t3); font-size: var(--fs-11-5); text-decoration: underline; text-underline-offset: var(--sp-2); }
 .board.scroll { overflow-x: auto; }
+/* Narrow Tasks: the List column goes first, then Priority (as on the phone), so the title keeps room; the Board's lanes keep a readable width and the board scrolls sideways. */
+.sheet-main[data-narrow] .tr.tasks { grid-template-columns: var(--sp-22) minmax(0, 1fr) var(--sp-110) var(--sp-70) !important; }
+.sheet-main[data-narrow] .tr.tasks > :nth-child(3) { display: none; }
+.sheet-main[data-tight] .tr.tasks { grid-template-columns: var(--sp-22) minmax(0, 1fr) var(--sp-110) !important; }
+.sheet-main[data-tight] .tr.tasks > :nth-child(5) { display: none; }
+.sheet-main[data-narrow] .board:not(.scroll) { grid-auto-flow: column; grid-auto-columns: minmax(var(--sp-176), 1fr); grid-template-columns: none !important; overflow-x: auto; }
 .project-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .month-row { display: contents; }
 .md:focus-visible, .slot:focus-visible { outline: var(--bw-2) solid var(--t1); outline-offset: var(--sp-n2); }

@@ -27,4 +27,10 @@ describe("narrow pages", () => {
   it("the Calendar toolbar's own sub title keeps its width: the title gives way first", () => {
     expect(rule(".ph:has(.pills) .sub {")).toContain("flex: none");
   });
+
+  it("the Tasks table drops List and then Priority, and the Board scrolls sideways, instead of squeezing the title", () => {
+    expect(rule(".sheet-main[data-narrow] .tr.tasks {")).toContain("var(--sp-22) minmax(0, 1fr) var(--sp-110) var(--sp-70)");
+    expect(rule(".sheet-main[data-tight] .tr.tasks {")).toContain("var(--sp-22) minmax(0, 1fr) var(--sp-110)");
+    expect(rule(".sheet-main[data-narrow] .board:not(.scroll) {")).toContain("overflow-x: auto");
+  });
 });
