@@ -148,7 +148,7 @@ function useSidebarHidden(): [boolean, () => void] {
 }
 
 function Shell() {
-  const { path } = useRouter();
+  const { path, back, forward, canBack, canForward } = useRouter();
   const mac = useMemo(() => isMacShell(), []);
   const [sideHidden, toggleSide] = useSidebarHidden();
   const main = useRef<HTMLElement>(null);
@@ -167,7 +167,7 @@ function Shell() {
 
   return (
     <div className={mac && sideHidden ? "app side-hidden" : "app"}>
-      {mac && <TitleRow sideHidden={sideHidden} onToggle={toggleSide} />}
+      {mac && <TitleRow sideHidden={sideHidden} onToggle={toggleSide} canBack={canBack} canForward={canForward} onBack={back} onForward={forward} />}
       <a
         className="skip"
         href="#content"

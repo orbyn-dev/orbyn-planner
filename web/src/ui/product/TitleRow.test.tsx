@@ -4,10 +4,10 @@ import { RouterProvider, useRouter } from "../../state/router";
 import { TitleRow } from "./TitleRow";
 
 function Harness({ hidden = false, onToggle = () => {} }: { hidden?: boolean; onToggle?: () => void }) {
-  const { navigate, path } = useRouter();
+  const { navigate, path, back, forward, canBack, canForward } = useRouter();
   return (
     <>
-      <TitleRow sideHidden={hidden} onToggle={onToggle} />
+      <TitleRow sideHidden={hidden} onToggle={onToggle} canBack={canBack} canForward={canForward} onBack={back} onForward={forward} />
       <button onClick={() => navigate("/tasks")}>go tasks</button>
       <button onClick={() => navigate("/calendar")}>go calendar</button>
       <output>{path}</output>
