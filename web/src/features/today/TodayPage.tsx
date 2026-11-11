@@ -227,8 +227,8 @@ export function TodayPage() {
   const eventsToCome = todayEvents.filter((o) => o.allDay || parseDue(o.end).date.getTime() > now.getTime()).length;
   const itemCount = todayEvents.length + todayTasks;
   const dayName = WEEKDAYS[now.getDay()]!;
-  const first = auth?.session?.name?.trim().split(/\s+/)[0];
-  const title = phone ? "Today" : first ? `${greetingAt(now)}, ${first}` : greetingAt(now);
+  // A plain greeting for every account: an account has only its email address, so no name is shown (Planner Designs v73 today).
+  const title = phone ? "Today" : greetingAt(now);
   // The header counts everything scheduled or due today, done included.
   const summary =
     itemCount === 0

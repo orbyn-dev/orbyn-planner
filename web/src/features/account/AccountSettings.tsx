@@ -259,7 +259,6 @@ function SignedInAccount({ onOpenPrivacy }: { onOpenPrivacy?: () => void }) {
     <>
       <EngineNotice />
       <div className="card" style={{ gap: 0, padding: "0 var(--sp-14)" }}>
-        <div className="kv" style={{ height: "var(--sp-44)", borderBottom: "var(--bw) solid var(--line)" }}><span>Name</span><b>{session?.name || "Not set"}</b></div>
         <div className="kv" style={{ height: "var(--sp-44)", borderBottom: "var(--bw) solid var(--line)" }}><span>Email</span><b>{session?.email}</b></div>
         <div className="kv" style={{ height: "var(--sp-44)", borderBottom: "var(--bw) solid var(--line)" }}><span>Passkeys <Planned /></span><b><NotAvailable /></b></div>
         <div className="kv" style={{ height: "var(--sp-44)", borderBottom: "var(--bw) solid var(--line)" }}>
