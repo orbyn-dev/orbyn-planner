@@ -156,8 +156,9 @@ function Shell() {
   const [sideHidden, toggleSide] = useSidebarHidden();
   const [sideWidth, setSideWidth] = useSidebarWidth();
   const main = useRef<HTMLElement>(null);
+  const sheetGrid = useRef<HTMLDivElement>(null);
   const sheetMain = useRef<HTMLDivElement>(null);
-  useContentWidth(sheetMain);
+  useContentWidth(sheetGrid, sheetMain);
   const ui = useUi();
   const { tasks } = usePlanner();
   const now = useNow();
@@ -196,7 +197,7 @@ function Shell() {
       </aside>
       <main id="content" ref={main} tabIndex={-1} className="sheet">
         <DeletionBanner />
-        <div className={ui.taskId || ui.eventKey ? "sheet-grid has-panel" : "sheet-grid"}>
+        <div ref={sheetGrid} className={ui.taskId || ui.eventKey ? "sheet-grid has-panel" : "sheet-grid"}>
           <div ref={sheetMain} className="sheet-main">{showFirstRun ? <FirstRun onDone={firstRun.finish} /> : page()}</div>
           <TaskPanel />
           <EventPanel />
