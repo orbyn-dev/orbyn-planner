@@ -2026,5 +2026,68 @@
       "height": 740,
       "side": 300
     }
+  },
+  "p-narrow-month-agenda-480": {
+    "kind": "desktop",
+    "design": "p-narrow-month-agenda-480",
+    "route": "/calendar",
+    "scenario": "month",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Month"
+      },
+      {
+        "click": "[data-day=\"2026-11-10\"]"
+      }
+    ],
+    "window": {
+      "width": 902,
+      "height": 640,
+      "side": 420
+    }
+  },
+  "p-narrow-month-agenda-600": {
+    "kind": "desktop",
+    "design": "p-narrow-month-agenda-600",
+    "route": "/calendar",
+    "scenario": "month",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Month"
+      },
+      {
+        "click": "[data-day=\"2026-11-10\"]"
+      },
+      {
+        "click": ".day-panel button[aria-haspopup=menu]"
+      }
+    ],
+    "window": {
+      "width": 902,
+      "height": 640,
+      "side": 300
+    }
+  },
+  "p-narrow-month-agenda-empty-480": {
+    "kind": "desktop",
+    "design": "p-narrow-month-agenda-empty-480",
+    "route": "/calendar",
+    "scenario": "month",
+    "steps": [
+      {
+        "role": "radio",
+        "name": "Month"
+      },
+      {
+        "click": "[data-day=\"2026-11-15\"]"
+      }
+    ],
+    "window": {
+      "width": 902,
+      "height": 520,
+      "side": 420
+    }
   }
 }

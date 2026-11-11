@@ -856,6 +856,15 @@ button.pillx { border: 0; }
 .nwbar .pills { flex-wrap: nowrap; }
 .pill.sm { height: var(--sp-26); padding: 0 var(--sp-9); }
 .nwhint { padding: 0 var(--sp-20) var(--sp-6); font-size: var(--fs-11-5); color: var(--t3); }
+.md.sel { box-shadow: inset 0 0 0 var(--bw-2) var(--t1); border-radius: var(--r-8); }
+/* The day agenda over the narrow month (Planner Designs v70 p-narrow-month-agenda-480). */
+.pnltop { display: flex; align-items: center; gap: var(--sp-8); padding-bottom: var(--sp-8); }
+.agttl { display: flex; align-items: baseline; gap: var(--sp-8); padding: var(--sp-8) 0 var(--sp-4); }
+.agttl b { font-size: var(--fs-18); font-weight: var(--fw-medium); color: var(--t1); }
+.agttl span { color: var(--t3); font-size: var(--fs-12-5); }
+.agempty { display: flex; flex-direction: column; gap: var(--sp-4); padding: var(--sp-24) 0; }
+.agempty b { font-weight: var(--fw-medium); color: var(--t1); }
+.agempty span { color: var(--t3); }
 .dots { display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: center; }
 .dots i { width: var(--sp-6); height: var(--sp-6); border-radius: var(--r-round); display: inline-block; }
 .dots em { font-style: normal; font-size: var(--fs-10-5); color: var(--t3); margin-left: var(--sp-1); }

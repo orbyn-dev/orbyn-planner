@@ -44,6 +44,10 @@ interface Ui {
   taskId: string | null;
   openTask: (id: string) => void;
   closeTask: () => void;
+  /** The day whose agenda the narrow month shows in the panel, or null (Planner Designs v70 p-narrow-month-agenda-480). */
+  dayKey: string | null;
+  openDay: (day: string) => void;
+  closeDay: () => void;
   eventKey: EventKey | null;
   openEvent: (id: string, date: string) => void;
   closeEvent: () => void;
@@ -81,6 +85,7 @@ let toastCounter = 0;
 export function UiProvider({ children }: { children: ReactNode }) {
   const [taskId, setTaskId] = useState<string | null>(null);
   const [eventKey, setEventKey] = useState<EventKey | null>(null);
+  const [dayKey, setDayKey] = useState<string | null>(null);
   const [newEventDate, setNewEventDate] = useState<string | null>(null);
   const [newEventTime, setNewEventTime] = useState<string | null>(null);
   const [newEventTitle, setNewEventTitle] = useState("");
@@ -123,6 +128,14 @@ export function UiProvider({ children }: { children: ReactNode }) {
         setTaskId(id);
       },
       closeTask: () => setTaskId(null),
+      // The day agenda stays under a task or an event opened from it, so closing that returns to the agenda.
+      dayKey,
+      openDay: (day: string) => {
+        setTaskId(null);
+        setEventKey(null);
+        setDayKey(day);
+      },
+      closeDay: () => setDayKey(null),
       eventKey,
       openEvent: (id: string, date: string) => {
         setTaskId(null);
@@ -157,7 +170,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
       showToast,
       dismissToast,
     }),
-    [newTaskDefaults, taskId, eventKey, newEventDate, newEventTime, newEventTitle, listId, newTaskOpen, searchOpen, menuOpen, toasts, showToast, dismissToast],
+    [newTaskDefaults, taskId, eventKey, dayKey, newEventDate, newEventTime, newEventTitle, listId, newTaskOpen, searchOpen, menuOpen, toasts, showToast, dismissToast],
   );
   return <UiContext.Provider value={value}>{children}</UiContext.Provider>;
 }
