@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { ApiFailure } from "../../core/account/errors";
 import { useAuth } from "../../state/account";
 import { confirmTotp, disableTotp, enrolTotp } from "../../state/services/flows";
+import { ReauthCancelled, useReauth } from "./ConfirmIdentity";
 import { saveFile } from "../export";
 import { useUi } from "../../ui/product/UiProvider";
 import { PAUSED_HINT, useDeletionPaused } from "../../state/deletionNotice";
@@ -144,21 +145,27 @@ function DisableDialog({ onClose, onDone }: { onClose: () => void; onDone: () =>
   const auth = useAuth()!;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { run, prompt } = useReauth();
 
   const submit = async () => {
     setBusy(true);
     setError(null);
     try {
       // This device's own signature is the proof: no code, so a lost authenticator can't lock anyone out of turning it off.
-      await disableTotp(auth.services, auth.session!);
+      // The engine allows it only after a sign-in from the last ten minutes: "Confirm it’s you" asks for the password and sends it again.
+      await run("To turn off two-factor", () => disableTotp(auth.services, auth.session!));
       onDone();
     } catch (e) {
-      if (e instanceof ApiFailure && e.code === "totp_not_enabled") onDone();
-      setError(describeError(e));
+      if (e instanceof ReauthCancelled) onClose();
+      else {
+        if (e instanceof ApiFailure && e.code === "totp_not_enabled") onDone();
+        setError(describeError(e));
+      }
       setBusy(false);
     }
   };
 
+  if (prompt) return <>{prompt}</>;
   return (
     <Modal label="Turn off two-factor" onClose={onClose}>
       <b className="card-title">Turn off two-factor?</b>

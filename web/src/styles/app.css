@@ -1116,3 +1116,10 @@ button.pillx { border: 0; }
 .tags-empty { gap: var(--sp-6); padding: var(--sp-18) var(--sp-14); align-items: flex-start; }
 .tags-empty b { font-weight: var(--fw-medium); color: var(--t1); }
 .tags-empty .t3, .tags-note { font-size: var(--fs-12-5); }
+
+/* Confirm it's you (Planner Designs v73 p-reauth): the password again before an action the engine only allows after a recent sign-in. */
+.reauth-form { display: flex; flex-direction: column; gap: var(--sp-12); }
+.reauth-subject { display: flex; align-items: center; gap: var(--sp-8); background: var(--raise); border-radius: var(--r-8); padding: var(--sp-8) var(--sp-10); }
+.reauth-note { display: flex; align-items: center; gap: var(--sp-8); background: var(--raise); border-radius: var(--r-8); padding: var(--sp-8) var(--sp-10); color: var(--t2); font-size: var(--fs-12-5); }
+.reauth-note.bad { background: var(--red-bg); color: var(--red); }
+.field.bad { box-shadow: inset 0 0 0 var(--bw) var(--red); }

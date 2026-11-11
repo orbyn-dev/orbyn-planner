@@ -12,6 +12,7 @@ import { TwoFactorRow } from "./TwoFactor";
 import type { Device } from "../../generated/Device";
 import { useAuth } from "../../state/account";
 import { removeDevice, verifiedDevices } from "../../state/services/flows";
+import { ReauthCancelled, useReauth } from "./ConfirmIdentity";
 import { PAUSED_HINT, useDeletionPaused } from "../../state/deletionNotice";
 import { useCancelDeletion } from "./DeletionBanner";
 import { useApprover } from "../../state/useApprover";
@@ -131,18 +132,24 @@ function RemoveDialog({ device, onClose, onDone }: { device: Device; onClose: ()
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const { run, prompt } = useReauth();
+
   const remove = async () => {
     setBusy(true);
     setError(null);
     try {
-      await removeDevice(auth.services, auth.session!, device);
+      // Removing a device needs a sign-in from the last ten minutes: if the engine asks, "Confirm it’s you" takes over and, once the password
+      // is right, the same removal is sent again.
+      await run(<>To remove {device.name}</>, () => removeDevice(auth.services, auth.session!, device));
       onDone();
     } catch (e) {
-      setError(describeError(e));
+      if (e instanceof ReauthCancelled) onClose();
+      else setError(describeError(e));
       setBusy(false);
     }
   };
 
+  if (prompt) return <>{prompt}</>;
   return (
     <Modal label="Remove device" onClose={onClose}>
       <b className="card-title">Remove “{device.name}”?</b>

@@ -41,6 +41,8 @@ export interface SyncRig {
     refuseUploads: Map<string, { status: number; code: string }>;
     /** Milliseconds every request waits, to make a pass long enough to stop. */
     delayMs: number;
+    /** Paths whose requests wait for ever (a "Checking…" frame). */
+    hold: Set<string>;
     /** Runs when an upload reaches the server, before it answers: an edit made while the upload is out. */
     onUpload?: () => void;
   };
@@ -50,10 +52,11 @@ export interface SyncRig {
 export async function createSyncRig(options: { third?: boolean } = {}): Promise<SyncRig> {
   const crypto = realAuthCrypto();
   const clock = { now: Date.UTC(2026, 10, 7, 10, 0, 0) };
-  const network: SyncRig["network"] = { down: false, loseAnswer: false, refuseKeys: false, dropZoneMake: false, refuseUploads: new Map<string, { status: number; code: string }>(), delayMs: 0 };
+  const network: SyncRig["network"] = { hold: new Set<string>(), down: false, loseAnswer: false, refuseKeys: false, dropZoneMake: false, refuseUploads: new Map<string, { status: number; code: string }>(), delayMs: 0 };
   const engine = createMockEngine(() => clock.now);
   const fetchFn = (async (url: string, init?: RequestInit) => {
     if (network.down) throw new TypeError("Failed to fetch");
+    if (network.hold.size > 0 && network.hold.has(new URL(String(url), "http://engine.test").pathname)) return new Promise<Response>(() => undefined);
     if (network.delayMs) await new Promise((r) => setTimeout(r, network.delayMs));
     const method = init?.method ?? "GET";
     if (network.refuseKeys && method === "POST" && String(url).endsWith("/v1/keychain/envelopes")) {

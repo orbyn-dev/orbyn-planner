@@ -124,7 +124,7 @@ export function createMockEngine(now: () => number = () => Date.now()) {
   };
   const subscribers = new Set<(accountId: string, zone: string, token: string, author: string) => void>();
   /** Refuse the next calls to a path (or a path prefix) with this error: `refuseNext("/v1/sessions/login/start", 429, "too_many_attempts")`. */
-  const refusals: { path: string; status: number; code: string; message: string; times: number }[] = [];
+  const refusals: { path: string; status: number; code: string; message: string; times: number; retryAfter?: number }[] = [];
   const state = { attemptsPerEmail: new Map<string, number>(), trustedProofs: 0, lastManage: new Map<string, number>() };
 
   const json = (status: number, body: unknown) => new Response(status === 204 ? null : JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
@@ -179,7 +179,9 @@ export function createMockEngine(now: () => number = () => Date.now()) {
     const refusal = refusals.find((r) => path.startsWith(r.path) && r.times > 0);
     if (refusal) {
       refusal.times -= 1;
-      return fail(refusal.status, refusal.code, refusal.message);
+      const refused = fail(refusal.status, refusal.code, refusal.message);
+      if (refusal.retryAfter !== undefined) refused.headers.set("retry-after", String(refusal.retryAfter));
+      return refused;
     }
 
     // Always 202, whatever the address: the answer tells nothing about the account. The mock keeps the addresses asked for.
@@ -426,6 +428,8 @@ export function createMockEngine(now: () => number = () => Date.now()) {
       // Accepted once: each signature must be strictly later than the last one this device had accepted for the action.
       const slot = `${device.id}:${action}`;
       if (!proven || signedAt <= (state.lastManage.get(slot) ?? 0)) return fail(401, "device_proof_required", "This request needs the device's signature.");
+      // Turning two-factor off needs a password sign-in from the last ten minutes; the refusal does not use up the signature.
+      if (action === "disable" && !fresh()) return fail(401, "reauthentication_required", "Sign in again to do this.");
       state.lastManage.set(slot, signedAt);
       if (action === "enrol") {
         if (account.totp?.enabled) return fail(409, "totp_already_enabled", "Two-factor is already on.");
@@ -497,6 +501,8 @@ export function createMockEngine(now: () => number = () => Date.now()) {
 
     if (method === "GET" && path === "/v1/devices") return json(200, { devices: account.devices.map(view), removals: account.removals ?? [] });
     if (method === "DELETE" && path === "/v1/sessions") {
+      if (account.deletion) return fail(409, "deletion_scheduled", "Your account is scheduled for deletion.");
+      if (!fresh()) return fail(401, "reauthentication_required", "Sign in again to do this.");
       for (const [t, s] of sessions) if (s.accountId === account.id) sessions.delete(t);
       return json(204, null);
     }
@@ -548,6 +554,8 @@ export function createMockEngine(now: () => number = () => Date.now()) {
       if (target.state === "trusted" && account.devices.filter((d) => d.state === "trusted").length === 1) {
         return fail(409, "last_trusted_device", "The last trusted device cannot be removed.");
       }
+      // Removing a device needs a password sign-in from the last ten minutes; the refusal does not use up the signed request.
+      if (!fresh()) return fail(401, "reauthentication_required", "Sign in again to do this.");
       account.devices = account.devices.filter((d) => d.id !== target.id);
       (account.removals ??= []).push({ device_id: target.id, signing_key: target.signing_key, agreement_key: target.agreement_key, removed_by: device.id, sequence: b.sequence, signature: b.signature });
       for (const [t, s] of sessions) if (s.deviceId === target.id) sessions.delete(t);
@@ -595,8 +603,12 @@ export function createMockEngine(now: () => number = () => Date.now()) {
     deleteUnusedAsked,
     /** Whether the code is still unused. */
     inviteUnused: (code: string) => invitesState.codes.get(normalInvite(code))?.used === false,
-    refuseNext(path: string, status: number, code: string, message = "Refused.", times = 1) {
-      refusals.push({ path, status, code, message, times });
+    refuseNext(path: string, status: number, code: string, message = "Refused.", times = 1, retryAfter?: number) {
+      refusals.push({ path, status, code, message, times, retryAfter });
+    },
+    /** Makes every session older than ten minutes since its password sign-in, so the engine asks the sensitive requests to sign in again. */
+    ageSessions(ms = 11 * 60_000) {
+      for (const s of sessions.values()) s.authenticatedAt = (s.authenticatedAt ?? now()) - ms;
     },
     /** The account's deletion finished: its data and sessions are gone, and its id answers the status route with the day. */
     deleteAccountNow(email: string, deletedAt = "2026-11-14T00:00:00Z") {

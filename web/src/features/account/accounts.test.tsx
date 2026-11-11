@@ -1165,6 +1165,41 @@ describe("removing a device and approving one again", () => {
     expect(account.removals![1]!.sequence).toBe(2);
   });
 
+  it("an old sign-in asks “Confirm it’s you” first, and after the right password the same removal is sent again (Planner Designs v73 p-reauth-before-remove-device)", async () => {
+    const { a, account } = await withStranded();
+    await mount(a, "/settings");
+    await openAccount();
+    engine.ageSessions(); // the sign-in is older than ten minutes
+    await userEvent.click(await screen.findByRole("button", { name: "Remove Old phone" }));
+    await userEvent.click(within(screen.getByRole("dialog", { name: "Remove device" })).getByRole("button", { name: "Remove" }));
+    const ask = await screen.findByRole("dialog", { name: "Confirm it’s you" });
+    expect(within(ask).getByText("To remove Old phone")).toBeInTheDocument();
+    expect(account.devices.map((d) => d.name)).toContain("Old phone"); // nothing is removed yet
+    await userEvent.type(within(ask).getByLabelText("Password"), "wrong one");
+    await userEvent.click(within(ask).getByRole("button", { name: "Confirm" }));
+    expect(await within(ask).findByText("That isn’t your password. Check it and try again.")).toBeInTheDocument();
+    await userEvent.type(within(ask).getByLabelText("Password"), SAM.password);
+    await userEvent.click(within(ask).getByRole("button", { name: "Confirm" }));
+    await waitFor(() => expect(account.devices.map((d) => d.name)).not.toContain("Old phone"));
+    expect(screen.queryByRole("dialog", { name: "Confirm it’s you" })).toBeNull();
+    // Both removal requests carry the same signed sequence: the refusal did not use it up.
+    const removals = engine.calls.filter((c) => c.method === "DELETE" && c.path.startsWith("/v1/devices/")).map((c) => (c.body as { sequence: number }).sequence);
+    expect(removals).toEqual([1, 1]);
+  });
+
+  it("Cancel on “Confirm it’s you” removes nothing", async () => {
+    const { a, account } = await withStranded();
+    await mount(a, "/settings");
+    await openAccount();
+    engine.ageSessions();
+    await userEvent.click(await screen.findByRole("button", { name: "Remove Old phone" }));
+    await userEvent.click(within(screen.getByRole("dialog", { name: "Remove device" })).getByRole("button", { name: "Remove" }));
+    const ask = await screen.findByRole("dialog", { name: "Confirm it’s you" });
+    await userEvent.click(within(ask).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(account.devices.map((d) => d.name)).toContain("Old phone");
+  });
+
   it("a device this one doesn't verify is offered for approval again, whatever the server calls it", async () => {
     const { a } = await withStranded();
     await mount(a, "/settings");

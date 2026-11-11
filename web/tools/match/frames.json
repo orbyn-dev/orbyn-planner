@@ -2212,5 +2212,177 @@
       "height": 520,
       "side": 420
     }
+  },
+  "p-reauth-before-remove-device": {
+    "kind": "desktop",
+    "design": "p-reauth-before-remove-device",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Account\")"
+      },
+      {
+        "eval": "window.__matchEngine.engine.ageSessions()"
+      },
+      {
+        "click": "button[aria-label=\"Remove B\"]"
+      },
+      {
+        "click": "[role=dialog] button:text-is(\"Remove\")"
+      }
+    ]
+  },
+  "p-reauth": {
+    "kind": "desktop",
+    "design": "p-reauth",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Account\")"
+      },
+      {
+        "eval": "window.__matchEngine.engine.ageSessions()"
+      },
+      {
+        "click": "button[aria-label=\"Remove B\"]"
+      },
+      {
+        "click": "[role=dialog] button:text-is(\"Remove\")"
+      }
+    ]
+  },
+  "p-reauth-checking": {
+    "kind": "desktop",
+    "design": "p-reauth-checking",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Account\")"
+      },
+      {
+        "eval": "window.__matchEngine.engine.ageSessions()"
+      },
+      {
+        "click": "button[aria-label=\"Remove B\"]"
+      },
+      {
+        "click": "[role=dialog] button:text-is(\"Remove\")"
+      },
+      {
+        "eval": "window.__matchEngine.hold.add('/v1/sessions/login/start')"
+      },
+      {
+        "fill": "#reauth-password",
+        "value": "correct horse"
+      },
+      {
+        "click": "[role=dialog] form .btn"
+      },
+      {
+        "wait": 600
+      }
+    ]
+  },
+  "p-reauth-wrong-password": {
+    "kind": "desktop",
+    "design": "p-reauth-wrong-password",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Account\")"
+      },
+      {
+        "eval": "window.__matchEngine.engine.ageSessions()"
+      },
+      {
+        "click": "button[aria-label=\"Remove B\"]"
+      },
+      {
+        "click": "[role=dialog] button:text-is(\"Remove\")"
+      },
+      {
+        "eval": "window.__matchEngine.engine.refuseNext('/v1/sessions/login/start',401,'login_failed','Login failed.')"
+      },
+      {
+        "fill": "#reauth-password",
+        "value": "correct horse"
+      },
+      {
+        "click": "[role=dialog] form .btn"
+      },
+      {
+        "wait": 600
+      }
+    ]
+  },
+  "p-reauth-throttled": {
+    "kind": "desktop",
+    "design": "p-reauth-throttled",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Account\")"
+      },
+      {
+        "eval": "window.__matchEngine.engine.ageSessions()"
+      },
+      {
+        "click": "button[aria-label=\"Remove B\"]"
+      },
+      {
+        "click": "[role=dialog] button:text-is(\"Remove\")"
+      },
+      {
+        "eval": "window.__matchEngine.engine.refuseNext('/v1/sessions/login/start',429,'too_many_attempts','Too many attempts.',1,720)"
+      },
+      {
+        "fill": "#reauth-password",
+        "value": "correct horse"
+      },
+      {
+        "click": "[role=dialog] form .btn"
+      },
+      {
+        "wait": 600
+      }
+    ]
+  },
+  "p-reauth-network": {
+    "kind": "desktop",
+    "design": "p-reauth-network",
+    "route": "/settings",
+    "scenario": "today",
+    "steps": [
+      {
+        "click": "button.nav:has-text(\"Account\")"
+      },
+      {
+        "eval": "window.__matchEngine.engine.ageSessions()"
+      },
+      {
+        "click": "button[aria-label=\"Remove B\"]"
+      },
+      {
+        "click": "[role=dialog] button:text-is(\"Remove\")"
+      },
+      {
+        "fill": "#reauth-password",
+        "value": "correct horse"
+      },
+      {
+        "eval": "window.__matchEngine.offline.value = true"
+      },
+      {
+        "click": "[role=dialog] form .btn"
+      },
+      {
+        "wait": 600
+      }
+    ]
   }
 }

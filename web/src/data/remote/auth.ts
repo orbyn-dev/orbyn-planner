@@ -162,8 +162,8 @@ export function createAuthApi(options: AuthApiOptions) {
     cancelDeletionByMail: (body: CancelDeletionByMail) => call<void>("POST", "/v1/accounts/delete/cancel-by-mail", body),
     /** Ends this device's session. */
     signOut: () => call<void>("DELETE", "/v1/sessions/current", undefined, true),
-    /** Ends every session; a trusted device only. */
-    signOutEverywhere: () => call<void>("DELETE", "/v1/sessions", undefined, true),
+    /** Ends every session, this one too; a trusted device only, from a sign-in of the last ten minutes (401 `reauthentication_required` otherwise: about the request, so the session stays), and refused 409 `deletion_scheduled` while a deletion waits. */
+    signOutEverywhere: () => call<void>("DELETE", "/v1/sessions", undefined, true, true),
     devices: () => call<DeviceList>("GET", "/v1/devices", undefined, true),
     currentDevice: () => call<CurrentDevice>("GET", "/v1/devices/current", undefined, true),
     createApproval: (body: CreateApproval) => call<ApprovalCreated>("POST", "/v1/devices/approvals", body, true),
@@ -193,7 +193,8 @@ export function createAuthApi(options: AuthApiOptions) {
     upload: (zone: string, body: UploadChanges) => call<UploadResult>("POST", `/v1/zones/${encodeURIComponent(zone)}/changes`, body, true),
     keyEnvelopes: () => call<KeyEnvelopeList>("GET", "/v1/keychain/envelopes", undefined, true),
     putKeyEnvelopes: (body: PutKeyEnvelopes) => call<void>("POST", "/v1/keychain/envelopes", body, true),
-    removeDevice: (id: string, body: RemoveDevice) => call<void>("DELETE", `/v1/devices/${encodeURIComponent(id)}`, body, true),
+    /** Needs a password sign-in from the last ten minutes: a stale one is answered 401 `reauthentication_required`, which is about the request (the signed removal is not used up), so the session stays. */
+    removeDevice: (id: string, body: RemoveDevice) => call<void>("DELETE", `/v1/devices/${encodeURIComponent(id)}`, body, true, true),
   };
 }
 
