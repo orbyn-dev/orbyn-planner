@@ -3,6 +3,9 @@ import { build } from "vite";
 import { describe, expect, it } from "vitest";
 import { FAKE_AUTH_MARKER } from "./FakeAuthCrypto";
 
+const nodeUrl = "node:url";
+const { fileURLToPath } = (await import(/* @vite-ignore */ nodeUrl)) as { fileURLToPath(url: URL): string };
+
 // The fake crypto and the mock engine are for tests. Two checks keep them out of the app.
 
 const sources = import.meta.glob<string>("/src/**/*.{ts,tsx}", { query: "?raw", import: "default", eager: true });
@@ -19,7 +22,7 @@ describe("no fake in the app", () => {
   });
 
   it("the production build contains neither the fake nor the mock engine", async () => {
-    const root = new URL("../..", import.meta.url).pathname;
+    const root = fileURLToPath(new URL("../..", import.meta.url));
     const result = await build({ root, logLevel: "silent", build: { write: false } });
     const outputs = Array.isArray(result) ? result : "output" in result ? [result] : [];
     const code = outputs
@@ -36,7 +39,7 @@ describe("no fake in the app", () => {
   }, 120_000);
 
   async function files(define?: Record<string, string>): Promise<string[]> {
-    const root = new URL("../..", import.meta.url).pathname;
+    const root = fileURLToPath(new URL("../..", import.meta.url));
     const result = await build({ root, logLevel: "silent", build: { write: false }, define });
     const outputs = Array.isArray(result) ? result : "output" in result ? [result] : [];
     return outputs.flatMap((r) => r.output).map((o) => o.fileName);

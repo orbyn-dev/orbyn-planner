@@ -5,8 +5,8 @@ import { DANGER_FILL, EASING, HOUR_PX, MOTION_MS, PHONE_MAX_PX, SLOW_FACTOR } fr
 const nodeFs = "node:fs";
 const fs = (await import(/* @vite-ignore */ nodeFs)) as { readFileSync(path: string, encoding: "utf8"): string };
 const here = `${(globalThis as { process?: { cwd(): string } }).process!.cwd()}/src/styles`;
-const css = fs.readFileSync(`${here}/tokens.css`, "utf8");
-const app = fs.readFileSync(`${here}/app.css`, "utf8");
+const css = fs.readFileSync(`${here}/tokens.css`, "utf8").replace(/\r\n/g, "\n");
+const app = fs.readFileSync(`${here}/app.css`, "utf8").replace(/\r\n/g, "\n");
 const declared = (name: string): string => {
   const m = new RegExp(`${name.replace(/[-]/g, "\\-")}:\\s*([^;]+);`).exec(css);
   if (!m) throw new Error(`${name} is not in tokens.css`);

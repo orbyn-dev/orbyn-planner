@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 const nodeFs = "node:fs";
 const fs = (await import(/* @vite-ignore */ nodeFs)) as { readFileSync(path: string, encoding: "utf8"): string };
-const css = fs.readFileSync(`${(globalThis as { process?: { cwd(): string } }).process!.cwd()}/src/styles/app.css`, "utf8");
+const css = fs.readFileSync(`${(globalThis as { process?: { cwd(): string } }).process!.cwd()}/src/styles/app.css`, "utf8").replace(/\r\n/g, "\n");
 const rule = (selector: string, from = 0) => {
   const i = css.indexOf(selector, from);
   expect(i, selector).toBeGreaterThan(-1);
