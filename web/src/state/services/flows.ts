@@ -2,7 +2,7 @@ import { normaliseSignupCode } from "../../core/account/signupCode";
 import { ApiFailure } from "../../core/account/errors";
 import { isAuthFailed, type ApprovalEngine, type AuthCrypto, type DeviceKeys } from "../../core/account/authCrypto";
 import { decodeBytes, encodeBytes, utf8 } from "../../lib/bytes";
-import type { StoredSession } from "../../data/account/keyStore";
+import { emptySyncState, type StoredSession } from "../../data/account/keyStore";
 import type { Device } from "../../generated/Device";
 import type { DeviceList } from "../../generated/DeviceList";
 import type { ProtectionLevel } from "../../generated/ProtectionLevel";
@@ -523,10 +523,44 @@ export async function signOut(services: AuthServices, options: { keepDevice?: bo
 }
 
 /**
+ * Marks every zone this device holds for rotation before a device is removed: the key the removed device keeps must
+ * not open what the account writes next. Written before the removal request and kept when the answer is lost, so an
+ * app closed straight after the answer still rotates on its next pass. Returns the zones it added, for a rollback.
+ */
+async function markRotation(services: AuthServices): Promise<string[]> {
+  return services.engine.exclusive(async () => {
+    if (!(await services.keys.loadKeys())) return [];
+    const state = (await services.keys.loadSyncState()) ?? emptySyncState();
+    const pending = state.rotateZones ?? [];
+    const added = state.zones.filter((zone) => !pending.includes(zone));
+    if (added.length > 0) await services.keys.saveSyncState({ ...state, rotateZones: [...pending, ...added] });
+    return added;
+  });
+}
+
+/** The server refused the removal: the zones it marked are put back as they were. */
+async function unmarkRotation(services: AuthServices, added: string[]): Promise<void> {
+  if (added.length === 0) return;
+  await services.engine.exclusive(async () => {
+    const state = await services.keys.loadSyncState();
+    if (!state?.rotateZones) return;
+    const left = state.rotateZones.filter((zone) => !added.includes(zone));
+    const next = { ...state };
+    if (left.length === 0) delete next.rotateZones;
+    else next.rotateZones = left;
+    await services.keys.saveSyncState(next);
+  });
+}
+
+/**
  * Removes a device. The engine asks for this device's signature over the account, the device, its
  * keys and a removal sequence one above every removal this device has counted. The count lives in
  * the engine's saved state, so it only goes up; the list is counted first, and again afterwards so
  * this removal is counted before the next.
+ *
+ * A removed device keeps the zone keys it already holds, so the zones are marked first and the next
+ * pass rotates them (see `runCycle`). Only a trusted device was ever sent keys; a pending one is
+ * removed without touching them.
  */
 export async function removeDevice(services: AuthServices, session: StoredSession, device: Device): Promise<void> {
   const list = await services.api.devices();
@@ -534,7 +568,16 @@ export async function removeDevice(services: AuthServices, session: StoredSessio
     engine.verifyDevices(list);
     return engine.signRemoval(device);
   });
-  await services.api.removeDevice(device.id, body);
+  const marked = device.state === "trusted" ? await markRotation(services) : [];
+  try {
+    await services.api.removeDevice(device.id, body);
+  } catch (error) {
+    // An answer from the server means nothing was removed; a lost or dropped request may have removed it, so the
+    // marking stays and the next pass rotates: fresh keys for a device that still exists are harmless. A network
+    // failure is not an answer (`status` 0), so it keeps the marking.
+    if (error instanceof ApiFailure && error.status >= 400) await unmarkRotation(services, marked);
+    throw error;
+  }
   try {
     const after = await services.api.devices();
     await services.engine.run(session, (engine) => void engine.verifyDevices(after));

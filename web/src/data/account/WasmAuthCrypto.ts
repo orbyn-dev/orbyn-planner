@@ -41,6 +41,7 @@ export interface WasmSyncEngine {
   record(zone: string, recordId: string): string | undefined;
   checkZones(zonesJson: string): string;
   createZoneKey(zone: string): string;
+  rotateZoneKey(zone: string): string;
   envelopesFor(zone: string, devicesJson: string): string;
   acceptEnvelopes(envelopesJson: string, devicesJson: string): string;
   retryQuarantined(zone: string, now: number): string;
@@ -114,6 +115,7 @@ function wasmApprovals(engine: WasmSyncEngine): ApprovalEngine {
       record: (zone, id) => engine.record(zone, id) ?? undefined,
       checkZones: (zones) => engine.checkZones(zones),
       createZoneKey: (zone) => engine.createZoneKey(zone),
+      rotateZoneKey: (zone) => engine.rotateZoneKey(zone),
       envelopesFor: (zone, devices) => engine.envelopesFor(zone, devices),
       acceptEnvelopes: (envelopes, devices) => engine.acceptEnvelopes(envelopes, devices),
       retryQuarantined: (zone, now) => engine.retryQuarantined(zone, now),

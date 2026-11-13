@@ -37,6 +37,8 @@ export interface SyncRig {
     refuseKeys: boolean;
     /** The next request to make a zone fails as if the connection dropped, after the server got it. */
     dropZoneMake: boolean;
+    /** The next device removal reaches the server but the answer is lost, as a dropped connection after it was applied. */
+    dropRemove: boolean;
     /** Uploads to these zones are refused with this status. */
     refuseUploads: Map<string, { status: number; code: string }>;
     /** Milliseconds every request waits, to make a pass long enough to stop. */
@@ -52,7 +54,7 @@ export interface SyncRig {
 export async function createSyncRig(options: { third?: boolean } = {}): Promise<SyncRig> {
   const crypto = realAuthCrypto();
   const clock = { now: Date.UTC(2026, 10, 7, 10, 0, 0) };
-  const network: SyncRig["network"] = { hold: new Set<string>(), down: false, loseAnswer: false, refuseKeys: false, dropZoneMake: false, refuseUploads: new Map<string, { status: number; code: string }>(), delayMs: 0 };
+  const network: SyncRig["network"] = { hold: new Set<string>(), down: false, loseAnswer: false, refuseKeys: false, dropZoneMake: false, dropRemove: false, refuseUploads: new Map<string, { status: number; code: string }>(), delayMs: 0 };
   const engine = createMockEngine(() => clock.now);
   const fetchFn = (async (url: string, init?: RequestInit) => {
     if (network.down) throw new TypeError("Failed to fetch");
@@ -64,6 +66,11 @@ export async function createSyncRig(options: { third?: boolean } = {}): Promise<
     }
     if (network.dropZoneMake && method === "PUT" && /\/v1\/zones\//.test(String(url))) {
       network.dropZoneMake = false;
+      throw new TypeError("Failed to fetch");
+    }
+    if (network.dropRemove && method === "DELETE" && /\/v1\/devices\/[^/]+$/.test(String(url))) {
+      network.dropRemove = false;
+      await engine.fetch(url, init);
       throw new TypeError("Failed to fetch");
     }
     if (method === "POST" && /\/v1\/zones\/[^/]+\/changes$/.test(String(url))) {
