@@ -104,6 +104,41 @@ async fn save_export(app: AppHandle, name: String, contents: String) -> Result<b
     Ok(true)
 }
 
+/// The page's own background, as CSS reports it ("rgb(246, 246, 246)"), so the window is the app's colour in the frames
+/// before the page paints instead of white. The value comes from tokens.css; nothing is repeated here.
+fn css_color(text: &str) -> Option<tauri::window::Color> {
+    let body = text
+        .trim()
+        .strip_prefix("rgb(")
+        .or_else(|| text.trim().strip_prefix("rgba("))?
+        .strip_suffix(')')?;
+    let mut parts = body.split(',').map(|part| part.trim().parse::<f32>());
+    let red = parts.next()?.ok()?;
+    let green = parts.next()?.ok()?;
+    let blue = parts.next()?.ok()?;
+    let alpha = parts.next().and_then(|value| value.ok()).unwrap_or(1.0);
+    let byte = |value: f32| value.clamp(0.0, 255.0).round() as u8;
+    Some(tauri::window::Color(byte(red), byte(green), byte(blue), byte(alpha * 255.0)))
+}
+
+/// The page's third command: show the window. It is created hidden (`visible(false)` below) so the first thing on screen is
+/// the splash `web/index.html` draws, never an empty window: the page calls this once its markup and stylesheet are parsed,
+/// and the guard in `setup` shows the window anyway if it never does.
+#[tauri::command]
+fn show_window(window: tauri::WebviewWindow, background: Option<String>) -> Result<(), String> {
+    // The frames between showing the window and the page's first paint are the window's own colour, not white.
+    if let Some(color) = background.as_deref().and_then(css_color) {
+        let _ = window.set_background_color(Some(color));
+    }
+    // A window restored maximized zooms into place when it is first shown; re-applying it while it is still hidden sets
+    // the frame now, so the first frame on screen is already the size it stays.
+    if window.is_maximized().unwrap_or(false) {
+        let _ = window.maximize();
+    }
+    window.show().map_err(|error| error.to_string())?;
+    window.set_focus().map_err(|error| error.to_string())
+}
+
 /// The standard menus: the app, Edit, View and Window. Editing and window items are the system's own,
 /// so the shell has no handler for any of them.
 fn menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
@@ -180,7 +215,7 @@ fn main() {
         .plugin(tauri_plugin_opener::init())
         // Used by `save_export` only, the same way.
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![open_link, save_export])
+        .invoke_handler(tauri::generate_handler![open_link, save_export, show_window])
         .menu(menu)
         .setup(move |app| {
             // In development the window shows the dev server; otherwise the built app, which Tauri serves.
@@ -193,6 +228,8 @@ fn main() {
                 .title(TITLE)
                 .inner_size(WIDTH, HEIGHT)
                 .min_inner_size(MIN_WIDTH, MIN_HEIGHT)
+                // Hidden until the page shows it, so a launch never flashes an empty window first (see `show_window`).
+                .visible(false)
                 .on_navigation(move |url| may_show(url, debug))
                 // A link that wants a new window gets none: the shell opens no other windows.
                 .on_new_window(|_, _| NewWindowResponse::Deny);
@@ -205,6 +242,15 @@ fn main() {
                 .traffic_light_position(tauri::LogicalPosition::new(TRAFFIC_LIGHT_X, TRAFFIC_LIGHT_Y));
             window.build()?;
             let _ = app.get_webview_window("main");
+            // The window starts hidden and the page shows it. A page that never asks (a failed load, a script the policy
+            // refused) still gets a window: it is shown after this long anyway, so the app is never invisible.
+            let handle = app.handle().clone();
+            std::thread::spawn(move || {
+                std::thread::sleep(std::time::Duration::from_secs(3));
+                if let Some(window) = handle.get_webview_window("main") {
+                    let _ = window.show();
+                }
+            });
             Ok(())
         })
         .run(tauri::generate_context!())

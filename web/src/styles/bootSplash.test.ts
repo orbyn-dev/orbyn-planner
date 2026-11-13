@@ -27,32 +27,37 @@ describe("Boot splash (Planner Designs p-splash)", () => {
     expect(boot?.textContent?.trim()).toBe("");
   });
 
-  it("waits 400 ms from the first frame, so a fast open never flashes it", () => {
-    // The wait is started one frame after the element first paints at opacity 0; the 400 ms itself is in the CSS.
-    expect(html).toContain('boot.setAttribute("data-wait", "")');
-    expect(html.indexOf("requestAnimationFrame")).toBeGreaterThan(html.indexOf('<div id="boot"'));
-    expect(css).toContain("#boot[data-wait] { opacity: 1; }");
-    expect(css).toContain("transition: opacity var(--m-fast) var(--m-out) var(--m-wait);");
+  it("shows the window once the markup is parsed, so the first thing on screen is the splash", () => {
+    // The shell creates the window hidden; this is the page's one call that shows it, with the frame time recorded.
+    expect(html).toContain('document.documentElement.dataset.bootShown = String(Date.now());');
+    expect(html).toContain('internals.invoke("show_window", { background: background })');
+    // The window's colour in the frames before the first paint is the page's own, not white.
+    expect(html).toContain("getComputedStyle(document.documentElement).backgroundColor");
+    expect(html.indexOf("show_window")).toBeGreaterThan(html.indexOf('<div id="boot"'));
+    expect(html.indexOf("show_window")).toBeLessThan(html.indexOf("/src/main.tsx"));
   });
 
-  it("sits on the window background in the secondary ink, at 64 px, from tokens only", () => {
+  it("is visible from the first frame, on the window background in the secondary ink, at 64 px, from tokens only", () => {
     expect(css).toContain('@import "./tokens.css";');
+    // The page itself is the app's colour before any bundle, font or WebAssembly arrives.
+    expect(css).toContain("html { background: var(--bg); }");
     expect(css).toContain("background: var(--bg);");
     expect(css).toContain("color: var(--t2);");
     expect(css).toContain("width: var(--sp-64);");
     expect(css).toContain("height: var(--sp-64);");
-    // No literal colour, length or duration: the tokens carry every one (0s is "no wait", the way tokens.css writes it).
+    // No literal colour, length or duration: the tokens carry every one.
     expect(css).not.toMatch(/#[0-9a-f]{3,8}\b/i);
-    expect(css).not.toMatch(/\b(?!0s\b)\d+(?:\.\d+)?(?:ms|s)\b/);
+    expect(css).not.toMatch(/\b\d+(?:\.\d+)?(?:ms|s)\b/);
     expect(css).not.toMatch(/\b\d+(?:\.\d+)?px\b/);
   });
 
-  it("fades out from wherever it is, with no wait left, and never moves", () => {
-    expect(css).toContain("html[data-booted] #boot { opacity: 0; transition-delay: 0s; }");
-    // The only thing that changes is opacity: no keyframes, no transform anywhere.
+  it("fades out over the first screen and never moves", () => {
+    expect(css).toContain("opacity: 1;");
+    expect(css).toContain("transition: opacity var(--m-fast) var(--m-out);");
+    expect(css).toContain("html[data-booted] #boot { opacity: 0; }");
+    // The only thing that changes is opacity: no keyframes, no transform, no wait before it appears.
     expect(css).not.toContain("@keyframes");
     expect(css).not.toContain("transform");
-    // Reduced motion keeps the wait, or the mark flashes on a fast open.
-    expect(css).toContain("#boot { transition-delay: var(--m-wait) !important; }");
+    expect(css).not.toContain("data-wait");
   });
 });

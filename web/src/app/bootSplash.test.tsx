@@ -1,37 +1,45 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { endBoot } from "./bootSplash";
 
-/** The page as index.html ships it: the splash is waiting (data-wait) or the app opened inside the 400 ms. */
-function page(waiting: boolean): HTMLElement {
+/** The page as index.html ships it: the splash, shown at `shownAt`, and the root still marked busy. */
+function page(shownAt: number | null): HTMLElement {
   document.body.innerHTML =
-    `<div id="boot"${waiting ? ' data-wait=""' : ""}><svg class="boot-mark"></svg></div>` +
-    '<div id="root" aria-busy="true"></div>';
+    '<div id="boot"><svg class="boot-mark"></svg></div><div id="root" aria-busy="true"></div>';
+  if (shownAt !== null) document.documentElement.dataset.bootShown = String(shownAt);
   return document.getElementById("boot")!;
 }
 
 afterEach(() => {
   document.body.innerHTML = "";
   delete document.documentElement.dataset.booted;
+  delete document.documentElement.dataset.bootShown;
+  vi.useRealTimers();
 });
 
 describe("endBoot", () => {
-  it("marks the page booted, clears the busy flag, and removes the splash when the fade ends", () => {
-    const boot = page(true);
+  it("keeps the mark up for 400 ms from the frame it showed, then fades it out over the first screen", () => {
+    vi.useFakeTimers();
+    const boot = page(Date.now());
     endBoot();
-    expect(document.documentElement.dataset.booted).toBe("");
     expect(document.getElementById("root")!.hasAttribute("aria-busy")).toBe(false);
+    // Still fully on screen: the app was ready in the same frame the window showed.
+    expect(document.documentElement.dataset.booted).toBeUndefined();
+    vi.advanceTimersByTime(400);
+    expect(document.documentElement.dataset.booted).toBe("");
     // Still on screen while it fades: the first real screen is underneath it.
     expect(boot.isConnected).toBe(true);
     boot.dispatchEvent(new Event("transitionend"));
     expect(boot.isConnected).toBe(false);
   });
 
-  it("takes it away at once when the wait never began, so the mark never flashes", () => {
-    const boot = page(false);
+  it("takes it away at once when the mark has already been up long enough", () => {
+    vi.useFakeTimers();
+    const boot = page(Date.now() - 5_000);
     endBoot();
+    expect(document.documentElement.dataset.booted).toBe("");
+    boot.dispatchEvent(new Event("transitionend"));
     expect(boot.isConnected).toBe(false);
-    expect(document.documentElement.dataset.booted).toBeUndefined();
   });
 
   it("does nothing on a page without a splash", () => {

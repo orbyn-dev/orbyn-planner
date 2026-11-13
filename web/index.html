@@ -45,11 +45,17 @@
       </svg>
     </div>
     <script>
-      /* The wait before the splash appears: its length and the fade are --m-wait and --m-fast in boot.css. */
-      requestAnimationFrame(function () {
-        var boot = document.getElementById("boot");
-        if (boot) boot.setAttribute("data-wait", "");
-      });
+      /* The shell's window is created hidden, so the first thing on screen is this splash, never an empty window.
+         It is shown here, once the markup and its stylesheet are parsed; main.rs shows it anyway if this never runs.
+         The page's own background goes with it, so the frames before the first paint are the app's colour, not white;
+         the timestamp is when the mark went on screen, and bootSplash.ts keeps it there long enough to be seen. */
+      (function () {
+        document.documentElement.dataset.bootShown = String(Date.now());
+        var internals = window.__TAURI_INTERNALS__;
+        if (!internals) return;
+        var background = getComputedStyle(document.documentElement).backgroundColor;
+        internals.invoke("show_window", { background: background }).catch(function () {});
+      })();
     </script>
     <div id="root" aria-busy="true"></div>
     <script type="module" src="/src/main.tsx"></script>
