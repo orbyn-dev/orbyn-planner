@@ -6,6 +6,7 @@ import "./styles/tokens.css";
 import "./styles/app.css";
 import { applyChoice, readStoredChoice, watchSystemTheme } from "./ui/theme";
 import { applyTitlebar } from "./app/titlebar";
+import { endBoot } from "./app/bootSplash";
 
 applyChoice(readStoredChoice());
 watchSystemTheme();
@@ -23,6 +24,7 @@ async function start() {
         <CancelDeletionPage />
       </StrictMode>,
     );
+    endBootAfterPaint();
     return;
   }
   // The Start over link opens a page of its own in the same way: it deletes an empty account, with no sign-in.
@@ -33,10 +35,16 @@ async function start() {
         <DeleteUnusedPage />
       </StrictMode>,
     );
+    endBootAfterPaint();
     return;
   }
   const { bootApp } = await import("./app/bootApp");
   bootApp(root);
+}
+
+/** These two pages are not the planner, so the account gate never runs and never ends the splash: they do it. */
+function endBootAfterPaint(): void {
+  requestAnimationFrame(() => requestAnimationFrame(endBoot));
 }
 
 void start();

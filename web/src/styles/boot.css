@@ -1,0 +1,35 @@
+/*
+ * The splash while the app opens (Planner Designs `p-splash`; the ask is orbyn-designs `briefs/planner-splash`).
+ * Linked from index.html rather than imported by main.tsx, so it paints in the first frame: before the JS
+ * bundle, the fonts and the engine's WebAssembly. Every value is a token.
+ *
+ * Nothing shows for the first 400 ms, so a fast open never flashes a splash. index.html marks the element
+ * `data-wait` on the first frame, which starts the wait and then the fade in; src/app/bootSplash.ts fades it
+ * out over the first real screen, from whatever opacity it reached, so it can never flash into view on the way
+ * out either. Nothing moves, so reduced motion only has to keep the wait: the change is opacity, at --m-fast.
+ */
+@import "./tokens.css";
+
+#boot {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  color: var(--t2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--m-fast) var(--m-out) var(--m-wait);
+}
+#boot[data-wait] { opacity: 1; }
+#boot .boot-mark { width: var(--sp-64); height: var(--sp-64); display: block; }
+
+/* The first real screen has painted: fade out from wherever it is, with no wait left to run. */
+html[data-booted] #boot { opacity: 0; transition-delay: 0s; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* The 400 ms wait is not motion: keep it, or a fast open flashes the mark. */
+  #boot { transition-delay: var(--m-wait) !important; }
+  html[data-booted] #boot { transition-delay: 0s !important; }
+}
