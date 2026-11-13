@@ -9,6 +9,7 @@ The plan lives in the internal Orbyn Platform Plan, and the screens in the inter
 - Orbyn house style: Geist and JetBrains Mono; Light, Dark and Dim; at most three interface colours: ink, amber when the person must act, and red for failures and removals. A person's list, calendar and project colours are content and keep their colour.
 - Wire types come from orbyn-engine's contracts and are generated, never written by hand, from the engine commit pinned in `web/src/generated/wasm/manifest.json` (the same one the wasm package and the end-to-end job use; `generate` and `generate:check` refuse any other checkout). They change with a deliberate pin bump, not when engine main moves.
 - The app works offline. A sync line always says whether this device is synced, syncing, offline with changes waiting, or unable to sync.
+- **Opening.** `web/index.html` draws the splash before the bundle runs (Planner Designs `p-splash`): the Planner mark at 64 px in `--t2` on `--bg`, nothing for the first 400 ms, then a `--m-fast` fade in, with no font and no request of its own; the only script is the line there that starts the wait. `web/src/app/bootSplash.ts` fades it out once the account gate has a screen to show, never while the gate still renders nothing.
 
 ## Design tokens
 

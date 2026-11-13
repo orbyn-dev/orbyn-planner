@@ -35,6 +35,7 @@ import { TitleRow } from "../ui/product/TitleRow";
 import { SidebarRail } from "../ui/product/SidebarRail";
 import { useSidebarWidth } from "../ui/product/sidebarWidth";
 import { isMacShell } from "./titlebar";
+import { endBoot } from "./bootSplash";
 import { ContentWidthContext, useContentWidth, useSheetOverlay } from "../lib/contentWidth";
 
 const PAGES: Record<string, () => ReactNode> = {
@@ -227,6 +228,16 @@ function Shell() {
   );
 }
 
+/** Ends the splash in index.html once the account gate has a screen to show, never while it still renders nothing. */
+function BootSplash() {
+  const auth = useAuth();
+  const status = auth?.status ?? "local";
+  useEffect(() => {
+    if (status !== "loading") endBoot();
+  }, [status]);
+  return null;
+}
+
 /** `auth` turns accounts on: signed out, the public pages show first. Without it the planner runs on this device alone. */
 export function App({ store, auth }: { store?: PlannerStore; auth?: AuthServices }) {
   useExternalLinks();
@@ -234,6 +245,7 @@ export function App({ store, auth }: { store?: PlannerStore; auth?: AuthServices
     <UiProvider>
       <PrefsProvider>
         <AuthProvider services={auth ?? null}>
+          <BootSplash />
           <PlannerStores fixed={store}>
             <AuthGate>
               <SyncProvider>
