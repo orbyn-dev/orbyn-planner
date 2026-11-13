@@ -17,13 +17,14 @@ describe("Boot splash (Planner Designs p-splash)", () => {
     expect(start).toBeLessThan(html.indexOf("/src/main.tsx"));
     expect(html).toContain('<link rel="stylesheet" href="/src/styles/boot.css" />');
     expect(html).toContain('role="status" aria-label="Opening Orbyn Planner"');
+    // Parsed, so the assertions are about the element and not about a slice of the file.
+    const boot = new DOMParser().parseFromString(html, "text/html").getElementById("boot");
     // The mono drawing: the dot knocked out of the ring, then the dot itself.
-    expect(html).toContain('mask id="boot-knock"');
-    expect(html).toContain('r="124.5"');
-    expect(html).toContain('r="31"');
-    // Nothing to read on screen: the element holds the svg and nothing else.
-    const inside = html.slice(start, html.indexOf("</div>", start));
-    expect(inside.replace(/<[^>]+>/g, "").trim()).toBe("");
+    expect(boot?.querySelector("mask#boot-knock")).not.toBeNull();
+    expect(boot?.querySelector('circle[r="124.5"]')).not.toBeNull();
+    expect(boot?.querySelector('circle[r="31"]')).not.toBeNull();
+    // Nothing to read on screen: the element holds the svg and no words.
+    expect(boot?.textContent?.trim()).toBe("");
   });
 
   it("waits 400 ms from the first frame, so a fast open never flashes it", () => {
