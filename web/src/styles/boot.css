@@ -3,12 +3,15 @@
  * Linked from index.html rather than imported by main.tsx, so it paints in the first frame: before the JS
  * bundle, the fonts and the engine's WebAssembly. Every value is a token.
  *
- * Nothing shows for the first 400 ms, so a fast open never flashes a splash. index.html marks the element
- * `data-wait` on the first frame, which starts the wait and then the fade in; src/app/bootSplash.ts fades it
- * out over the first real screen, from whatever opacity it reached, so it can never flash into view on the way
- * out either. Nothing moves, so reduced motion only has to keep the wait: the change is opacity, at --m-fast.
+ * It is on screen from the first frame the window shows, so a launch starts with the mark instead of an empty
+ * window, and src/app/bootSplash.ts fades it out over the first real screen once it has been there long enough
+ * to be seen. Nothing moves, so reduced motion has nothing to turn off: the only thing that changes is opacity,
+ * at --m-fast, which the motion rules allow.
  */
 @import "./tokens.css";
+
+/* The page is the app's own colour from its first paint, before the bundle, the fonts and the WebAssembly. */
+html { background: var(--bg); }
 
 #boot {
   position: fixed;
@@ -18,18 +21,11 @@
   place-items: center;
   background: var(--bg);
   color: var(--t2);
-  opacity: 0;
+  opacity: 1;
   pointer-events: none;
-  transition: opacity var(--m-fast) var(--m-out) var(--m-wait);
+  transition: opacity var(--m-fast) var(--m-out);
 }
-#boot[data-wait] { opacity: 1; }
 #boot .boot-mark { width: var(--sp-64); height: var(--sp-64); display: block; }
 
-/* The first real screen has painted: fade out from wherever it is, with no wait left to run. */
-html[data-booted] #boot { opacity: 0; transition-delay: 0s; }
-
-@media (prefers-reduced-motion: reduce) {
-  /* The 400 ms wait is not motion: keep it, or a fast open flashes the mark. */
-  #boot { transition-delay: var(--m-wait) !important; }
-  html[data-booted] #boot { transition-delay: 0s !important; }
-}
+/* The first real screen has painted: fade out over it. */
+html[data-booted] #boot { opacity: 0; }
