@@ -31,6 +31,14 @@ export interface SyncState {
   made: Record<string, true>;
   /** Zones whose key was really sent to a device other than this one (an envelope was put), not merely marked as owed to nobody. */
   keysReached?: Record<string, true>;
+  /**
+   * Zones whose key still has to be rotated because a trusted device was removed: what the account writes next must
+   * not open with a key that device keeps. Set by the removal and by a pass that finds a trusted device gone, and
+   * cleared by the pass that rotated them.
+   */
+  rotateZones?: string[];
+  /** The trusted devices this device verified at its last pass, sorted, so a removal (here or on another device) is noticed. */
+  verified?: string[];
   /** True from the moment the engine's snapshot was dropped or replaced until this device has been approved again once: nothing is called stranded, and no delete is offered, while it is true. */
   reset?: boolean;
   /** When (ms) every key was last resent because a device's approval changed, per device: at most once in ten minutes unless an approval completed here. */
@@ -55,7 +63,7 @@ export interface SyncState {
 
 /** What only the engine's snapshot can vouch for. Dropping or replacing the snapshot makes it untrue. */
 export function withoutEngineSide(state: SyncState): SyncState {
-  return { ...state, staged: {}, stagedZone: {}, keysSent: {}, keysReached: {}, made: {}, quarantined: {}, reset: true };
+  return { ...state, staged: {}, stagedZone: {}, keysSent: {}, keysReached: {}, made: {}, quarantined: {}, verified: [], reset: true };
 }
 
 export const emptySyncState = (): SyncState => ({ zones: [], zoneOf: {}, staged: {}, stagedZone: {}, keysSent: {}, made: {}, approvals: {}, resentAt: {}, failed: {}, backoff: {}, quarantined: {}, lastSyncedAt: null });

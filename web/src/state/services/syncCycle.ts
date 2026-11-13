@@ -310,6 +310,13 @@ export async function runCycle(
   const verified = await withEngine((e) => e.verifyDevices(devices));
   report.devices = devices.devices.filter((d) => d.state === "trusted").length;
   const owes = [...verified].sort().join(",");
+  // A device this device trusted is no longer in the trusted set: it was removed, here or on another device, and it
+  // keeps the zone keys it was given. Every zone this device holds is marked for rotation (step 2b). The removal marks
+  // them too, before its request; this covers a removal made elsewhere, and a marking a racing pass wrote over.
+  if (state.verified?.some((id) => id !== session.deviceId && !verified.includes(id))) {
+    state.rotateZones = [...new Set([...(state.rotateZones ?? []), ...state.zones])];
+  }
+  state.verified = [...verified].sort();
   // A device that was approved again (it lost its saved state and holds no keys) is in the trusted set already, so the
   // set didn't change. Its approval did: every trusted device then sends it every zone key it holds, not just the approver.
   state.approvals ??= {};
@@ -356,6 +363,24 @@ export async function runCycle(
     if (!after) break;
   }
   for (const name of serverZones.keys()) if (!state.zones.includes(name)) state.zones.push(name);
+
+  // 2b. Rotate the keys a removed device still holds -----------------------------------------------------------
+  // Removing a device ends its sessions, not the zone keys it already has: every key this device holds is replaced, and
+  // the next records are sealed under a key that device never got. The removal marked the zones before its request, so a
+  // pass after a crash still rotates; clearing `keysSent` is what makes step 4 send the new keys before anything goes up.
+  // A zone whose key this device doesn't hold is left to a device that does: it can't rotate one it can't open.
+  for (const zone of state.rotateZones ?? []) {
+    try {
+      await withEngine((e) => void e.sync.rotateZoneKey(zone));
+    } catch (error) {
+      if (!hasCode(error, "no_zone_key")) throw error;
+    }
+    delete state.keysSent[zone];
+    delete state.keysReached?.[zone];
+    state.rotateZones = (state.rotateZones ?? []).filter((name) => name !== zone);
+    await save();
+  }
+  if (state.rotateZones?.length === 0) delete state.rotateZones;
 
   // 3. Fetch what changed -------------------------------------------------------------------------------------
   for (const zone of stale) {

@@ -5,10 +5,14 @@
 import { describe, expect, it } from "vitest";
 import { emptySyncState } from "../../data/account/keyStore";
 import { runCycle } from "./syncCycle";
+import { removeDevice } from "./flows";
 import { createSyncRig, type SyncRig, type TestDevice } from "../../testing/syncRig";
 
 const sync = (_r: SyncRig, d: TestDevice) => runCycle(d.services, d.session, d.store);
 const titles = (d: TestDevice) => d.store.getState().tasks.map((t) => t.title).sort();
+/** The key ids the server holds for a zone, to one recipient device. */
+const keyIds = (r: SyncRig, zone: string, recipient: string) =>
+  [...r.engine.accounts.values()][0]!.records!.envelopes.filter((e) => e.zone === zone && e.recipient_device_id === recipient).map((e) => e.key_id).sort();
 
 describe("outgoing and incoming", () => {
   it("a task made on A reaches B, and A's outbox is cleared only once it was acknowledged", async () => {
@@ -340,6 +344,84 @@ describe("which zones' keys reached another device", () => {
     await sync(r, r.a);
     const state = (await r.a.keys.loadSyncState())!;
     expect(Object.keys(state.keysReached ?? {})).toEqual([]);
+  });
+});
+
+describe("removing a device rotates the keys it still holds", () => {
+  /** A, B and C synced, so all three hold the Inbox zone's key. */
+  async function rig() {
+    const r = await createSyncRig({ third: true });
+    r.a.store.addTask({ title: "Before" });
+    for (const d of [r.a, r.b, r.c]) await sync(r, d);
+    return r;
+  }
+
+  it("replaces the key and sends the new one to the devices that stay", async () => {
+    const r = await rig();
+    const before = keyIds(r, "list:inbox", r.c.id);
+    expect(before.length).toBeGreaterThan(0);
+    await removeDevice(r.a.services, r.a.session, r.b.device);
+    await sync(r, r.a);
+
+    const after = keyIds(r, "list:inbox", r.c.id);
+    expect(after).not.toEqual(before);
+    // The removed device was sent the old key and no rotation: the new key never reaches it.
+    const removedHolds = new Set(keyIds(r, "list:inbox", r.b.id));
+    expect(after.some((id) => !removedHolds.has(id))).toBe(true);
+
+    // What A writes after the removal opens on C with the new key.
+    r.a.store.addTask({ title: "After" });
+    await sync(r, r.a);
+    await sync(r, r.c);
+    expect(titles(r.c)).toContain("After");
+  });
+
+  it("survives a pass that can't reach the server, and runs on the next one", async () => {
+    const r = await rig();
+    const before = keyIds(r, "list:inbox", r.c.id);
+    await removeDevice(r.a.services, r.a.session, r.b.device);
+    r.network.down = true;
+    await expect(sync(r, r.a)).rejects.toThrow();
+    expect(keyIds(r, "list:inbox", r.c.id)).toEqual(before); // the pass stopped before rotating
+    r.network.down = false;
+    await sync(r, r.a);
+    expect(keyIds(r, "list:inbox", r.c.id)).not.toEqual(before);
+  });
+
+  it("rotates once: a later pass keeps the key it made", async () => {
+    const r = await rig();
+    await removeDevice(r.a.services, r.a.session, r.b.device);
+    await sync(r, r.a);
+    const after = keyIds(r, "list:inbox", r.c.id);
+    await sync(r, r.a);
+    expect(keyIds(r, "list:inbox", r.c.id)).toEqual(after);
+    expect((await r.a.keys.loadSyncState())?.rotateZones).toBeUndefined();
+  });
+
+  it("a second remaining device notices the removal and rotates too", async () => {
+    const r = await rig();
+    await removeDevice(r.a.services, r.a.session, r.b.device);
+    await sync(r, r.a);
+    // C holds no marker: it sees a device it verified gone from the trusted set, and replaces the keys it holds.
+    const before = keyIds(r, "list:inbox", r.a.id);
+    await sync(r, r.c);
+    expect(keyIds(r, "list:inbox", r.a.id)).not.toEqual(before);
+  });
+
+  it("a refused removal rotates nothing", async () => {
+    const r = await rig();
+    const before = keyIds(r, "list:inbox", r.c.id);
+    r.engine.refuseNext(`/v1/devices/${r.b.id}`, 409, "deletion_scheduled", "Your account is scheduled for deletion.");
+    await expect(removeDevice(r.a.services, r.a.session, r.b.device)).rejects.toThrow();
+    expect((await r.a.keys.loadSyncState())?.rotateZones).toBeUndefined();
+    await sync(r, r.a);
+    expect(keyIds(r, "list:inbox", r.c.id)).toEqual(before);
+  });
+
+  it("a pending device was never sent a key, so its removal marks nothing", async () => {
+    const r = await rig();
+    await removeDevice(r.a.services, r.a.session, { ...r.b.device, state: "pending" });
+    expect((await r.a.keys.loadSyncState())?.rotateZones).toBeUndefined();
   });
 });
 

@@ -128,6 +128,11 @@ export interface SyncApi {
   /** Compares one `ZoneList` page; returns `{stale, next}`. */
   checkZones(zonesJson: string): string;
   createZoneKey(zone: string): string;
+  /**
+   * Replaces the zone's current key, signed as `orbyn/zone-key-rotation/v1`: what is written next cannot be opened with
+   * the key a removed device still holds. Throws `no_zone_key` when this device doesn't hold the zone's key.
+   */
+  rotateZoneKey(zone: string): string;
   /** A `PutKeyEnvelopes` for every device of the `DeviceList` this device verifies. */
   envelopesFor(zone: string, devicesJson: string): string;
   /** Opens a `KeyEnvelopeList` from verified devices; returns `{zones, refused}`. */
