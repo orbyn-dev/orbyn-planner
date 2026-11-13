@@ -573,8 +573,9 @@ export async function removeDevice(services: AuthServices, session: StoredSessio
     await services.api.removeDevice(device.id, body);
   } catch (error) {
     // An answer from the server means nothing was removed; a lost or dropped request may have removed it, so the
-    // marking stays and the next pass rotates: fresh keys for a device that still exists are harmless.
-    if (error instanceof ApiFailure) await unmarkRotation(services, marked);
+    // marking stays and the next pass rotates: fresh keys for a device that still exists are harmless. A network
+    // failure is not an answer (`status` 0), so it keeps the marking.
+    if (error instanceof ApiFailure && error.status >= 400) await unmarkRotation(services, marked);
     throw error;
   }
   try {

@@ -418,6 +418,17 @@ describe("removing a device rotates the keys it still holds", () => {
     expect(keyIds(r, "list:inbox", r.c.id)).toEqual(before);
   });
 
+  it("a removal whose answer is lost keeps the marking, because the device may be gone", async () => {
+    const r = await rig();
+    const before = keyIds(r, "list:inbox", r.c.id);
+    // The server applied the removal; the connection dropped before it answered, which is not an answer at all.
+    r.network.dropRemove = true;
+    await expect(removeDevice(r.a.services, r.a.session, r.b.device)).rejects.toThrow();
+    expect((await r.a.keys.loadSyncState())?.rotateZones).toContain("list:inbox");
+    await sync(r, r.a);
+    expect(keyIds(r, "list:inbox", r.c.id)).not.toEqual(before);
+  });
+
   it("a pending device was never sent a key, so its removal marks nothing", async () => {
     const r = await rig();
     await removeDevice(r.a.services, r.a.session, { ...r.b.device, state: "pending" });
