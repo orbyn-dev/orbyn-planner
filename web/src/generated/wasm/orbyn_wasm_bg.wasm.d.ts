@@ -59,6 +59,7 @@ export const syncengine_resignProtection: (a: number, b: number, c: number, d: n
 export const syncengine_restore: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => void;
 export const syncengine_retryQuarantined: (a: number, b: number, c: number, d: number, e: number) => void;
 export const syncengine_rotateZoneKey: (a: number, b: number, c: number, d: number) => void;
+export const syncengine_serviceEnvelopesFor: (a: number, b: number, c: number, d: number) => void;
 export const syncengine_signProtection: (a: number, b: number, c: number, d: number, e: number) => void;
 export const syncengine_signRemoval: (a: number, b: number, c: number, d: number) => void;
 export const syncengine_skippedFutureStamps: (a: number) => number;
@@ -76,6 +77,7 @@ export const syncengine_uploadConflicted: (a: number, b: number, c: number, d: n
 export const syncengine_uploadSucceeded: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
 export const syncengine_verifyDevices: (a: number, b: number, c: number, d: number) => void;
 export const syncengine_verifyProtection: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
+export const syncengine_verifyServiceKey: (a: number, b: number, c: number, d: number) => void;
 export const __wbindgen_export: (a: number) => void;
 export const __wbindgen_export2: () => number;
 export const __wbindgen_externrefs: WebAssembly.Table;
