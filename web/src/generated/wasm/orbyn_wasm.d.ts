@@ -193,6 +193,9 @@ export class SyncEngine {
     /**
      * A `PutKeyEnvelopes` sealing every key of the zone to each device of
      * `devices_json` (a `DeviceList`) this device verifies, other than itself.
+     * When the engine holds a service key it verified with `verifyServiceKey`,
+     * every key is also sealed to that key for the escrow; with none verified
+     * the device envelopes are unchanged and `service_envelopes` is absent.
      */
     envelopesFor(zone: string, devices_json: string): string;
     /**
@@ -261,6 +264,13 @@ export class SyncEngine {
      * returns its id. Send it with `envelopesFor`.
      */
     rotateZoneKey(zone: string): string;
+    /**
+     * The `NewServiceEnvelope`s of every key of the zone, for the pairs `GET
+     * /v1/keychain/service-missing` lists: each key sealed to the account's
+     * service key this engine verified with `verifyServiceKey`. With nothing
+     * verified it throws `service_key_not_verified` instead of sealing.
+     */
+    serviceEnvelopesFor(zone: string): string;
     /**
      * The `SetProtection` body for `POST /v1/keychain/protection`: `level` (`standard` or
      * `advanced`) as the next link of the chain this device verified, signed now.
@@ -344,6 +354,7 @@ export class SyncEngine {
      * changing nothing.
      */
     verifyProtection(chain_json: string, devices_json: string): string;
+    verifyServiceKey(input_json: string): string;
 }
 
 /**
@@ -447,6 +458,7 @@ export interface InitOutput {
     readonly syncengine_restore: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => void;
     readonly syncengine_retryQuarantined: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly syncengine_rotateZoneKey: (a: number, b: number, c: number, d: number) => void;
+    readonly syncengine_serviceEnvelopesFor: (a: number, b: number, c: number, d: number) => void;
     readonly syncengine_signProtection: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly syncengine_signRemoval: (a: number, b: number, c: number, d: number) => void;
     readonly syncengine_skippedFutureStamps: (a: number) => number;
@@ -464,6 +476,7 @@ export interface InitOutput {
     readonly syncengine_uploadSucceeded: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
     readonly syncengine_verifyDevices: (a: number, b: number, c: number, d: number) => void;
     readonly syncengine_verifyProtection: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
+    readonly syncengine_verifyServiceKey: (a: number, b: number, c: number, d: number) => void;
     readonly __wbindgen_export: (a: number) => void;
     readonly __wbindgen_export2: () => number;
     readonly __wbindgen_externrefs: WebAssembly.Table;

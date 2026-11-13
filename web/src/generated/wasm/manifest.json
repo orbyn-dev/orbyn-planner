@@ -3,9 +3,9 @@
   "rust": "1.99.1",
   "wasmBindgen": "0.2.130",
   "files": {
-    "orbyn_wasm.js": "c6391fc3e3898c277615bc32d7ded270b35e78be44d69d69ecf45e6a91a3fc15",
-    "orbyn_wasm.d.ts": "deb9009a1d83d351b7a3b0c45dda37bb7c25f3689bd3e122d4bfa30c3d58e06b",
-    "orbyn_wasm_bg.wasm": "d22d3406334f173cafed7e32d58476ebaca9cb36150b37290c36acb2239e0d4f",
-    "orbyn_wasm_bg.wasm.d.ts": "5a3b393bf533006638e9e4b9df120dc1c7f43d4c1720c808d39fc36ee18c8a23"
+    "orbyn_wasm.js": "f27ae9686497d74ef445fc3f40d8c52be41f70220b30e3a5adf90992e519cc7f",
+    "orbyn_wasm.d.ts": "1d88ed005eeb3447ba88399ea7f0e7756a1c801fccf7aa215b75c2b4c5d01400",
+    "orbyn_wasm_bg.wasm": "44b978e8f1435e69502d113ea1ba375a8c26c71c34949e72602ef61d731eb11a",
+    "orbyn_wasm_bg.wasm.d.ts": "f2a4f28f2dcc76cc709d360cadc23c280729118f6023c3073f869f32b5103c91"
   }
 }
