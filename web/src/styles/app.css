@@ -29,6 +29,9 @@ h1, h2, h3, h4, h5, p, ul { margin: 0; }
 ul { padding: 0; list-style: none; }
 a { color: inherit; text-decoration: none; }
 button, input, select, textarea { font: inherit; color: inherit; }
+/* WebView2 may keep a light native popup despite color-scheme: dark.
+   Give options matching opaque surfaces and ink in every theme. */
+option { background-color: var(--main); color: var(--t1); }
 button { cursor: pointer; }
 :focus-visible { outline: var(--bw-2) solid var(--t1); outline-offset: var(--sp-2); }
 
