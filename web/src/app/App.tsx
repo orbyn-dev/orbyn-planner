@@ -34,6 +34,7 @@ import { NAV, PHONE_MENU, SETTINGS, TABS, type NavItem } from "./nav";
 import { SyncLine, useSyncStatus, withPersistence } from "../features/sync";
 import { useSyncController, useSyncState } from "../state/sync";
 import { Link, RouterProvider, useRouter } from "../state/router";
+import { registerShellNavigation } from "./desktopShell";
 
 const PAGES: Record<string, () => ReactNode> = {
   "/today": () => <TodayPage />,
@@ -202,13 +203,16 @@ function Sidebar({ due, unread }: { due: number; unread: number }) {
     registration.current?.update({ pinned, expanded: pinned || peek, toggle: changePinned });
   }, [pinned, peek, changePinned]);
 
+  // The Windows title bar has its own sidebar toggle, so the sidebar shows none of its own there.
+  const titlebarToggle = typeof document !== "undefined" && document.documentElement.getAttribute("data-titlebar") === "windows";
+
   return (
     <aside ref={sidebar} className="side" data-pinned={pinned} data-expanded={pinned || peek}
       onPointerEnter={(event) => { if (event.pointerType !== "touch") { pointer.current = true; refresh(); } }}
       onPointerLeave={() => { pointer.current = false; refresh(); }}
       onFocus={refresh}
       onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) { if (!pointer.current) suppressed.current = false; setPeek(!suppressed.current && pointer.current); } }}>
-      {!phone && <button ref={toggle} type="button" className="side-toggle" aria-label={pinned ? "Collapse sidebar" : "Pin sidebar open"}
+      {!phone && !titlebarToggle && <button ref={toggle} type="button" className="side-toggle" aria-label={pinned ? "Collapse sidebar" : "Pin sidebar open"}
         aria-controls="primary-navigation" aria-expanded={pinned || peek} aria-pressed={pinned} onClick={changePinned}>
         <svg className="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" /></svg>
         <span className="side-label">{pinned ? "Collapse sidebar" : "Pin sidebar open"}</span>
@@ -225,9 +229,24 @@ function Sidebar({ due, unread }: { due: number; unread: number }) {
 }
 
 function Shell() {
-  const { path } = useRouter();
+  const { path, canGoBack, canGoForward, back, forward } = useRouter();
   const main = useRef<HTMLElement>(null);
   const ui = useUi();
+  const destination = path === "/completed" ? "Completed" : ([...NAV, SETTINGS].find((item) => path === item.path || path.startsWith(`${item.path}/`)) ?? NAV[0]!).label;
+  const currentNavigation = useRef({ destination, canGoBack, canGoForward, back, forward });
+  const navigationRegistration = useRef<ReturnType<typeof registerShellNavigation> | null>(null);
+  useLayoutEffect(() => {
+    currentNavigation.current = { destination, canGoBack, canGoForward, back, forward };
+    navigationRegistration.current?.update(currentNavigation.current);
+  }, [destination, canGoBack, canGoForward, back, forward]);
+  useLayoutEffect(() => {
+    const entry = registerShellNavigation(currentNavigation.current);
+    navigationRegistration.current = entry;
+    return () => {
+      entry.unregister();
+      if (navigationRegistration.current === entry) navigationRegistration.current = null;
+    };
+  }, []);
   const { tasks } = usePlanner();
   const now = useNow();
   const due = dueCount(tasks, now);

@@ -8,10 +8,34 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 html, body, #root { height: 100%; }
-/* The macOS desktop shell draws up to the top edge; --titlebar is the height it keeps clear for the traffic lights (src/app/titlebar.ts). */
+/* Desktop chrome reserves its own row; macOS keeps its existing traffic-light drag strip. */
 :root { --titlebar: calc(var(--sp-28) * 0); }
 :root[data-titlebar="overlay"] { --titlebar: var(--sp-28); }
+:root[data-titlebar="windows"] { --titlebar: var(--sp-42); }
 .titlebar { position: fixed; inset: 0 0 auto 0; height: var(--titlebar); z-index: 200; }
+.desktop-titlebar { position: fixed; inset: 0 0 auto 0; height: var(--titlebar); z-index: 200; display: flex; align-items: center; padding-left: var(--sp-10); background: var(--bg); border-bottom: var(--bw) solid var(--line); user-select: none; }
+.desktop-titlebar button { appearance: none; display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--t1); padding: 0; }
+.desktop-chrome:hover:not(:disabled), .desktop-menu[aria-expanded="true"], .desktop-caption button:hover { background: var(--raise); }
+.desktop-titlebar button:focus-visible { outline-offset: calc(var(--sp-2) * -1); }
+.desktop-navigation { display: flex; align-items: center; gap: var(--sp-3); height: 100%; min-width: 0; }
+.desktop-titlebar .desktop-chrome { height: var(--sp-28); min-width: var(--sp-29); gap: var(--sp-6); padding: 0 var(--sp-7); border-radius: var(--r-4); font-size: var(--fs-12); white-space: nowrap; }
+.desktop-chrome svg { width: var(--sp-16); height: var(--sp-16); fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.desktop-titlebar .desktop-chrome:disabled { cursor: default; color: var(--t3); }
+.desktop-divider { width: var(--bw); height: var(--sp-15); margin: 0 var(--sp-6); background: var(--line); flex: none; }
+.desktop-breadcrumb { display: flex; align-items: center; gap: var(--sp-8); margin-left: var(--sp-4); font-size: var(--fs-12); min-width: 0; }
+.desktop-breadcrumb .desktop-slash { color: var(--t3); }
+.desktop-breadcrumb strong { font-weight: var(--fw-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Centred on the window, not between its neighbours; clicks pass through so the bar still drags. */
+.desktop-app-name { position: absolute; left: 50%; top: 0; bottom: 0; transform: translateX(-50%); display: flex; align-items: center; gap: var(--sp-7); font-size: var(--fs-12); font-weight: var(--fw-medium); color: var(--t2); white-space: nowrap; pointer-events: none; }
+.desktop-app-name svg { width: var(--sp-16); height: var(--sp-16); flex: none; }
+.desktop-titlebar .desktop-menu { margin-left: auto; margin-right: var(--sp-6); }
+.desktop-menu .desktop-chevron { width: var(--sp-11); height: var(--sp-11); color: var(--t3); }
+.desktop-caption { display: flex; align-self: stretch; }
+.desktop-caption button { width: var(--sp-46); border-radius: 0; }
+.desktop-caption svg { width: var(--sp-11); height: var(--sp-11); fill: none; stroke: currentColor; stroke-width: 1; stroke-linecap: round; stroke-linejoin: round; }
+.desktop-caption .desktop-close:hover { background: var(--danger-bg); color: var(--on-red); }
+.desktop-window-error { position: absolute; top: 100%; right: var(--sp-8); display: flex; align-items: center; gap: var(--sp-8); padding: var(--sp-8) var(--sp-12); border-radius: var(--r-5); box-shadow: var(--sh-pop); background: var(--main); color: var(--t2); font-size: var(--fs-12); }
+.desktop-window-error button { padding: var(--sp-4) var(--sp-8); border-radius: var(--r-5); color: var(--t1); }
 body {
   padding-top: var(--titlebar);
   margin: 0; background: var(--bg); color: var(--t1);

@@ -1,7 +1,7 @@
 fn main() {
-    // The page may call exactly two commands of ours, `open_link` and `save_export`; see capabilities/main.json.
+    // Only these app commands are available for capability grants; plugins stay private to Rust.
     tauri_build::try_build(
-        tauri_build::Attributes::new().app_manifest(tauri_build::AppManifest::new().commands(&["open_link", "save_export"])),
+        tauri_build::Attributes::new().app_manifest(tauri_build::AppManifest::new().commands(&["open_link", "save_export", "desktop_shell"])),
     )
     .expect("build the Tauri app");
 }

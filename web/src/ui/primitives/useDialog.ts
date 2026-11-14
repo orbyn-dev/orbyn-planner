@@ -5,6 +5,14 @@ const FOCUSABLE =
 
 let locks = 0;
 let savedOverflow = "";
+const lockListeners = new Set<() => void>();
+
+/** App controls outside #root share this dialog owner's background lock. */
+export const dialogBackgroundLocked = (): boolean => locks > 0;
+export function subscribeDialogBackground(listener: () => void): () => void {
+  lockListeners.add(listener);
+  return () => { lockListeners.delete(listener); };
+}
 
 /** While a modal dialog is open the app behind it cannot be reached or scrolled. */
 function lockBackground(): () => void {
@@ -13,11 +21,13 @@ function lockBackground(): () => void {
     root()?.setAttribute("inert", "");
     savedOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    lockListeners.forEach((listener) => listener());
   }
   return () => {
     if (--locks === 0) {
       root()?.removeAttribute("inert");
       document.body.style.overflow = savedOverflow;
+      lockListeners.forEach((listener) => listener());
     }
   };
 }

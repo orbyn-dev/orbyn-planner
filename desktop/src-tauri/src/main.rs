@@ -1,8 +1,8 @@
 //! The desktop shell of Orbyn Planner: a window around the web build, and nothing more.
 //!
 //! The page is the same app that runs in a browser. The shell may open the window, remember where
-//! it was, give it a native menu and refuse to navigate anywhere but the app. It has two commands
-//! for the page to call (`open_link`, http(s) only, and `save_export`, which always asks the person where to save), no plugins the page can reach, and no network code: the page talks to the
+//! it was, give it a native menu and refuse to navigate anywhere but the app. Its commands open
+//! web links, save files the person chooses, and operate the main Windows title bar. There are no plugins the page can reach, and no network code: the page talks to the
 //! engine itself, as far as the content security policy in `tauri.conf.json` allows.
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
@@ -98,6 +98,94 @@ async fn save_export(app: AppHandle, name: String, contents: String) -> Result<b
     Ok(true)
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum DesktopAction {
+    Ready,
+    Fallback,
+    State,
+    Menu,
+    Minimize,
+    ToggleMaximize,
+    Close,
+    Drag,
+}
+
+fn validate_desktop_action(windows: bool, label: &str, action: &str) -> Result<DesktopAction, String> {
+    if !windows || label != "main" {
+        return Err("custom window controls are only available in the main Windows window".into());
+    }
+    match action {
+        "ready" => Ok(DesktopAction::Ready),
+        "fallback" => Ok(DesktopAction::Fallback),
+        "state" => Ok(DesktopAction::State),
+        "menu" => Ok(DesktopAction::Menu),
+        "minimize" => Ok(DesktopAction::Minimize),
+        "toggle_maximize" => Ok(DesktopAction::ToggleMaximize),
+        "close" => Ok(DesktopAction::Close),
+        "drag" => Ok(DesktopAction::Drag),
+        _ => Err("unknown window action".into()),
+    }
+}
+
+fn validate_menu_position(x: Option<f64>, y: Option<f64>, width: f64, height: f64) -> Result<tauri::LogicalPosition<f64>, String> {
+    match (x, y) {
+        (Some(x), Some(y))
+            if x.is_finite() && y.is_finite() && width.is_finite() && height.is_finite()
+                && width > 0.0 && height > 0.0 && x >= 0.0 && y >= 0.0 && x <= width && y <= height =>
+        {
+            Ok(tauri::LogicalPosition::new(x, y))
+        }
+        _ => Err("the menu position must be inside the main window".into()),
+    }
+}
+
+/// The custom title bar operates only its own main Windows window. It takes no window label,
+/// executable, path, menu contents or script from the page. Native decorations remain until `ready`.
+#[tauri::command]
+fn desktop_shell(window: tauri::WebviewWindow, action: String, x: Option<f64>, y: Option<f64>) -> Result<bool, String> {
+    let action = validate_desktop_action(cfg!(target_os = "windows"), window.label(), &action)?;
+    if action != DesktopAction::Menu && (x.is_some() || y.is_some()) {
+        return Err("only the menu accepts a position".into());
+    }
+    match action {
+        DesktopAction::Ready => {
+            window.hide_menu().map_err(|e| e.to_string())?;
+            if let Err(error) = window.set_decorations(false) {
+                // The page is mounted, but the native frame must remain usable if this step fails.
+                let _ = window.show_menu();
+                return Err(error.to_string());
+            }
+        }
+        DesktopAction::Fallback => {
+            window.set_decorations(true).map_err(|e| e.to_string())?;
+            window.show_menu().map_err(|e| e.to_string())?;
+        }
+        DesktopAction::State => {}
+        DesktopAction::Menu => {
+            let menu = window.menu().ok_or_else(|| "the window menu is unavailable".to_string())?;
+            let size = window.inner_size().map_err(|e| e.to_string())?;
+            let scale = window.scale_factor().map_err(|e| e.to_string())?;
+            let position = validate_menu_position(x, y, f64::from(size.width) / scale, f64::from(size.height) / scale)?;
+            // The right-hand Menu button supplies its actual left edge and the header's bottom edge.
+            window.popup_menu_at(&menu, position).map_err(|e| e.to_string())?;
+        }
+        DesktopAction::Minimize => window.minimize().map_err(|e| e.to_string())?,
+        DesktopAction::ToggleMaximize => {
+            if window.is_maximized().map_err(|e| e.to_string())? {
+                window.unmaximize().map_err(|e| e.to_string())?;
+            } else {
+                window.maximize().map_err(|e| e.to_string())?;
+            }
+        }
+        DesktopAction::Close => {
+            window.close().map_err(|e| e.to_string())?;
+            return Ok(false);
+        }
+        DesktopAction::Drag => window.start_dragging().map_err(|e| e.to_string())?,
+    }
+    window.is_maximized().map_err(|e| e.to_string())
+}
+
 /// The standard menus: the app, Edit, View and Window. Editing and window items are the system's own,
 /// so the shell has no handler for any of them.
 fn menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
@@ -174,7 +262,7 @@ fn main() {
         .plugin(tauri_plugin_opener::init())
         // Used by `save_export` only, the same way.
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![open_link, save_export])
+        .invoke_handler(tauri::generate_handler![open_link, save_export, desktop_shell])
         .menu(menu)
         .setup(move |app| {
             // In development the window shows the dev server; otherwise the built app, which Tauri serves.
@@ -187,6 +275,18 @@ fn main() {
                 .title(TITLE)
                 .inner_size(WIDTH, HEIGHT)
                 .min_inner_size(MIN_WIDTH, MIN_HEIGHT)
+                .on_page_load(|window, payload| {
+                    // A reload can fail before JavaScript mounts. Each new document starts with
+                    // a working system frame; only its mounted custom title bar can hide it again.
+                    if cfg!(target_os = "windows") && matches!(payload.event(), tauri::webview::PageLoadEvent::Started) {
+                        if let Err(error) = window.set_decorations(true) {
+                            eprintln!("restore window frame for page load: {error}");
+                        }
+                        if let Err(error) = window.show_menu() {
+                            eprintln!("restore window menu for page load: {error}");
+                        }
+                    }
+                })
                 .on_navigation(move |url| may_show(url, debug))
                 // A link that wants a new window gets none: the shell opens no other windows.
                 .on_new_window(|_, _| NewWindowResponse::Deny);
@@ -201,6 +301,9 @@ fn main() {
         .run(tauri::generate_context!())
         .expect("run Orbyn Planner");
 }
+
+#[cfg(test)]
+mod desktop_shell_tests;
 
 #[cfg(test)]
 mod tests {
