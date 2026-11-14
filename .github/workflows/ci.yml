@@ -146,7 +146,7 @@ jobs:
       - if: env.RUN == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # No git credentials on disk: on a shared-user host a concurrent job could read the token from .git\config.
+          # No git credentials on disk: nothing in this job pushes or fetches with them, and it can run on a self-hosted runner.
           persist-credentials: false
       - if: env.RUN == 'true'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -427,6 +427,10 @@ jobs:
         working-directory: .
       - if: env.RUN == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # No git credentials on disk: the Windows runners share one user, so a concurrent job could read the token from
+          # .git\config. Nothing in this job pushes or fetches with it.
+          persist-credentials: false
       - if: env.RUN == 'true'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
