@@ -29,7 +29,12 @@ jobs:
   # and manual runs, and any path this does not recognise, run everything.
   changes:
     name: Changes
-    runs-on: ubuntu-24.04
+    # Runs on the organisation's self-hosted runners only when the repository variable CI_RUNNER is 'local'; with it
+    # unset this is `ubuntu-24.04`, as before. This check sends our own fork pull requests to hosted runners; it is NOT a
+    # security boundary. The real boundary is a private repository plus the runner group, because a fork's pull request
+    # runs its own copy of this file and can name any runner. Turn the variable on only after the repository is private.
+    # The same line is on every job that moved. Docker, wasm, macOS and Windows stay hosted.
+    runs-on: ${{ vars.CI_RUNNER == 'local' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","orbyn-local"]') || 'ubuntu-24.04' }}
     outputs:
       web: ${{ steps.scope.outputs.web }}
       desktop: ${{ steps.scope.outputs.desktop }}
@@ -67,7 +72,8 @@ jobs:
   lint:
     name: Cheap checks
     needs: changes
-    runs-on: ubuntu-24.04
+    # Local runners behind CI_RUNNER: not a security boundary, see `changes`.
+    runs-on: ${{ vars.CI_RUNNER == 'local' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","orbyn-local"]') || 'ubuntu-24.04' }}
     env:
       WEB: ${{ needs.changes.outputs.web }}
     steps:
@@ -115,7 +121,8 @@ jobs:
     name: Web
     needs: [changes, lint]
     if: ${{ !cancelled() }}
-    runs-on: ubuntu-24.04
+    # Local runners behind CI_RUNNER: not a security boundary, see `changes`. Checked on the runner image with Node 22.
+    runs-on: ${{ vars.CI_RUNNER == 'local' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","orbyn-local"]') || 'ubuntu-24.04' }}
     env:
       RUN: ${{ needs.changes.outputs.web }}
     defaults:
