@@ -392,7 +392,11 @@ jobs:
     name: Desktop (${{ matrix.os }})
     needs: [changes, lint]
     if: ${{ !cancelled() }}
-    runs-on: ${{ matrix.os }}
+    # Only the windows-2022 entry can go to the self-hosted Windows runners (group orbyn-local-windows), and only when the
+    # repository variable CI_RUNNER_WINDOWS is 'local'; macos-15 and an unset variable give `matrix.os`, as before. The matrix
+    # values, and so the job names, do not change. The fork check is the one on the Linux jobs and is NOT a security boundary:
+    # a fork's pull request runs its own copy of this file. The real boundary is a private repository plus the runner group.
+    runs-on: ${{ matrix.os == 'windows-2022' && vars.CI_RUNNER_WINDOWS == 'local' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","windows","orbyn-win"]') || matrix.os }}
     env:
       RUN: ${{ needs.changes.outputs.desktop }}
     strategy:
@@ -430,6 +434,10 @@ jobs:
         run: npm ci
       - if: env.RUN == 'true'
         run: npm test
+      # The steps below call rustup and cargo. The hosted images have both; a self-hosted Windows runner may not, so this installs
+      # them (a no-op in effect on a hosted image, where the next step installs the same stable toolchain anyway).
+      - if: env.RUN == 'true'
+        uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
       - if: env.RUN == 'true'
         uses: taiki-e/install-action@c509219cf42fba86913069efd0ade2458c59337b # v2.90.1
         with:

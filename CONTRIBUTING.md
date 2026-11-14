@@ -31,7 +31,9 @@ Three Linux jobs (`changes`, `Cheap checks` and `Web`) can run on the organisati
 
 The real boundary is a private repository plus the runner group. Set `CI_RUNNER=local` (Settings, Secrets and variables, Actions, Variables) **only after the repository is private**, and never by admitting a public repository to the runner group: a fork's pull request would choose its own runner and run its code on those machines. The group excludes public repositories today, so with the variable set on a public repository a job would simply wait forever. Once the repository is private, anyone who can push a branch can run anything on the runner, which is acceptable only then. Unset the variable to go back.
 
-Stay hosted: `Wasm package` (builds `wasm-bindgen-cli` from source and needs a C linker the runner image lacks), `End to end` (Docker), `Desktop` (macOS and Windows), and the title, AI usage, commit trailer and CLA workflows. The runner image has git, bash, Python 3.12 and curl, no C compiler, `make`, Rust or `sudo`; `setup-node` installs Node 22 without root.
+Stay hosted: `Wasm package` (builds `wasm-bindgen-cli` from source and needs a C linker the runner image lacks), `End to end` (Docker), `Desktop (macos-15)`, and the title, AI usage, commit trailer and CLA workflows. The runner image has git, bash, Python 3.12 and curl, no C compiler, `make`, Rust or `sudo`; `setup-node` installs Node 22 without root.
+
+The Windows entry of `Desktop (windows-2022)` can likewise run on the self-hosted Windows runners (group `orbyn-local-windows`, labels `self-hosted, windows, orbyn-win`) when the second repository variable `CI_RUNNER_WINDOWS` is `local`; the macOS entry and the job names never change, and with the variable unset it runs hosted. That group admits private repositories only today, so a public repository cannot reach it until the owner allows it, and the same rule applies: not a security boundary, and not for a public repository.
 
 ## Pull requests
 
