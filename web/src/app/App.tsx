@@ -203,13 +203,16 @@ function Sidebar({ due, unread }: { due: number; unread: number }) {
     registration.current?.update({ pinned, expanded: pinned || peek, toggle: changePinned });
   }, [pinned, peek, changePinned]);
 
+  // The Windows title bar has its own sidebar toggle, so the sidebar shows none of its own there.
+  const titlebarToggle = typeof document !== "undefined" && document.documentElement.getAttribute("data-titlebar") === "windows";
+
   return (
     <aside ref={sidebar} className="side" data-pinned={pinned} data-expanded={pinned || peek}
       onPointerEnter={(event) => { if (event.pointerType !== "touch") { pointer.current = true; refresh(); } }}
       onPointerLeave={() => { pointer.current = false; refresh(); }}
       onFocus={refresh}
       onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) { if (!pointer.current) suppressed.current = false; setPeek(!suppressed.current && pointer.current); } }}>
-      {!phone && <button ref={toggle} type="button" className="side-toggle" aria-label={pinned ? "Collapse sidebar" : "Pin sidebar open"}
+      {!phone && !titlebarToggle && <button ref={toggle} type="button" className="side-toggle" aria-label={pinned ? "Collapse sidebar" : "Pin sidebar open"}
         aria-controls="primary-navigation" aria-expanded={pinned || peek} aria-pressed={pinned} onClick={changePinned}>
         <svg className="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" /></svg>
         <span className="side-label">{pinned ? "Collapse sidebar" : "Pin sidebar open"}</span>

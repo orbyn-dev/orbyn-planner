@@ -91,6 +91,10 @@ export function DesktopTitlebar() {
         </button>
         <div className="desktop-breadcrumb" aria-label="Location"><span>Workspace</span>{navigation && <><span className="desktop-slash" aria-hidden="true">/</span><strong>{navigation.destination}</strong></>}</div>
       </div>
+      <div className="desktop-app-name" aria-hidden="true">
+        <svg viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="224" fill="#f6f4ef" /><circle cx="512" cy="512" r="250" fill="none" stroke="#1a1a1a" strokeWidth="56" /><circle cx="512" cy="262" r="64" fill="#1a1a1a" /></svg>
+        <span>Orbyn Planner</span>
+      </div>
       <button ref={menuButton} type="button" className="desktop-chrome desktop-menu" aria-label="App menu" aria-haspopup="menu" aria-expanded={menuOpen} onMouseDown={(event) => { event.preventDefault(); }} onClick={() => { void showMenu(); }}>
         <span>Menu</span><svg className="desktop-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4" /></svg>
       </button>

@@ -34,6 +34,14 @@ function registerApp() {
 }
 
 describe("Windows navigation-first D titlebar", () => {
+  it("shows the app name and icon as decoration only", async () => {
+    render(<DesktopTitlebar />);
+    await waitFor(() => expect(invoke).toHaveBeenCalledWith("desktop_shell", { action: "ready" }));
+    const name = screen.getByText("Orbyn Planner").closest(".desktop-app-name");
+    expect(name).toHaveAttribute("aria-hidden", "true");
+    expect(name?.querySelector("svg")).not.toBeNull();
+  });
+
   it("keeps captions usable through auth while app navigation is unavailable", async () => {
     render(<DesktopTitlebar />);
     await waitFor(() => expect(invoke).toHaveBeenCalledWith("desktop_shell", { action: "ready" }));

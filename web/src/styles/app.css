@@ -25,6 +25,9 @@ html, body, #root { height: 100%; }
 .desktop-breadcrumb { display: flex; align-items: center; gap: var(--sp-8); margin-left: var(--sp-4); font-size: var(--fs-12); min-width: 0; }
 .desktop-breadcrumb .desktop-slash { color: var(--t3); }
 .desktop-breadcrumb strong { font-weight: var(--fw-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Centred on the window, not between its neighbours; clicks pass through so the bar still drags. */
+.desktop-app-name { position: absolute; left: 50%; top: 0; bottom: 0; transform: translateX(-50%); display: flex; align-items: center; gap: var(--sp-7); font-size: var(--fs-12); font-weight: var(--fw-medium); color: var(--t2); white-space: nowrap; pointer-events: none; }
+.desktop-app-name svg { width: var(--sp-16); height: var(--sp-16); flex: none; }
 .desktop-titlebar .desktop-menu { margin-left: auto; margin-right: var(--sp-6); }
 .desktop-menu .desktop-chevron { width: var(--sp-11); height: var(--sp-11); color: var(--t3); }
 .desktop-caption { display: flex; align-self: stretch; }

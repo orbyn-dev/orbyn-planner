@@ -12,9 +12,11 @@ beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new Error("offline"))));
   vi.stubGlobal("matchMedia", (media: string) => ({ matches: false, media, addEventListener: () => undefined, removeEventListener: () => undefined }));
   (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = { invoke: vi.fn().mockResolvedValue(false) };
+  document.documentElement.setAttribute("data-titlebar", "windows");
 });
 afterEach(() => {
   vi.unstubAllGlobals();
+  document.documentElement.removeAttribute("data-titlebar");
   delete (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
 });
 
@@ -27,6 +29,8 @@ it("connects D to the actual sidebar, route history and workspace lifecycle", as
   render(<Preview />);
   const header = within(screen.getByRole("banner", { name: "Window" }));
   const toggle = header.getByRole("button", { name: "Toggle sidebar" });
+  // The title bar's toggle is the only one: the sidebar shows none of its own.
+  expect(screen.queryByRole("button", { name: /Collapse sidebar|Pin sidebar open/ })).toBeNull();
   expect(toggle).toHaveAttribute("aria-pressed", "true");
   await userEvent.click(toggle);
   const aside = screen.getByRole("complementary");
@@ -47,7 +51,7 @@ it("connects D to the actual sidebar, route history and workspace lifecycle", as
   expect(toggle).toHaveAttribute("aria-pressed", "false");
   await userEvent.click(toggle);
   expect(aside).toHaveAttribute("data-pinned", "true");
-  expect(screen.getByRole("button", { name: "Collapse sidebar" })).toHaveAttribute("aria-pressed", "true");
+  expect(toggle).toHaveAttribute("aria-pressed", "true");
   await userEvent.click(screen.getByRole("button", { name: "Leave workspace" }));
   expect(getShellNavigation()).toBeNull();
   expect(getSidebarSnapshot()).toBeNull();
