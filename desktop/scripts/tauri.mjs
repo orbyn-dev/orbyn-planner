@@ -25,12 +25,11 @@ try {
 }
 const override = JSON.stringify({ app: { security: { csp, devCsp: csp } } });
 
-// Launch the CLI with Node directly: cmd.exe strips the quotes from the JSON override.
-const bin = join(root, "node_modules", "@tauri-apps", "cli", "tauri.js");
-const result = spawnSync(process.execPath, [bin, command, "--config", override, ...process.argv.slice(3)], {
+const bin = join(root, "node_modules", ".bin", process.platform === "win32" ? "tauri.cmd" : "tauri");
+const result = spawnSync(bin, [command, "--config", override, ...process.argv.slice(3)], {
   cwd: root,
   stdio: "inherit",
+  shell: process.platform === "win32",
   env: { ...process.env, VITE_ENGINE_URL: engineUrl },
 });
-if (result.error) console.error(result.error.message);
 process.exit(result.status ?? 1);
