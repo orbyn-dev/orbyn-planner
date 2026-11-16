@@ -29,9 +29,6 @@ h1, h2, h3, h4, h5, p, ul { margin: 0; }
 ul { padding: 0; list-style: none; }
 a { color: inherit; text-decoration: none; }
 button, input, select, textarea { font: inherit; color: inherit; }
-/* WebView2 may keep a light native popup despite color-scheme: dark.
-   Give options matching opaque surfaces and ink in every theme. */
-option { background-color: var(--main); color: var(--t1); }
 button { cursor: pointer; }
 :focus-visible { outline: var(--bw-2) solid var(--t1); outline-offset: var(--sp-2); }
 
@@ -970,12 +967,6 @@ button.pillx { border: 0; }
 /* View options as a 280 px list (Planner Designs v49 p-view-options-list): rows with Selected at the right, a two-part direction switch. */
 /* The popover hangs from the right edge of the header buttons, 12 px under them, not from the View options button (p-view-options-list, p-view-options-board). */
 .ph .acts { position: relative; }
-@media (max-width: 767px) {
-  /* Today’s Menu belongs to the header, not the action row’s popover anchor. */
-  .ph .acts:has(> .menu-btn) { position: static; }
-  /* New task is still a sibling in the DOM, although phones hide it. */
-  .ph .acts:has(> .menu-btn:first-child + .btn:last-child) { display: contents; }
-}
 .vo-wrap { position: static; }
 .vo-wrap .view-options { top: calc(var(--sp-30) + var(--sp-10)); padding: var(--sp-5); gap: 0; }
 .view-options .vo-group, .view-options .vo-group .opt-menu { gap: var(--sp-1); }
