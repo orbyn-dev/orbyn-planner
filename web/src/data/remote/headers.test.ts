@@ -20,4 +20,23 @@ describe("the deployed security headers", () => {
     const connect = /connect-src ([^;"]*)/.exec(readFileSync(join(dir, "out.conf"), "utf8"))?.[1];
     expect(connect).toBe("'self' https://engine.example.com wss://engine.example.com");
   });
+
+  it("allow every inline script of the real index.html by its hash, and no unsafe-inline", async () => {
+    const { spawnSync } = await nodeModule("node:child_process");
+    const { mkdtempSync, readFileSync } = await nodeModule("node:fs");
+    const { createHash } = await nodeModule("node:crypto");
+    const { tmpdir } = await nodeModule("node:os");
+    const { join } = await nodeModule("node:path");
+    const proc = (globalThis as unknown as { process: { cwd(): string; env: object } }).process;
+    const dir = mkdtempSync(join(tmpdir(), "headers-"));
+    const run = spawnSync("node", ["scripts/headers.mjs", "index.html", join(dir, "out.conf")], { cwd: proc.cwd(), env: proc.env, encoding: "utf8" });
+    expect(run.stderr).toBe("");
+    expect(run.status).toBe(0);
+    const script = /script-src ([^;"]*)/.exec(readFileSync(join(dir, "out.conf"), "utf8"))?.[1] ?? "";
+    const html: string = readFileSync("index.html", "utf8");
+    const inline = [...html.matchAll(/<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1] as string);
+    expect(inline.length).toBeGreaterThan(0);
+    for (const code of inline) expect(script).toContain(`'sha256-${createHash("sha256").update(code).digest("base64")}'`);
+    expect(script).not.toContain("unsafe-inline");
+  });
 });
