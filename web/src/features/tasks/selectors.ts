@@ -1,4 +1,4 @@
-import { addDays, compareDue, dateKey, dueDayKey, formatDue, isDueToday, isOverdue, parseDue, startOfDay, startOfWeek, weekStartOf } from "../../core/planner/dates";
+import { addDays, compareDue, dateKey, dueDayKey, formatDue, isDueToday, isOverdue, parseDue, startOfDay, weekStartOf, type WeekStart } from "../../core/planner/dates";
 import type { Task } from "../../core/planner/types";
 
 export type DueFilter = "any" | "today" | "week" | "overdue";
@@ -60,7 +60,7 @@ export interface TodayGroups {
   doneThisWeek: number;
 }
 
-export function groupToday(tasks: readonly Task[], now: Date): TodayGroups {
+export function groupToday(tasks: readonly Task[], now: Date, weekStart: WeekStart = "mon"): TodayGroups {
   const live = tasks.filter(isLive);
   const open = live.filter((t) => !t.done && t.due !== null);
   const overdue = sortByDue(open.filter((t) => isOverdue(t.due!, now)));
@@ -79,7 +79,7 @@ export function groupToday(tasks: readonly Task[], now: Date): TodayGroups {
       if (t.repeat) return n + (t.completions ?? []).filter((c) => new Date(c).getTime() >= since).length;
       return n + (t.done && t.completedAt !== null && new Date(t.completedAt).getTime() >= since ? 1 : 0);
     }, 0);
-  return { overdue, today, week, doneToday: doneSince(startOfDay(now).getTime()), doneThisWeek: doneSince(startOfWeek(now).getTime()) };
+  return { overdue, today, week, doneToday: doneSince(startOfDay(now).getTime()), doneThisWeek: doneSince(weekStartOf(now, weekStart).getTime()) };
 }
 
 /** The count behind the Tasks badge: open tasks that are due or overdue. */
