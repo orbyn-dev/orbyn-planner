@@ -36,7 +36,22 @@ describe("the deployed security headers", () => {
     const html: string = readFileSync("index.html", "utf8");
     const inline = [...html.matchAll(/<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1] as string);
     expect(inline.length).toBeGreaterThan(0);
-    for (const code of inline) expect(script).toContain(`'sha256-${createHash("sha256").update(code).digest("base64")}'`);
+    for (const code of inline) expect(script).toContain(`'sha256-${createHash("sha256").update(code.replace(/\r\n?/g, "\n")).digest("base64")}'`);
     expect(script).not.toContain("unsafe-inline");
+  });
+
+  it("hash an inline script the way the browser reads it, with CRLF turned into LF", async () => {
+    const { spawnSync } = await nodeModule("node:child_process");
+    const { mkdtempSync, writeFileSync, readFileSync } = await nodeModule("node:fs");
+    const { createHash } = await nodeModule("node:crypto");
+    const { tmpdir } = await nodeModule("node:os");
+    const { join } = await nodeModule("node:path");
+    const proc = (globalThis as unknown as { process: { cwd(): string; env: object } }).process;
+    const dir = mkdtempSync(join(tmpdir(), "headers-"));
+    writeFileSync(join(dir, "index.html"), "<html><head><script>\r\n  var a = 1;\r\n</script></head></html>");
+    const run = spawnSync("node", ["scripts/headers.mjs", join(dir, "index.html"), join(dir, "out.conf")], { cwd: proc.cwd(), env: proc.env, encoding: "utf8" });
+    expect(run.status).toBe(0);
+    const lf = createHash("sha256").update("\n  var a = 1;\n").digest("base64");
+    expect(readFileSync(join(dir, "out.conf"), "utf8")).toContain(`'sha256-${lf}'`);
   });
 });

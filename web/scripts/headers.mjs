@@ -13,7 +13,8 @@ if (!indexPath || !outPath) throw new Error("usage: node scripts/headers.mjs <in
 const html = readFileSync(indexPath, "utf8");
 const inline = [...html.matchAll(/<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
 if (inline.length === 0) throw new Error(`expected an inline script in ${indexPath}, found none`);
-const hashes = inline.map((code) => `'sha256-${createHash("sha256").update(code).digest("base64")}'`);
+// The browser hashes the script after HTML parsing has turned CRLF and CR into LF, so a Windows checkout must hash the same text.
+const hashes = inline.map((code) => `'sha256-${createHash("sha256").update(code.replace(/\r\n?/g, "\n")).digest("base64")}'`);
 
 const connect = ["'self'"];
 const engine = process.env.VITE_ENGINE_URL?.trim();
