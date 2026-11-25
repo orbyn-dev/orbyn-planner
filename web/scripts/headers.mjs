@@ -1,8 +1,8 @@
 // Writes the nginx security headers for one build: node scripts/headers.mjs <index.html> <out>
 //
 // The policy allows the page's own files, the engine the build was made for
-// (VITE_ENGINE_URL) and nothing else. index.html holds one inline script, which sets the theme
-// before the first paint; it is allowed by its hash, so no inline script can be added. The
+// (VITE_ENGINE_URL) and nothing else. index.html holds a few inline scripts (the theme before the
+// first paint, the desktop splash); each is allowed by its hash, so no other inline script can run. The
 // engine's WebAssembly module needs 'wasm-unsafe-eval', which does not allow eval().
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -12,8 +12,9 @@ if (!indexPath || !outPath) throw new Error("usage: node scripts/headers.mjs <in
 
 const html = readFileSync(indexPath, "utf8");
 const inline = [...html.matchAll(/<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
-if (inline.length !== 1) throw new Error(`expected one inline script in ${indexPath}, found ${inline.length}`);
-const hash = createHash("sha256").update(inline[0]).digest("base64");
+if (inline.length === 0) throw new Error(`expected an inline script in ${indexPath}, found none`);
+// The browser hashes the script after HTML parsing has turned CRLF and CR into LF, so a Windows checkout must hash the same text.
+const hashes = inline.map((code) => `'sha256-${createHash("sha256").update(code.replace(/\r\n?/g, "\n")).digest("base64")}'`);
 
 const connect = ["'self'"];
 const engine = process.env.VITE_ENGINE_URL?.trim();
@@ -26,7 +27,7 @@ if (engine) {
 
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'sha256-${hash}' 'wasm-unsafe-eval'`,
+  `script-src 'self' ${hashes.join(" ")} 'wasm-unsafe-eval'`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self' data:",
