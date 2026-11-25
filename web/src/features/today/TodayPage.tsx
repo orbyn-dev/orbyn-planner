@@ -14,6 +14,7 @@ import { Icon } from "../../ui/primitives/Icon";
 import { MONTHS, WEEKDAYS, addDays, dateKey, formatTime, isDueToday, parseDue, startOfDay } from "../../core/planner/dates";
 import { daysBetween, lastDayOf, touchesDay } from "../../core/planner/wall";
 import { usePlanner } from "../../state/store";
+import { usePrefs } from "../../state/prefs";
 import { expandEvents, type Occurrence } from "../../core/planner/occurrences";
 import { eventMeta } from "../calendar";
 import { colourOf } from "../calendar";
@@ -176,7 +177,8 @@ export function TodayPage() {
   const syncNow = useCallback(() => controller?.syncNow(), [controller]);
   const { status: health, retry } = useSyncStatus(outbox.length, sync, syncNow);
   const status = withPersistence(health, persistence);
-  const g = useMemo(() => groupToday(tasks, now), [tasks, now]);
+  const { prefs } = usePrefs();
+  const g = useMemo(() => groupToday(tasks, now, prefs.weekStart), [tasks, now, prefs.weekStart]);
   const skeleton = useSlow(!ready);
   const lateRows = useProgressive(g.overdue.length);
 

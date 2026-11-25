@@ -462,6 +462,17 @@ describe("groupToday", () => {
     expect(groupToday(store.getState().tasks, new Date(2026, 10, 16, 10, 0)).doneThisWeek).toBe(0);
     expect(groupToday(store.getState().tasks, new Date(2026, 10, 8, 10, 0)).doneToday).toBe(0);
   });
+
+  it("starts the week's done count on the chosen first day", async () => {
+    const store = new LocalStore({ persistence: new MemoryPersistence(), now: () => new Date(2026, 10, 8, 10, 0), broadcast: false });
+    await store.ready;
+    const t = store.addTask({ title: "Sunday chore" });
+    store.setDone(t.id, true); // done on Sunday 8 November
+    const monday = new Date(2026, 10, 9, 10, 0);
+    expect(groupToday(store.getState().tasks, monday, "mon").doneThisWeek).toBe(0);
+    expect(groupToday(store.getState().tasks, monday, "sun").doneThisWeek).toBe(1);
+    expect(groupToday(store.getState().tasks, monday, "sat").doneThisWeek).toBe(1);
+  });
 });
 
 describe("Today when storage fails", () => {
