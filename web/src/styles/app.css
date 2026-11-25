@@ -556,6 +556,7 @@ button.pillx { border: 0; }
 .srow-bar { display: flex; align-items: center; gap: var(--sp-8); padding: var(--sp-22) var(--sp-28) var(--sp-8); }
 .srow-bar .srch { flex: 1; display: flex; align-items: center; gap: var(--sp-8); min-width: 0; }
 .srow-bar .srch input { flex: 1; min-width: 0; border: 0; background: transparent; font: inherit; color: var(--t1); outline: none; }
+.srow-bar .srch:focus-within { outline: var(--bw-2) solid var(--t1); outline-offset: var(--sp-2); }
 .srow-bar + .nwhint { padding: 0 var(--sp-28) var(--sp-6); }
 .hl { background: var(--sel); border-radius: var(--r-3); }
 .nores { display: flex; flex-direction: column; align-items: center; gap: var(--sp-8); padding: var(--sp-40) var(--sp-28); text-align: center; color: var(--t3); }
