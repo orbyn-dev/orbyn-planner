@@ -176,8 +176,23 @@ export interface Project {
   archived: boolean;
 }
 
+/** Coverage is explicit while the store hydrates. Date windows are inclusive local dates.
+ * Omitted only by legacy/test stores, where `ready` remains the coverage contract. */
+export interface PlannerCoverage {
+  phase: "loading" | "partial" | "complete" | "failed";
+  metadata: boolean;
+  today?: { start: string; end: string };
+  calendar?: { start: string; end: string };
+  /** The default Tasks view: all open tasks plus its retained recent completions. */
+  openTasks?: boolean;
+  taskRecords: "partial" | "complete";
+  eventRecords: "partial" | "complete";
+  outbox: "loading" | "complete";
+}
+
 export interface PlannerState {
   ready: boolean;
+  coverage?: PlannerCoverage;
   tasks: readonly Task[];
   lists: readonly TaskList[];
   events: readonly CalendarEvent[];
@@ -268,6 +283,9 @@ export interface PlannerStore {
   getState(): PlannerState;
   readonly ready: Promise<void>;
   pendingChanges(): number;
+  /** Freeze a complete authoritative records/outbox snapshot before preparing a network pass.
+   * No storage transaction remains open while the caller uses the snapshot. */
+  prepareSync?(): Promise<PlannerState>;
   /** The store's clock, as an ISO time: what stamps its changes. */
   nowIso(): string;
   /** Clears outbox entries the server acknowledged; an entry edited since it was sent stays. */
@@ -277,7 +295,7 @@ export interface PlannerStore {
    * path (so the screen and the other tabs update) without making outbox entries. A record with `fields`
    * is created or updated; one with `fields: null` is removed.
    */
-  applyRemote(changes: RemoteChange[]): Promise<void>;
+  applyRemote(changes: RemoteChange[], preparedSnapshot?: PlannerState): Promise<void>;
 
   addTask(input: NewTask): Task;
   updateTask(id: string, patch: TaskPatch): void;

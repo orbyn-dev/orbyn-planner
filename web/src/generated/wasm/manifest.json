@@ -2,10 +2,18 @@
   "engine": "65935a1f3ca4dd02ad7112c4e7d2e697450e9f25",
   "rust": "1.99.1",
   "wasmBindgen": "0.2.130",
+  "binaryen": "133",
+  "optimizerFlags": [
+    "-Oz",
+    "--enable-bulk-memory-opt",
+    "--enable-nontrapping-float-to-int",
+    "--gufa",
+    "--converge"
+  ],
   "files": {
     "orbyn_wasm.js": "f27ae9686497d74ef445fc3f40d8c52be41f70220b30e3a5adf90992e519cc7f",
     "orbyn_wasm.d.ts": "1d88ed005eeb3447ba88399ea7f0e7756a1c801fccf7aa215b75c2b4c5d01400",
-    "orbyn_wasm_bg.wasm": "44b978e8f1435e69502d113ea1ba375a8c26c71c34949e72602ef61d731eb11a",
+    "orbyn_wasm_bg.wasm": "333298bafff149416d7a7d67b8a22f467371a9e28552a34c1f68546c23e8959a",
     "orbyn_wasm_bg.wasm.d.ts": "f2a4f28f2dcc76cc709d360cadc23c280729118f6023c3073f869f32b5103c91"
   }
 }

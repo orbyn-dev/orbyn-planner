@@ -46,6 +46,7 @@ async function open(path = "/settings", seed?: (s: LocalStore) => void) {
     </ClockProvider>,
     { container: root },
   );
+  if (path === "/settings") await screen.findByRole("heading", { name: "Planning", level: 2 });
   return store;
 }
 

@@ -2,18 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { Icon } from "../ui/primitives/Icon";
 import { Portal } from "../ui/primitives/Portal";
 import { useDialog } from "../ui/primitives/useDialog";
-import { CalendarPage, DayPanel, EventPanel, NewEventDialog } from "../features/calendar";
-import { ListsPage } from "../features/lists";
+import { DayPanel, EventPanel, NewEventDialog } from "../features/calendar";
 import { AuthGate, DeletionBanner, DeviceDataOffer, MemoryOnlyGuard } from "../features/account";
-import { NotificationsPage } from "../features/notifications";
-import { NotificationsProvider, useNotifications } from "../state/notifications";
-import { ProjectPage, ProjectsPage } from "../features/projects";
-import { SettingsPage } from "../features/settings";
-import { CompletedPage, dueCount, NewTaskDialog, TaskPanel, TasksPage } from "../features/tasks";
+import { NotificationsProvider, useUnreadNotifications } from "../state/notifications";
+import { dueCount, NewTaskDialog, TaskPanel } from "../features/tasks";
 import { FirstRun, useFirstRun } from "../features/firstRun";
 import { SearchDialog } from "../features/search";
-import { memoryPlannerFor, plannerFor } from "../data/local/planners";
-import { StoreProvider, usePlanner } from "../state/store";
+import { initialViewFor, memoryPlannerFor, plannerFor } from "../data/local/planners";
+import { StoreProvider, usePlannerSelector } from "../state/store";
 import type { PlannerStore } from "../core/planner/types";
 import { Toast } from "../ui/primitives/Toast";
 import { useNow } from "../state/clock";
@@ -38,15 +34,27 @@ import { isMacShell } from "./titlebar";
 import { endBoot } from "./bootSplash";
 import { ContentWidthContext, useContentWidth, useSheetOverlay } from "../lib/contentWidth";
 
+import { LazyRoute } from "./LazyRoute";
+
+// App deep-imports are allowed for lazy route boundaries (web/src/README.md).
+const loadTasks = () => import("../features/tasks/TasksPage").then((m) => ({ default: m.TasksPage }));
+const loadCalendar = () => import("../features/calendar/CalendarPage").then((m) => ({ default: m.CalendarPage }));
+const loadLists = () => import("../features/lists/ListsPage").then((m) => ({ default: m.ListsPage }));
+const loadProjects = () => import("../features/projects/ProjectsPage").then((m) => ({ default: m.ProjectsPage }));
+const loadProject = () => import("../features/projects/ProjectPage").then((m) => ({ default: m.ProjectPage }));
+const loadNotifications = () => import("../features/notifications/NotificationsPage").then((m) => ({ default: m.NotificationsPage }));
+const loadSettings = () => import("../features/settings/SettingsPage").then((m) => ({ default: m.SettingsPage }));
+const loadCompleted = () => import("../features/tasks/CompletedPage").then((m) => ({ default: m.CompletedPage }));
+
 const PAGES: Record<string, () => ReactNode> = {
   "/today": () => <TodayPage />,
-  "/tasks": () => <TasksPage />,
-  "/calendar": () => <CalendarPage />,
-  "/lists": () => <ListsPage />,
-  "/projects": () => <ProjectsPage />,
-  "/notifications": () => <NotificationsPage />,
-  "/settings": () => <SettingsPage />,
-  "/completed": () => <CompletedPage />,
+  "/tasks": () => <LazyRoute key="loadTasks" load={loadTasks} pageProps={{}} />,
+  "/calendar": () => <LazyRoute key="loadCalendar" load={loadCalendar} pageProps={{}} />,
+  "/lists": () => <LazyRoute key="loadLists" load={loadLists} pageProps={{}} />,
+  "/projects": () => <LazyRoute key="loadProjects" load={loadProjects} pageProps={{}} />,
+  "/notifications": () => <LazyRoute key="loadNotifications" load={loadNotifications} pageProps={{}} />,
+  "/settings": () => <LazyRoute key="loadSettings" load={loadSettings} pageProps={{}} />,
+  "/completed": () => <LazyRoute key="loadCompleted" load={loadCompleted} pageProps={{}} />,
 };
 
 function NavLink({ item, className = "nav", onNavigate, badge, amberBadge = false }: { item: NavItem; className?: string; onNavigate?: () => void; badge?: string; amberBadge?: boolean }) {
@@ -90,7 +98,8 @@ function PhoneMenu({ onClose, unread }: { onClose: () => void; unread: number })
   useDialog(ref, onClose);
   const auth = useAuth();
   const session = auth?.session ?? null;
-  const { outbox, persistence } = usePlanner();
+  const outbox = usePlannerSelector((state) => state.outbox);
+  const persistence = usePlannerSelector((state) => state.persistence);
   const sync = useSyncState();
   const controller = useSyncController();
   const syncNow = useCallback(() => controller?.syncNow(), [controller]);
@@ -152,6 +161,28 @@ function useSidebarHidden(): [boolean, () => void] {
   return [hidden, toggle];
 }
 
+function DueNavLink({ item }: { item: NavItem }) {
+  const now = useNow();
+  const due = usePlannerSelector((state) => dueCount(state.tasks, now));
+  return <NavLink item={item} badge={due > 0 ? `${due} due` : undefined} amberBadge />;
+}
+
+/** Store subscriptions for background work must not make the whole shell render. */
+function PlannerEffects() {
+  const ui = useUi();
+  useSubscriptionRefresh();
+  useReminders((message) => ui.showToast(message));
+  return null;
+}
+
+/** Whole-planner aggregates stay loading until all records are covered. */
+function FullPlannerPage({ children }: { children: ReactNode }) {
+  const ready = usePlannerSelector((state) => state.ready);
+  const persistence = usePlannerSelector((state) => state.persistence);
+  if (!ready) return <div className="empty" role={persistence.status === "failed" ? "alert" : "status"}>{persistence.status === "failed" ? persistence.reason : "Loading page…"}</div>;
+  return children;
+}
+
 function Shell() {
   const { path, back, forward, canBack, canForward } = useRouter();
   const mac = useMemo(() => isMacShell(), []);
@@ -163,20 +194,16 @@ function Shell() {
   const widthFlags = useContentWidth(sheetGrid, sheetMain);
   useSheetOverlay(sheetGrid);
   const ui = useUi();
-  const { tasks } = usePlanner();
-  const now = useNow();
-  const due = dueCount(tasks, now);
-  const unread = useNotifications().unread;
-  useSubscriptionRefresh();
-  useReminders((message) => ui.showToast(message));
+  const unread = useUnreadNotifications();
   const project = /^\/projects\/([^/]+)$/.exec(path);
   const firstRun = useFirstRun();
   /** First run is the whole screen on a phone: no tab bar under it (Planner Designs fr-phone). */
   const showFirstRun = firstRun.active && (path === "/" || path === "/today");
-  const page = project ? () => <ProjectPage id={decodeURIComponent(project[1]!)} /> : (PAGES[path === "/" ? "/today" : path] ?? PAGES["/today"]!);
+  const page = project ? () => <LazyRoute key="loadProject" load={loadProject} pageProps={{ id: decodeURIComponent(project[1]!) }} /> : (PAGES[path === "/" ? "/today" : path] ?? PAGES["/today"]!);
 
   return (
     <div className={mac && sideHidden ? "app side-hidden" : "app"} style={{ "--side-w": `${sideWidth}px` } as CSSProperties}>
+      <PlannerEffects />
       {mac && <TitleRow sideHidden={sideHidden} onToggle={toggleSide} canBack={canBack} canForward={canForward} onBack={back} onForward={forward} />}
       <a
         className="skip"
@@ -193,7 +220,7 @@ function Shell() {
         <QuickFind />
         <nav aria-label="Primary" className="primary">
           {NAV.map((item) => (
-            <NavLink key={item.path} item={item} badge={item.path === "/tasks" && due > 0 ? `${due} due` : item.path === "/notifications" && unread > 0 ? String(unread) : undefined} amberBadge={item.path === "/tasks"} />
+            item.path === "/tasks" ? <DueNavLink key={item.path} item={item} /> : <NavLink key={item.path} item={item} badge={item.path === "/notifications" && unread > 0 ? String(unread) : undefined} />
           ))}
           <NavLink item={SETTINGS} className="nav bottom" />
         </nav>
@@ -201,7 +228,7 @@ function Shell() {
       <main id="content" ref={main} tabIndex={-1} className="sheet">
         <DeletionBanner />
         <div ref={sheetGrid} className={ui.taskId || ui.eventKey || ui.dayKey ? "sheet-grid has-panel" : "sheet-grid"}>
-          <div ref={sheetMain} className="sheet-main"><ContentWidthContext.Provider value={widthFlags}>{showFirstRun ? <FirstRun onDone={firstRun.finish} /> : page()}</ContentWidthContext.Provider></div>
+          <div ref={sheetMain} className="sheet-main"><ContentWidthContext.Provider value={widthFlags}>{showFirstRun ? <FirstRun onDone={firstRun.finish} /> : ["/", "/today", "/tasks", "/calendar", "/lists"].includes(path) ? page() : <FullPlannerPage>{page()}</FullPlannerPage>}</ContentWidthContext.Provider></div>
           <DayPanel />
           <TaskPanel />
           <EventPanel />
@@ -232,9 +259,10 @@ function Shell() {
 function BootSplash() {
   const auth = useAuth();
   const status = auth?.status ?? "local";
+  const bootstrapProblem = auth?.bootstrapProblem;
   useEffect(() => {
-    if (status !== "loading") endBoot();
-  }, [status]);
+    if (status !== "loading" || bootstrapProblem) endBoot();
+  }, [status, bootstrapProblem]);
   return null;
 }
 
@@ -270,9 +298,16 @@ export function App({ store, auth }: { store?: PlannerStore; auth?: AuthServices
  */
 function PlannerStores({ fixed, children }: { fixed?: PlannerStore; children: ReactNode }) {
   const auth = useAuth();
+  // Discover the saved identity before opening any database. The auth gate still owns crypto retry UI.
+  if (auth?.status === "loading") return <AuthGate>{null}</AuthGate>;
+  return <ReadyPlannerStores fixed={fixed}>{children}</ReadyPlannerStores>;
+}
+
+function ReadyPlannerStores({ fixed, children }: { fixed?: PlannerStore; children: ReactNode }) {
+  const auth = useAuth();
   const accountId = auth?.status === "signedIn" && auth.session ? auth.session.accountId : null;
   const memoryOnly = auth?.keysInMemory === true && accountId !== null;
-  const store = useMemo(() => fixed ?? (memoryOnly && accountId ? memoryPlannerFor(accountId) : plannerFor(accountId)), [fixed, accountId, memoryOnly]);
+  const store = useMemo(() => fixed ?? (memoryOnly && accountId ? memoryPlannerFor(accountId) : plannerFor(accountId, initialViewFor(window.location.pathname))), [fixed, accountId, memoryOnly]);
   return (
     <StoreProvider key={fixed ? "fixed" : memoryOnly ? `memory-${accountId}` : (accountId ?? "device")} store={store}>
       {!fixed && accountId && !memoryOnly && <DeviceDataOffer accountId={accountId} />}

@@ -7,7 +7,7 @@ import { Portal } from "../../ui/primitives/Portal";
 import { PHONE_QUERY, useMediaQuery } from "../../ui/primitives/useMediaQuery";
 import { useDialog } from "../../ui/primitives/useDialog";
 import { dateKey, makeDue, parseDue } from "../../core/planner/dates";
-import { usePlanner, useStore } from "../../state/store";
+import { usePlannerSelector, useStore } from "../../state/store";
 import { inOrder, keyBetween } from "../../core/planner/order";
 import { CannotMoveSeries, type Scope } from "../../core/planner/eventScope";
 import { allowedScopes, editTaskRepeat, undoableTasks, type RepeatEdit } from "../../core/planner/taskRepeat";
@@ -25,7 +25,9 @@ const SAVE_DELAY_MS = 500;
 
 function Panel({ task }: { task: Task }) {
   const store = useStore();
-  const { lists, projects, tags } = usePlanner();
+  const lists = usePlannerSelector((state) => state.lists);
+  const projects = usePlannerSelector((state) => state.projects);
+  const tags = usePlannerSelector((state) => state.tags);
   const ui = useUi();
   const now = useNow();
   const { prefs } = usePrefs();
@@ -326,9 +328,10 @@ export function TaskPanelState({ taskId, ready }: { taskId: string; ready: boole
 }
 
 export function TaskPanel() {
-  const { tasks, ready } = usePlanner();
+  const tasks = usePlannerSelector((state) => state.tasks);
+  const ready = usePlannerSelector((state) => state.ready);
   const { taskId } = useUi();
   const task = tasks.find((t) => t.id === taskId && t.deletedAt === null);
-  if (task) return <Panel key={task.id} task={task} />;
+  if (task && ready) return <Panel key={task.id} task={task} />;
   return taskId === null ? null : <TaskPanelState taskId={taskId} ready={ready} />;
 }

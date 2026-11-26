@@ -4,10 +4,11 @@ import { useNow } from "../../state/clock";
 import { usePrefs } from "../../state/prefs";
 import { Link } from "../../state/router";
 import { useUi } from "../../ui/product/UiProvider";
+import { VirtualList } from "../../ui/primitives/VirtualList";
 import { EmptyState } from "../../ui/primitives/EmptyState";
 import { Icon } from "../../ui/primitives/Icon";
 import { addDays, dateKey, dateOf, formatDue, MONTHS, WEEKDAYS, weekOrder, weekStartOf } from "../../core/planner/dates";
-import { usePlanner, useStore } from "../../state/store";
+import { usePlannerSelector, useStore } from "../../state/store";
 import type { Project, Task } from "../../core/planner/types";
 import { dueText, needsAction } from "../tasks";
 import { useTaskActions } from "../tasks";
@@ -85,7 +86,7 @@ function SectionHeader({ project, lane, index, count }: { project: Project; lane
 
 function TasksTab({ project }: { project: Project }) {
   const store = useStore();
-  const { tasks } = usePlanner();
+  const tasks = usePlannerSelector((state) => state.tasks);
   const [newSection, setNewSection] = useState("");
   const lanes = groupBySection(project, tasks);
   const stats = projectStats(tasks, project.id);
@@ -102,11 +103,9 @@ function TasksTab({ project }: { project: Project }) {
             {lane.tasks.length === 0 ? (
               <p className="quiet note" style={{ padding: "var(--sp-6) 0" }}>No tasks in this section.</p>
             ) : (
-              <ul>
-                {lane.tasks.map((t) => (
-                  <ProjectRow key={t.id} task={t} />
-                ))}
-              </ul>
+              <VirtualList totalCount={stats.total} items={lane.tasks} getKey={(t) => t.id}>
+                {(t) => <ProjectRow task={t} />}
+              </VirtualList>
             )}
           </section>
         ))}
@@ -179,7 +178,7 @@ function ProjectCard({ task, lanes, laneKey, index, of }: { task: Task; lanes: {
 }
 
 function BoardTab({ project }: { project: Project }) {
-  const { tasks } = usePlanner();
+  const tasks = usePlannerSelector((state) => state.tasks);
   const lanes = groupBySection(project, tasks).map((l) => ({ ...l, tasks: l.tasks.filter((t) => !t.done) }));
   const visible = lanes.filter((l) => l.sectionId !== null || l.tasks.length > 0 || lanes.length === 1);
   const finished = tasksOf(tasks, project.id).filter((t) => t.done);
@@ -194,11 +193,9 @@ function BoardTab({ project }: { project: Project }) {
       {all.map((lane) => (
         <section key={lane.key} className="lane" aria-label={lane.name}>
           <h2 className="lane-h">{lane.name}<span>{lane.tasks.length}</span></h2>
-          <ul className="cards">
-            {lane.tasks.map((t, i) => (
-              <ProjectCard key={t.id} task={t} lanes={laneChoices} laneKey={lane.key} index={i} of={lane.tasks.length} />
-            ))}
-          </ul>
+          <VirtualList totalCount={tasks.length} className="cards" items={lane.tasks} getKey={(t) => t.id}>
+            {(t, i) => <ProjectCard task={t} lanes={laneChoices} laneKey={lane.key} index={i} of={lane.tasks.length} />}
+          </VirtualList>
         </section>
       ))}
     </div>
@@ -211,7 +208,7 @@ function BoardTab({ project }: { project: Project }) {
 
 /** That project's tasks on the month grid. */
 function CalendarTab({ project }: { project: Project }) {
-  const { tasks } = usePlanner();
+  const tasks = usePlannerSelector((state) => state.tasks);
   const { prefs } = usePrefs();
   const { openTask: open } = useUi();
   const now = useNow();
@@ -245,12 +242,14 @@ function CalendarTab({ project }: { project: Project }) {
           return (
             <div className={cls} role="gridcell" key={day} data-day={day}>
               <span className="n">{date.getDate()}</span>
-              {here.map((t) => (
+              {here.length > 0 && <VirtualList as="div" className="virtual-stack" totalCount={mine.length} items={here} getKey={(task) => task.id} estimateSize={20}>
+                {(t) => (
                 <button key={t.id} type="button" className="chipx" data-row-id={t.id} style={t.done ? { textDecoration: "line-through", color: "var(--t3)" } : undefined} onClick={() => open(t.id)}>
                   <Swatch colour={project.colour} />
                   {t.title}
                 </button>
-              ))}
+                )}
+              </VirtualList>}
             </div>
           );
         })}
@@ -261,7 +260,9 @@ function CalendarTab({ project }: { project: Project }) {
 
 export function ProjectPage({ id }: { id: string }) {
   const store = useStore();
-  const { projects, tasks, ready } = usePlanner();
+  const projects = usePlannerSelector((state) => state.projects);
+  const tasks = usePlannerSelector((state) => state.tasks);
+  const ready = usePlannerSelector((state) => state.ready);
   const ui = useUi();
   const now = useNow();
   const [tab, setTab] = useState<Tab>("tasks");

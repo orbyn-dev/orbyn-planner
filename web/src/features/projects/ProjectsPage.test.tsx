@@ -26,6 +26,9 @@ async function open(path = "/projects", seed?: (s: LocalStore) => { projectId: s
     </ClockProvider>,
     { container: root },
   );
+  if (path === "/projects") await screen.findByRole("heading", { name: "Projects", level: 1 });
+  else if (path === "/projects/missing") await screen.findByRole("heading", { name: "Project not found" });
+  else await screen.findByRole("heading", { name: /Home renovation/, level: 1 });
   return store;
 }
 

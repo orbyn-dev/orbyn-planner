@@ -210,6 +210,8 @@ export function NoMemory() {
 
 function SignUp({ go }: { go: (s: AuthScreen) => void }) {
   const auth = useAuth()!;
+  const entry = useRef<AbortController | null>(null);
+  useEffect(() => () => entry.current?.abort(), []);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -236,7 +238,9 @@ function SignUp({ go }: { go: (s: AuthScreen) => void }) {
     setBusy(true);
     setError(null);
     try {
-      setPending(await signUp(auth.services, { name, email, password, invite: invite ?? undefined }));
+      const controller = new AbortController();
+      entry.current = controller;
+      setPending(await signUp(auth.services, { name, email, password, invite: invite ?? undefined }, controller.signal));
       setPassword(""); // the sign-up is waiting for its code: the password is not needed again, and is not kept in the page
     } catch (e) {
       if (e instanceof ApiFailure && e.code === "no_memory") setNoMemory(true);
@@ -286,6 +290,8 @@ function SignUp({ go }: { go: (s: AuthScreen) => void }) {
 
 function SignIn({ go }: { go: (s: AuthScreen) => void }) {
   const auth = useAuth()!;
+  const entry = useRef<AbortController | null>(null);
+  useEffect(() => () => entry.current?.abort(), []);
   // "Sign in again" (a fresh sign-in is needed while still signed in) starts with this account's email, so only the password is left.
   const [email, setEmail] = useState(auth.session?.email ?? "");
   const [password, setPassword] = useState("");
@@ -340,7 +346,9 @@ function SignIn({ go }: { go: (s: AuthScreen) => void }) {
     setBusy(true);
     setError(null);
     try {
-      await signIn(auth.services, { email, password, replaceKeys });
+      const controller = new AbortController();
+      entry.current = controller;
+      await signIn(auth.services, { email, password, replaceKeys }, controller.signal);
       signedIn();
     } catch (e) {
       if (e instanceof KeysForAnotherAccount) setForeign(e);

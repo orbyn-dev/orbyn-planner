@@ -1,3 +1,12 @@
+import "fake-indexeddb/auto";
+import { IDBFactory } from "fake-indexeddb";
+import { IdbPersistence } from "../../data/local/persistence";
+import { StoreProvider } from "../../state/store";
+import { PrefsProvider } from "../../state/prefs";
+import { UiProvider, useUi } from "../../ui/product/UiProvider";
+import { EventPanel } from "./EventPanel";
+import { NewEventDialog } from "./NewEventDialog";
+import { NewTaskDialog } from "../tasks";
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import { firstRunDoneForTests } from "../../test-setup";
 import userEvent from "@testing-library/user-event";
@@ -28,6 +37,8 @@ async function open(options: { path?: string; seed?: (store: LocalStore) => void
     </ClockProvider>,
     { container: root },
   );
+  if (window.location.pathname === "/calendar") await screen.findByRole("heading", { level: 1, name: /2026/ });
+  if (window.location.pathname === "/settings") await screen.findByRole("heading", { name: "Planning", level: 2 });
   return store;
 }
 
@@ -647,6 +658,7 @@ describe("the week header, today's column and the arrow keys", () => {
         <App store={store} />
       </ClockProvider>,
     );
+    await screen.findByRole("heading", { level: 1, name: /2026/ });
   };
   const saturday = new Date(2026, 10, 7, 10, 0);
   const dh = () => Array.from(document.querySelectorAll(".dh")).map((d) => d.textContent);
@@ -765,7 +777,8 @@ describe("Calendar loading and sync error (Planner Designs p-cal-loading, p-cal-
       await store.ready;
       const notReady = { ...store.getState(), ready: false }; // one object: a new one each call would loop
       const loading = Object.assign(Object.create(store) as LocalStore, { getState: () => notReady });
-      render(<ClockProvider value={() => NOW}><App store={loading} /></ClockProvider>);
+      await act(async () => { render(<ClockProvider value={() => NOW}><App store={loading} /></ClockProvider>); });
+      expect(screen.getByRole("button", { name: "New event" })).toBeDisabled();
       expect(screen.getByRole("button", { name: "New event" })).toBeInTheDocument(); // the header stays
       expect(screen.queryByText("Loading this week’s events")).toBeNull();
       await act(async () => void (await vi.advanceTimersByTimeAsync(450)));
@@ -797,7 +810,57 @@ describe("Calendar loading and sync error (Planner Designs p-cal-loading, p-cal-
   });
 
   it("no banner when every calendar synced", async () => {
-    await open({ seed: (s) => { const c = s.addSubscription("School holidays", "c3", "https://example.com/school.ics"); s.replaceFeedEvents(c.id, []); } });
-    expect(screen.queryByText(/Couldn’t sync/)).toBeNull();
+    const clock = vi.spyOn(Date, "now").mockReturnValue(NOW.getTime());
+    try {
+      await open({ seed: (s) => { const c = s.addSubscription("School holidays", "c3", "https://example.com/school.ics"); s.replaceFeedEvents(c.id, []); } });
+      expect(screen.queryByText(/Couldn’t sync/)).toBeNull();
+    } finally { clock.mockRestore(); }
   });
+});
+
+
+it("guards event actions while historical records are still loading", async () => {
+  const original = globalThis.indexedDB;
+  globalThis.indexedDB = new IDBFactory();
+  let release!: () => void;
+  let paused!: () => void;
+  const reached = new Promise<void>((resolve) => { paused = resolve; });
+  const resume = new Promise<void>((resolve) => { release = resolve; });
+  class Paused extends IdbPersistence {
+    override async scan(...args: Parameters<IdbPersistence["scan"]>) { paused(); await resume; return super.scan(...args); }
+  }
+  const seed = new LocalStore({ persistence: new IdbPersistence(), now: () => NOW, broadcast: false });
+  await seed.ready;
+  const event = seed.addEvent({ title: "Meeting", start: "2026-11-06T09:00", end: "2026-11-06T10:00" });
+  await seed.flush(); seed.close();
+  const store = new LocalStore({ persistence: new Paused(), now: () => NOW, broadcast: false });
+  await reached;
+  function Fixture() {
+    const ui = useUi();
+    return <><button onClick={() => ui.openEvent(event.id, "2026-11-06")}>Open event</button><button onClick={() => ui.openNewEvent("2026-11-06")}>Open new</button><button onClick={() => ui.openNewTask()}>Open task</button><EventPanel />{ui.newEventDate !== null && <NewEventDialog />}{ui.newTaskOpen && <NewTaskDialog />}</>;
+  }
+  render(<ClockProvider value={() => NOW}><StoreProvider store={store}><PrefsProvider><UiProvider><Fixture /></UiProvider></PrefsProvider></StoreProvider></ClockProvider>);
+  await userEvent.click(screen.getByRole("button", { name: "Open event" }));
+  const panel = screen.getByRole("complementary", { name: "Event" });
+  expect(within(panel).getByRole("button", { name: "Delete" })).toBeDisabled();
+  expect(within(panel).getByRole("button", { name: "Duplicate" })).toBeDisabled();
+  expect(within(panel).getByRole("button", { name: "Save" })).toBeDisabled();
+  await userEvent.click(screen.getByRole("button", { name: "Open new" }));
+  const dialog = screen.getByRole("dialog", { name: "New event" });
+  await userEvent.type(within(dialog).getByLabelText("Title"), "New meeting");
+  expect(within(dialog).getByRole("button", { name: "Add event" })).toBeDisabled();
+  await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+  await userEvent.click(screen.getByRole("button", { name: "Open task" }));
+  const taskDialog = screen.getByRole("dialog", { name: "New task" });
+  await userEvent.type(within(taskDialog).getByLabelText("Title"), "New task");
+  expect(within(taskDialog).getByRole("button", { name: "Add task" })).toBeDisabled();
+  await userEvent.click(within(taskDialog).getByRole("button", { name: "Cancel" }));
+  await userEvent.click(screen.getByRole("button", { name: "Open new" }));
+  const reopened = screen.getByRole("dialog", { name: "New event" });
+  await userEvent.type(within(reopened).getByLabelText("Title"), "New meeting");
+  await act(async () => { release(); await store.ready; });
+  expect(within(reopened).getByRole("button", { name: "Add event" })).toBeEnabled();
+  expect(within(panel).getByRole("button", { name: "Duplicate" })).toBeEnabled();
+  expect(store.getState().events).toHaveLength(1);
+  store.close(); globalThis.indexedDB = original;
 });

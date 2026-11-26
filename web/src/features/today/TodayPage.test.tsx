@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../app/App";
 import { ClockProvider } from "../../state/clock";
@@ -188,15 +188,13 @@ describe("Today page", () => {
     expect(screen.getByText("50% · goal today")).toBeInTheDocument();
   });
 
-  it("a long list is laid out in steps: the first rows at once, the rest on the next frames, all of them in the end", async () => {
+  it("keeps every overdue row and the full total when measurement is unavailable", async () => {
     await openToday((s) => {
-      for (let i = 0; i < 100; i++) s.addTask({ title: `late ${i}`, due: "2026-11-05" }); // more than the 40 rows drawn at once, fewer rows for a busy machine
+      for (let i = 0; i < 100; i++) s.addTask({ title: `late ${i}`, due: "2026-11-05" });
     });
     const count = () => document.querySelectorAll(".row").length;
-    expect(count()).toBeLessThan(100); // the page does not wait for every row
-    expect(count()).toBeGreaterThan(0);
-    await waitFor(() => expect(count()).toBe(100), { timeout: 15_000 });
-    expect(stats()[1]).toBe("Overdue100"); // the numbers never depended on how many rows were drawn
+    expect(count()).toBe(100); // jsdom has no ResizeObserver, so the list falls back to complete markup
+    expect(stats()[1]).toBe("Overdue100");
   }, 30_000);
 
   it("goals more than 30 days away, goals already past and projects with no goal are left out, and the rest come nearest first whatever order they were made in", async () => {

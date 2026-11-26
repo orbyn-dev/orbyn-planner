@@ -3,36 +3,22 @@ import { usePrefs } from "../../state/prefs";
 import { useUi } from "../../ui/product/UiProvider";
 import { Icon } from "../../ui/primitives/Icon";
 import { Modal } from "../../ui/primitives/Modal";
+import { VirtualList } from "../../ui/primitives/VirtualList";
 import { addDays, dateKey, dateOf, formatTime, isoWeek, MONTHS, parseDue, WEEKDAYS, weekLead, weekOrder } from "../../core/planner/dates";
-import { wallMinutes } from "../../core/planner/wall";
-import { usePlanner } from "../../state/store";
+import { usePlannerSelector } from "../../state/store";
 import { expandEvents, type Occurrence } from "../../core/planner/occurrences";
 import type { Task } from "../../core/planner/types";
 import { Check, useTaskActions } from "../tasks";
 import { useSyncController, useSyncState } from "../../state/sync";
 import { SyncLine, useSyncStatus, withPersistence } from "../sync";
-import { colourOf } from "./TimeGrid";
+import { colourOf, phoneEventMeta } from "./presentation";
+export { duration, phoneEventMeta as eventMeta } from "./presentation";
 
 const dayName = (key: string) => `${WEEKDAYS[dateOf(key).getDay()]!.slice(0, 3)} ${dateOf(key).getDate()}`;
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 const shift = (key: string, days: number) => dateKey(addDays(dateOf(key), days));
 /** How far a finger has to travel sideways before it is a swipe, in CSS pixels. */
 const SWIPE_PX = 40;
-
-/** "30 min", "1 h", "1 h 30 min": how long a timed event lasts. */
-export function duration(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return [h > 0 && `${h} h`, m > 0 && `${m} min`].filter(Boolean).join(" ") || "0 min";
-}
-
-/** What an event row says after its title: the place, or if it has none its length, never both; an all-day event says neither. */
-export function eventMeta(o: Pick<Occurrence, "allDay" | "start" | "end"> & { event: { place: string } }): string {
-  if (o.allDay) return "";
-  if (o.event.place) return o.event.place;
-  const minutes = wallMinutes(o.end) - wallMinutes(o.start);
-  return minutes > 0 ? duration(minutes) : "";
-}
 
 function TaskLine({ task }: { task: Task }) {
   const { open } = useTaskActions(task);
@@ -96,7 +82,12 @@ function MonthPicker({ selected, today, onPick, onClose }: { selected: string; t
  * (Planner Designs p-phone-week, p-cal-day-empty-phone, p-phone-day-nav and p-phone-month-picker).
  */
 export function PhoneCalendar({ today }: { today: string }) {
-  const { events, calendars, tasks, outbox, persistence } = usePlanner();
+  const ready = usePlannerSelector((state) => state.ready);
+  const events = usePlannerSelector((state) => state.events);
+  const calendars = usePlannerSelector((state) => state.calendars);
+  const tasks = usePlannerSelector((state) => state.tasks);
+  const outbox = usePlannerSelector((state) => state.outbox);
+  const persistence = usePlannerSelector((state) => state.persistence);
   const ui = useUi();
   const sync = useSyncState();
   const controller = useSyncController();
@@ -146,13 +137,15 @@ export function PhoneCalendar({ today }: { today: string }) {
 
   const key = (o: Occurrence) => (o.allDay ? "" : o.start.slice(11, 16));
   const items = [
-    ...occurrences.map((o) => ({ at: key(o), o, t: null as Task | null })),
-    ...dayTasks.map((t) => ({ at: t.due!.length > 10 ? t.due!.slice(11, 16) : "99:99", o: null as Occurrence | null, t })),
+    ...occurrences.map((o) => ({ kind: "event" as const, at: key(o), o })),
+    ...dayTasks.map((t) => ({ kind: "task" as const, at: t.due!.length > 10 ? t.due!.slice(11, 16) : "99:99", t })),
   ].sort((a, b) => a.at.localeCompare(b.at));
   const count = [occurrences.length > 0 && plural(occurrences.length, "event", "events"), dayTasks.length > 0 && plural(dayTasks.length, "task", "tasks")].filter(Boolean).join(" · ");
   const month = MONTHS[dateOf(day).getMonth()]!;
   const sub = `Week ${isoWeek(dateOf(day))} · ${day === today ? "Today" : dayName(day)}${status.kind === "offline" ? " · offline" : ""}`;
   const lastSynced = status.kind === "offline" ? status.lastSynced : null;
+
+  if (!ready) return <div className="empty" role="status">Loading events</div>;
 
   return (
     <>
@@ -180,20 +173,18 @@ export function PhoneCalendar({ today }: { today: string }) {
           {items.length === 0 ? (
             <p className="t3 pm-empty">Nothing planned</p>
           ) : (
-            <ul>
-              {items.map(({ o, t }) =>
-                o ? (
-                  <li className="row" key={`${o.event.id}-${o.date}`} data-row-id={o.event.id}>
-                    <span className="time">{o.allDay ? "All day" : formatTime(parseDue(o.start).date)}</span>
-                    <span className="sw" style={{ background: colourOf(calendars, o.event) }} aria-hidden="true" />
-                    <button type="button" className="what link-btn" onClick={() => ui.openEvent(o.event.id, o.date)}>{o.event.title}</button>
-                    <span className="meta">{eventMeta(o)}</span>
+            <VirtualList items={items} getKey={(item) => item.kind === "event" ? `event:${item.o.event.id}:${item.o.date}` : `task:${item.t.id}`} getRowId={(item) => item.kind === "event" ? item.o.event.id : item.t.id}>
+              {(item) => item.kind === "event" ? (
+                  <li className="row" data-row-id={item.o.event.id}>
+                    <span className="time">{item.o.allDay ? "All day" : formatTime(parseDue(item.o.start).date)}</span>
+                    <span className="sw" style={{ background: colourOf(calendars, item.o.event) }} aria-hidden="true" />
+                    <button type="button" className="what link-btn" onClick={() => ui.openEvent(item.o.event.id, item.o.date)}>{item.o.event.title}</button>
+                    <span className="meta">{phoneEventMeta(item.o)}</span>
                   </li>
                 ) : (
-                  <TaskLine key={t!.id} task={t!} />
-                ),
-              )}
-            </ul>
+                  <TaskLine task={item.t} />
+                )}
+            </VirtualList>
           )}
           {lastSynced && (
             <div className="bh"><b>Last synced</b><span>{formatTime(new Date(lastSynced))}</span></div>

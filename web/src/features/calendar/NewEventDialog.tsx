@@ -7,7 +7,7 @@ import { WhenField } from "../../ui/primitives/WhenField";
 import type { When } from "../../core/planner/whenParser";
 import { useDialog } from "../../ui/primitives/useDialog";
 import { dateKey } from "../../core/planner/dates";
-import { usePlanner, useStore } from "../../state/store";
+import { usePlannerSelector, useStore } from "../../state/store";
 import { REMINDERS, REPEAT_CHOICES, parsePeople, ruleOf, type RepeatChoice } from "./eventForm";
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -15,7 +15,8 @@ const pad = (n: number) => String(n).padStart(2, "0");
 /** The "New event" card: title and when first, then calendar, repeat, reminder and people. */
 export function NewEventDialog() {
   const store = useStore();
-  const { calendars } = usePlanner();
+  const ready = usePlannerSelector((state) => state.ready);
+  const calendars = usePlannerSelector((state) => state.calendars);
   const ui = useUi();
   const now = useNow();
   const ref = useRef<HTMLDivElement>(null);
@@ -37,7 +38,7 @@ export function NewEventDialog() {
   const bad = title.trim() === "" || end < start;
 
   const submit = () => {
-    if (bad) return;
+    if (bad || !ready) return;
     const event = store.addEvent({
       title,
       calendarId,
@@ -101,7 +102,7 @@ export function NewEventDialog() {
             </div>
             <div className="dialog-actions">
               <button type="button" className="ghost" onClick={ui.closeNewEvent}>Cancel</button>
-              <button type="submit" className="btn" disabled={bad}>Add event</button>
+              <button type="submit" className="btn" disabled={bad || !ready}>Add event</button>
             </div>
           </form>
         </div>

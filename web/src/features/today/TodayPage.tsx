@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { MotionList } from "../../ui/primitives/MotionList";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { VirtualList } from "../../ui/primitives/VirtualList";
+import { coversWindow } from "../../core/planner/coverage";
 import { useContentFlags } from "../../lib/contentWidth";
 import { useNow } from "../../state/clock";
 import { useRouter } from "../../state/router";
@@ -13,7 +14,7 @@ import { PageHeader } from "../../ui/primitives/EmptyState";
 import { Icon } from "../../ui/primitives/Icon";
 import { MONTHS, WEEKDAYS, addDays, dateKey, formatTime, isDueToday, parseDue, startOfDay } from "../../core/planner/dates";
 import { daysBetween, lastDayOf, touchesDay } from "../../core/planner/wall";
-import { usePlanner } from "../../state/store";
+import { usePlannerSelector } from "../../state/store";
 import { expandEvents, type Occurrence } from "../../core/planner/occurrences";
 import { eventMeta } from "../calendar";
 import { colourOf } from "../calendar";
@@ -53,29 +54,13 @@ export function TodayError({ onRetry }: { onRetry: () => void }) {
 
 const countWords = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
-/** The first rows of a long list are laid out at once; the rest follow a few at a time, a frame apart, so the page paints before a thousand rows are laid out. */
-const FIRST_ROWS = 40;
-const ROWS_PER_FRAME = 60;
-function useProgressive(total: number): number {
-  const [shown, setShown] = useState(FIRST_ROWS);
-  useEffect(() => {
-    if (shown >= total) return;
-    const frame = requestAnimationFrame(() => setShown((n) => n + ROWS_PER_FRAME));
-    return () => cancelAnimationFrame(frame);
-  }, [shown, total]);
-  return Math.min(shown, total);
-}
-
-/** Where a row stands in a list drawn in steps, for a screen reader; a list that fits in the first rows needs no such thing. */
-const place = (index: number, of: number) => (of > FIRST_ROWS ? { index, of } : undefined);
-
 const clock = (iso: string) => formatTime(parseDue(iso).date);
 
 /** A timed event that began before today and ends after it fills the whole day, so it sits in the All day group like a multi-day event. */
 const coversDay = (o: Occurrence, day: string) => !o.allDay && o.start.slice(0, 10) < day && lastDayOf(o.start, o.end, false) > day;
 
 function EventRow({ occ, day, at }: { occ: Occurrence; day: string; at?: { index: number; of: number } }) {
-  const { calendars } = usePlanner();
+  const calendars = usePlannerSelector((state) => state.calendars);
   const ui = useUi();
   const calendar = calendars.find((c) => c.id === occ.event.calendarId);
   // An all-day event names its calendar; a timed one says it is an event, and where.
@@ -151,7 +136,13 @@ function dayLabel(tasks: Task[], events: Occurrence[], day: string): ReactNode {
 }
 
 export function TodayPage() {
-  const { tasks, outbox, persistence, events, calendars, projects, ready } = usePlanner();
+  const tasks = usePlannerSelector((state) => state.tasks);
+  const outbox = usePlannerSelector((state) => state.outbox);
+  const persistence = usePlannerSelector((state) => state.persistence);
+  const events = usePlannerSelector((state) => state.events);
+  const calendars = usePlannerSelector((state) => state.calendars);
+  const projects = usePlannerSelector((state) => state.projects);
+  const ready = usePlannerSelector((state) => state.ready);
   const ui = useUi();
   const { navigate } = useRouter();
   const auth = useAuth();
@@ -163,6 +154,7 @@ export function TodayPage() {
   // rows of a long list arrive a frame at a time, and each step renders again).
   const minute = Math.floor(clockNow.getTime() / 60_000);
   const now = useMemo(() => new Date(minute * 60_000), [minute]);
+  const covered = usePlannerSelector((state) => coversWindow(state, "today", dateKey(now), dateKey(addDays(now, 6))));
   const waiting = useMemo(() => {
     const latest = new Map<string, string>();
     for (const e of outbox) if (e.type === "task") latest.set(e.id, e.updatedAt);
@@ -177,8 +169,7 @@ export function TodayPage() {
   const { status: health, retry } = useSyncStatus(outbox.length, sync, syncNow);
   const status = withPersistence(health, persistence);
   const g = useMemo(() => groupToday(tasks, now), [tasks, now]);
-  const skeleton = useSlow(!ready);
-  const lateRows = useProgressive(g.overdue.length);
+  const skeleton = useSlow(!covered);
 
   const shownEvents = useMemo(() => {
     const visible = new Set(calendars.filter((c) => c.visible).map((c) => c.id));
@@ -196,7 +187,6 @@ export function TodayPage() {
     [g.today, todayEvents, key],
   );
 
-  const entryRows = useProgressive(entries.length);
   const weekEvents = useMemo(() => expandEvents(shownEvents, dateKey(g.week[0]!.date), dateKey(g.week.at(-1)!.date)), [shownEvents, g.week]);
   const week = useMemo(
     () =>
@@ -246,9 +236,6 @@ export function TodayPage() {
 
   // Only while the device is offline do rows say their change has not left it (as the designs draw it).
   const unsynced = new Set(status.kind === "offline" ? waiting.map((w) => w.id) : []);
-  const rows = (list: Entry[], of: number) =>
-    list.map((e, i) => (e.kind === "task" ? <TodayRow key={e.task.id} task={e.task} unsynced={unsynced.has(e.task.id)} at={place(i, of)} /> : <EventRow key={`${e.occ.event.id}-${e.occ.date}`} occ={e.occ} day={key} at={place(i, of)} />));
-
   const weekList = (
     <ul aria-label="The week at a glance">
       {week.map((d) => (
@@ -269,7 +256,8 @@ export function TodayPage() {
     </li>
   ));
 
-  if (!ready) {
+  if (!covered && persistence.status === "failed") return <TodayError onRetry={() => window.location.reload()} />;
+  if (!covered) {
     return (
       <>
         <PageHeader title={title} sub={skeleton ? <span className="skel" style={{ width: "var(--sp-200)" }} /> : undefined}>
@@ -301,7 +289,7 @@ export function TodayPage() {
             {initialsOf(auth?.session?.name, auth?.session?.email)}
           </button>
         )}
-        <button type="button" className="btn" onClick={() => ui.openNewTask()}>
+        <button type="button" className="btn" disabled={!ready} onClick={() => ui.openNewTask()}>
           <Icon name="plus" small />
           New task
         </button>
@@ -340,22 +328,24 @@ export function TodayPage() {
               {allDay.length > 0 && (
                 <>
                   <div className="bh" style={{ paddingTop: "var(--sp-2)" }}><b>All day</b><span>{allDay.length}</span></div>
-                  <ul>{allDay.map((occ) => <EventRow key={`${occ.event.id}-${occ.date}`} occ={occ} day={key} />)}</ul>
+                  <VirtualList items={allDay} getKey={(occ) => `event:${occ.event.id}:${occ.date}`} getRowId={(occ) => occ.event.id}>
+                    {(occ) => <EventRow occ={occ} day={key} />}
+                  </VirtualList>
                   {entries.length > 0 && <div className="bh" style={{ paddingTop: "var(--sp-10)" }}><b>Timed</b><span></span></div>}
                 </>
               )}
-              {entries.length > 0 && <MotionList>{rows(entries.slice(0, entryRows), entries.length)}</MotionList>}
+              {entries.length > 0 && <VirtualList items={entries} getKey={(e) => e.kind === "task" ? `task:${e.task.id}` : `event:${e.occ.event.id}:${e.occ.date}`} getRowId={(e) => e.kind === "task" ? e.task.id : e.occ.event.id}>
+                {(e, i) => e.kind === "task" ? <TodayRow task={e.task} unsynced={unsynced.has(e.task.id)} at={entries.length > 40 ? { index: i, of: entries.length } : undefined} /> : <EventRow occ={e.occ} day={key} at={entries.length > 40 ? { index: i, of: entries.length } : undefined} />}
+              </VirtualList>}
               {g.overdue.length > 0 && (
                 <>
                   <div className="bh" style={{ paddingTop: allDay.length > 0 ? "var(--sp-12)" : "var(--sp-16)" }}>
                     <b className="amber">Overdue</b>
                     <span>{g.overdue.length}</span>
                   </div>
-                  <ul>
-                    {g.overdue.slice(0, lateRows).map((t, i) => (
-                      <TodayRow key={t.id} task={t} unsynced={unsynced.has(t.id)} late={lateDays(t.due!)} quietLate={phone} at={place(i, g.overdue.length)} />
-                    ))}
-                  </ul>
+                  <VirtualList items={g.overdue} getKey={(t) => `task:${t.id}`} getRowId={(t) => t.id}>
+                    {(t, i) => <TodayRow task={t} unsynced={unsynced.has(t.id)} late={lateDays(t.due!)} quietLate={phone} at={g.overdue.length > 40 ? { index: i, of: g.overdue.length } : undefined} />}
+                  </VirtualList>
                 </>
               )}
             </div>
@@ -375,7 +365,7 @@ export function TodayPage() {
         <div className="blk aside">
           <div className="bh"><b>Next 7 days</b><span></span></div>
           {weekList}
-          {progress.length > 0 && (
+          {progress.length > 0 && (ready ? (
             <>
               <div className="bh" style={{ paddingTop: "var(--sp-16)" }}><b>Progress</b><span></span></div>
               {progress.map(({ project, percent }) => (
@@ -385,7 +375,7 @@ export function TodayPage() {
                 </div>
               ))}
             </>
-          )}
+          ) : <div className="bh" aria-busy="true"><b>Progress</b><span className="skel" /></div>)}
         </div>
         )}
       </div>

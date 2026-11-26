@@ -17,7 +17,7 @@ vi.mock("../../state/services/flows", () => ({ readProtection: () => read() }));
 vi.mock("../../state/router", () => ({ useRouter: () => ({ path: "/notifications", navigate }) }));
 vi.mock("../../ui/product/UiProvider", () => ({ useUi: () => ({ openTask }) }));
 vi.mock("../../state/clock", () => ({ useNow: () => NOW }));
-vi.mock("../../state/store", () => ({ usePlanner: () => ({ tasks }) }));
+vi.mock("../../state/store", () => ({ usePlanner: () => ({ tasks }), usePlannerSelector: (select: (s: { tasks: Task[] }) => unknown) => select({ tasks }) }));
 const auth = vi.hoisted(() => ({ services: {}, session: { accountId: "acct-1", deviceState: "trusted", deviceId: "d1" } as { accountId: string; deviceState: string; deviceId: string } }));
 vi.mock("../../state/account", () => ({ useAuth: () => auth }));
 

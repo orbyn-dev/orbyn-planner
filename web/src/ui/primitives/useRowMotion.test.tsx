@@ -6,9 +6,9 @@ import { useRowMotion } from "./useRowMotion";
 type Call = { target: HTMLElement; frames: Keyframe[]; options: KeyframeAnimationOptions };
 let calls: Call[] = [];
 
-function List({ ids }: { ids: string[] }) {
+function List({ ids, logicalKeys }: { ids: string[]; logicalKeys?: string[] }) {
   const ref = useRef<HTMLUListElement>(null);
-  useRowMotion(ref);
+  useRowMotion(ref, logicalKeys);
   return (
     <ul ref={ref}>
       {ids.map((id) => <li key={id} data-row-id={id}>{id}</li>)}
@@ -52,6 +52,13 @@ afterEach(() => {
 });
 
 describe("rows arriving and leaving (Motion Designs additem, delete)", () => {
+  it("does not animate viewport changes, but still animates a logical insertion", () => {
+    const { rerender } = render(<List ids={["a", "b"]} logicalKeys={["a", "b", "c"]} />);
+    rerender(<List ids={["b", "c"]} logicalKeys={["a", "b", "c"]} />);
+    expect(calls).toEqual([]);
+    rerender(<List ids={["b", "new", "c"]} logicalKeys={["a", "b", "new", "c"]} />);
+    expect(calls.some((call) => call.target.dataset.rowId === "new")).toBe(true);
+  });
   it("a new row fades in and rises 6 px over 200 ms while the rows below shift one slot", () => {
     const { getByText } = render(<Harness initial={["a", "b", "c"]} />);
     expect(calls).toEqual([]); // the first draw moves nothing

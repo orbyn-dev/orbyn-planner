@@ -16,7 +16,16 @@ export interface StoredSession {
  * What the sync layer keeps beside the engine's snapshot (which holds the zone keys, sealed). Plain data
  * with no secrets: names and ids the server sees anyway. Cleared with the device.
  */
+export interface MirrorIntent {
+  id: string;
+  zone: string;
+  records: { id: string; type?: string }[];
+  /** Set atomically with the engine snapshot which may have advanced past these records. */
+  applied: boolean;
+}
 export interface SyncState {
+  /** Durable local-mirror work; ids/types only, never record fields or keys. */
+  mirrorPending?: MirrorIntent[];
   /** Zones this device writes to or reads, by name. */
   zones: string[];
   /** The zone each record was last synced to, by "type:id", so a record that moves lists is moved in the store. */
@@ -63,7 +72,7 @@ export interface SyncState {
 
 /** What only the engine's snapshot can vouch for. Dropping or replacing the snapshot makes it untrue. */
 export function withoutEngineSide(state: SyncState): SyncState {
-  return { ...state, staged: {}, stagedZone: {}, keysSent: {}, keysReached: {}, made: {}, quarantined: {}, verified: [], reset: true };
+  return { ...state, mirrorPending: [], staged: {}, stagedZone: {}, keysSent: {}, keysReached: {}, made: {}, quarantined: {}, verified: [], reset: true };
 }
 
 export const emptySyncState = (): SyncState => ({ zones: [], zoneOf: {}, staged: {}, stagedZone: {}, keysSent: {}, made: {}, approvals: {}, resentAt: {}, failed: {}, backoff: {}, quarantined: {}, lastSyncedAt: null });
@@ -90,7 +99,7 @@ export interface KeyStore {
   clearKeys(): Promise<void>;
   /** The sync engine's state, sealed by the module under the wrapping secret. Never stored unsealed. */
   loadSnapshot(): Promise<Uint8Array | null>;
-  saveSnapshot(sealed: Uint8Array): Promise<void>;
+  saveSnapshot(sealed: Uint8Array, appliedMirror?: string): Promise<void>;
   /**
    * Drops the snapshot. The sync state's engine-side parts (what was staged, which keys were sent or made) are reset in the
    * same step, since the engine that knew them is gone: every outbox entry is then staged again from the outbox.
@@ -143,7 +152,17 @@ export interface ReplacementDevice {
 
 const sameBytes = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((x, i) => x === b[i]);
 
+/** Identity could not be read: callers must not treat this as a confirmed signed-out state. */
+export class KeyStoreUnavailable extends Error {
+  constructor(readonly reason: "blocked" | "open", cause?: unknown) {
+    super(reason === "blocked" ? "Close the other Orbyn Planner tabs to finish updating." : "Couldn’t open this device’s storage.", { cause });
+    this.name = "KeyStoreUnavailable";
+  }
+}
+
 export const KEY_DB_NAME = "orbyn-planner-keys";
+/** Fences older snapshot writers which cannot preserve the durable mirror intent. */
+export const KEY_DB_VERSION = 5;
 
 function request<T>(req: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -155,32 +174,50 @@ function request<T>(req: IDBRequest<T>): Promise<T> {
 /** IndexedDB in a database of its own, `orbyn-planner-keys`, apart from the planner's records. */
 export function createIdbKeyStore(factory: IDBFactory = indexedDB): KeyStore {
   let db: Promise<IDBDatabase> | null = null;
-  const open = () =>
-    (db ??= new Promise<IDBDatabase>((resolve, reject) => {
-      const req = factory.open(KEY_DB_NAME, 4);
+  const open = (): Promise<IDBDatabase> => {
+    if (db) return db;
+    const opening = new Promise<IDBDatabase>((resolve, reject) => {
+      let req: IDBOpenDBRequest;
+      try { req = factory.open(KEY_DB_NAME, KEY_DB_VERSION); }
+      catch (error) { reject(new KeyStoreUnavailable("open", error)); return; }
+      let abandoned = false;
       req.onupgradeneeded = () => {
         for (const name of ["device", "session", "snapshot", "wrap", "identity", "quarantine", "sync"]) {
           if (!req.result.objectStoreNames.contains(name)) req.result.createObjectStore(name);
         }
       };
+      req.onblocked = () => {
+        abandoned = true;
+        reject(new KeyStoreUnavailable("blocked"));
+      };
       req.onsuccess = () => {
+        // IDBOpenDBRequest cannot be cancelled while another tab blocks it. A rejected attempt
+        // may finish later; close that orphan rather than publishing or caching its connection.
+        if (abandoned) { req.result.close(); return; }
         req.result.onversionchange = () => {
           req.result.close();
-          db = null;
+          if (db === opening) db = null;
         };
         resolve(req.result);
       };
-      req.onerror = () => {
-        db = null;
-        reject(req.error);
-      };
-    }));
+      req.onerror = () => reject(new KeyStoreUnavailable("open", req.error));
+    });
+    db = opening;
+    void opening.catch(() => { if (db === opening) db = null; });
+    return opening;
+  };
 
   async function get<T>(store: string): Promise<T | null> {
-    const database = await open();
-    const value = await request<T | undefined>(database.transaction(store, "readonly").objectStore(store).get("current"));
-    return value ?? null;
+    try {
+      const database = await open();
+      const value = await request<T | undefined>(database.transaction(store, "readonly").objectStore(store).get("current"));
+      return value ?? null;
+    } catch (error) {
+      if (error instanceof KeyStoreUnavailable) throw error;
+      throw new KeyStoreUnavailable("open", error);
+    }
   }
+
   async function put(store: string, value: unknown): Promise<void> {
     const database = await open();
     const tx = database.transaction(store, "readwrite");
@@ -238,7 +275,20 @@ export function createIdbKeyStore(factory: IDBFactory = indexedDB): KeyStore {
     saveKeys: (bytes) => put("device", bytes),
     clearKeys: () => remove("device"),
     loadSnapshot: () => get<Uint8Array>("snapshot"),
-    saveSnapshot: (b) => put("snapshot", b),
+    saveSnapshot: async (b, appliedMirror) => {
+      if (!appliedMirror) return put("snapshot", b);
+      const database = await open();
+      const tx = database.transaction(["snapshot", "sync"], "readwrite");
+      tx.objectStore("snapshot").put(b, "current");
+      const sync = tx.objectStore("sync");
+      const read = sync.get("current") as IDBRequest<SyncState | undefined>;
+      read.onsuccess = () => {
+        if (read.result) sync.put({ ...read.result, mirrorPending: read.result.mirrorPending?.map(intent => intent.id === appliedMirror ? { ...intent, applied: true } : intent) }, "current");
+      };
+      await new Promise<void>((resolve, reject) => {
+        tx.oncomplete = () => resolve(); tx.onerror = tx.onabort = () => reject(tx.error ?? new Error("The snapshot write was aborted"));
+      });
+    },
     clearSnapshot: () => resetAnd(true),
     resetEngineSide: () => resetAnd(false),
     loadWrapKey: () => get<CryptoKey>("wrap"),
@@ -311,7 +361,10 @@ export function createMemoryKeyStore(): KeyStore {
     saveKeys: async (b) => void (keys = b),
     clearKeys: async () => void (keys = null),
     loadSnapshot: async () => snapshot,
-    saveSnapshot: async (b) => void (snapshot = b),
+    saveSnapshot: async (b, appliedMirror) => {
+      snapshot = b;
+      if (appliedMirror && sync) sync = { ...sync, mirrorPending: sync.mirrorPending?.map(intent => intent.id === appliedMirror ? { ...intent, applied: true } : intent) };
+    },
     clearSnapshot: async () => {
       snapshot = null;
       if (sync) sync = withoutEngineSide(sync);

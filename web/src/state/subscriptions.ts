@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { ApiError, NEEDS_ENGINE, NEEDS_SIGN_IN, configuredEngine, fetchFeedViaEngine, inDesktopApp } from "../data/remote/feeds";
 import { sessionToken, setSessionToken } from "../data/account/session";
 import { IcsError, MAX_FEED_BYTES, parseIcs } from "../core/planner/ics";
-import { usePlanner, useStore } from "./store";
+import { usePlannerSelector, useStore } from "./store";
 import type { FeedEvent, PlannerCalendar, PlannerStore } from "../core/planner/types";
 
 /** How often a subscribed calendar is read again while the app is open. */
@@ -148,7 +148,8 @@ export async function refreshCalendar(store: PlannerStore, calendar: PlannerCale
 /** While the app is open: read stale subscriptions now, and every subscription once an hour. */
 export function useSubscriptionRefresh(now: () => number = Date.now): void {
   const store = useStore();
-  const { calendars, ready } = usePlanner();
+  const calendars = usePlannerSelector(s => s.calendars);
+  const ready = usePlannerSelector(s => s.ready);
   const latest = useRef(calendars);
   // The clock is read through a ref: a new function on every render (an inline `() => Date.now()`) must not restart the effect below,
   // or a feed that is stale by that clock is read again after each of its own updates, and the page renders without end.

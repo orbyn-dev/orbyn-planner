@@ -22,7 +22,7 @@ async function openTasks(seed?: (s: LocalStore) => void) {
   );
   await store.ready;
   if (seed) await act(async () => seed(store));
-  const field = screen.getByRole("textbox", { name: "Add a task" });
+  const field = await screen.findByRole("textbox", { name: "Add a task" });
   await waitFor(() => expect(field).toBeEnabled());
   return { store, field };
 }

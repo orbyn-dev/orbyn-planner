@@ -264,3 +264,25 @@ describe("the engine's saved state", () => {
     expect([...given].every((b) => b === 0)).toBe(true);
   });
 });
+
+describe("durable mirror intent ordering", () => {
+  it("records ids before the action and marks them applied with the saved snapshot", async () => {
+    const { keys, host } = await setup();
+    const intent = { id: "mirror-1", zone: "list:inbox", records: [{ id: "task-1", type: "task" }] };
+    await host().run(session, async e => {
+      expect((await keys.loadSyncState())?.mirrorPending).toEqual([{ ...intent, applied: false }]);
+      return e.verifyDevices(list([device(ME)]));
+    }, intent);
+    expect(await keys.loadSnapshot()).not.toBeNull();
+    expect((await keys.loadSyncState())?.mirrorPending).toEqual([{ ...intent, applied: true }]);
+    await host().run(session, e => e.verifyDevices(list([device(ME)])));
+    expect((await keys.loadSyncState())?.mirrorPending).toEqual([{ ...intent, applied: true }]);
+  });
+
+  it("does not mark an intent applied when the action refuses before mutation", async () => {
+    const { keys, host } = await setup();
+    const intent = { id: "mirror-2", zone: "list:inbox", records: [{ id: "task-1" }] };
+    await expect(host().run(session, () => { throw new Error("refused"); }, intent)).rejects.toThrow("refused");
+    expect((await keys.loadSyncState())?.mirrorPending).toEqual([{ ...intent, applied: false }]);
+  });
+});

@@ -1,15 +1,17 @@
+import { memo } from "react";
 import { useNow } from "../../state/clock";
 import { useContentFlags } from "../../lib/contentWidth";
 import { Highlighted } from "./FiltersSheet";
 import { useUi } from "../../ui/product/UiProvider";
 import { formatTime, parseDue } from "../../core/planner/dates";
-import { usePlanner } from "../../state/store";
+import { usePlannerSelector } from "../../state/store";
 import { shownTags, TagChip, tagLabels } from "./TagChips";
 import { Swatch } from "../../ui/product/Swatch";
 import { statusOf } from "../../core/planner/taskStatus";
 import type { Task } from "../../core/planner/types";
 import { dueText, needsAction } from "./selectors";
 import { useComplete } from "./useComplete";
+import { canCompleteTask } from "../../core/planner/coverage";
 
 export function useTaskActions(task: Task) {
   const ui = useUi();
@@ -22,11 +24,13 @@ export function useTaskActions(task: Task) {
 
 export function Check({ task }: { task: Task }) {
   const { toggle } = useTaskActions(task);
+  const editable = usePlannerSelector((state) => canCompleteTask(state, task));
   return (
     <input
       type="checkbox"
       className="check"
       checked={task.done}
+      disabled={!editable}
       aria-label={`Complete ${task.title}`}
       onChange={(event) => toggle(event.target.checked)}
     />
@@ -38,8 +42,9 @@ const LIST_COLS = "var(--sp-22) minmax(0,1fr) var(--sp-110)";
 const priorityLabel = (t: Task) => (t.priority === "none" ? "" : t.priority[0]!.toUpperCase() + t.priority.slice(1));
 
 /** One aligned table row: Tasks (list, due, priority), a list's own tasks, or Completed. */
-export function TaskRow({ task, layout = "tasks", extra, unsynced = false, query = "" }: { task: Task; /** The words typed in the narrow search: picked out in the title. */ query?: string; layout?: "tasks" | "list" | "completed"; extra?: string; /** The change to it has not left this device yet (offline). */ unsynced?: boolean }) {
-  const { lists, tags } = usePlanner();
+export const TaskRow = memo(function TaskRow({ task, layout = "tasks", extra, unsynced = false, query = "" }: { task: Task; /** The words typed in the narrow search: picked out in the title. */ query?: string; layout?: "tasks" | "list" | "completed"; extra?: string; /** The change to it has not left this device yet (offline). */ unsynced?: boolean }) {
+  const lists = usePlannerSelector((state) => state.lists);
+  const tags = usePlannerSelector((state) => state.tags);
   const { table } = useContentFlags();
   const { open } = useTaskActions(task);
   const now = useNow();
@@ -90,11 +95,11 @@ export function TaskRow({ task, layout = "tasks", extra, unsynced = false, query
       )}
     </li>
   );
-}
+});
 
 /** A Today row: time, check, title, and what matters about it. */
-export function TodayRow({ task, late, compact = false, quietLate = false, unsynced = false, at }: { task: Task; late?: number; compact?: boolean; /** The change to it has not left this device yet. */ unsynced?: boolean; /** On a phone an overdue row has no meta. */ quietLate?: boolean; /** Where the row stands in a list drawn in steps, for a screen reader. */ at?: { index: number; of: number } }) {
-  const { lists } = usePlanner();
+export const TodayRow = memo(function TodayRow({ task, late, compact = false, quietLate = false, unsynced = false, at }: { task: Task; late?: number; compact?: boolean; /** The change to it has not left this device yet. */ unsynced?: boolean; /** On a phone an overdue row has no meta. */ quietLate?: boolean; /** Logical position, independent of the mounted viewport. */ at?: { index: number; of: number } }) {
+  const lists = usePlannerSelector((state) => state.lists);
   const { open } = useTaskActions(task);
   const now = useNow();
   const list = lists.find((l) => l.id === task.listId);
@@ -119,4 +124,4 @@ export function TodayRow({ task, late, compact = false, quietLate = false, unsyn
       <span className={late !== undefined && !task.done ? "meta amber" : "meta"}>{compact ? (parsed?.hasTime ? formatTime(parsed.date) : "") : meta}</span>
     </li>
   );
-}
+}, (previous, next) => previous.task === next.task && previous.late === next.late && previous.compact === next.compact && previous.quietLate === next.quietLate && previous.unsynced === next.unsynced && previous.at?.index === next.at?.index && previous.at?.of === next.at?.of);

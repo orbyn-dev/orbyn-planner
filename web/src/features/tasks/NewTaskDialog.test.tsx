@@ -20,7 +20,7 @@ describe("New task, laid out as drawn", () => {
         <App store={store} />
       </ClockProvider>,
     );
-    await userEvent.click(screen.getByRole("button", { name: "Add a task" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Add a task" }));
     const dialog = screen.getByRole("dialog", { name: "New task" });
     const labels = Array.from(dialog.querySelectorAll("form label")).map((l) => l.textContent);
     expect(labels.slice(0, 5)).toEqual(["Title", "Due", "List", "Repeat", "Reminder"]);
@@ -40,7 +40,7 @@ describe("New task", () => {
         <App store={store} />
       </ClockProvider>,
     );
-    const opener = screen.getByRole("button", { name: "Add a task" });
+    const opener = await screen.findByRole("button", { name: "Add a task" });
     await userEvent.click(opener);
     const dialog = screen.getByRole("dialog", { name: "New task" });
     expect(dialog).toBeInTheDocument();

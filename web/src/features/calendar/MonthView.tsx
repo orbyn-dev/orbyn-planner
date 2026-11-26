@@ -2,9 +2,9 @@ import { useState, type KeyboardEvent } from "react";
 import { useUi } from "../../ui/product/UiProvider";
 import { addDays, dateKey, dateOf, WEEKDAYS, weekOrder, type WeekStart } from "../../core/planner/dates";
 import { touchesDay } from "../../core/planner/wall";
-import { usePlanner } from "../../state/store";
+import { usePlannerSelector } from "../../state/store";
 import type { Occurrence } from "../../core/planner/occurrences";
-import { colourOf } from "./TimeGrid";
+import { colourOf } from "./presentation";
 import { useContentFlags } from "../../lib/contentWidth";
 
 const MAX_CHIPS = 3;
@@ -17,7 +17,7 @@ export function MonthView({ days, anchor, occurrences, today, weekStart, onDay }
   weekStart: WeekStart;
   onDay: (day: string) => void;
 }) {
-  const { calendars } = usePlanner();
+  const calendars = usePlannerSelector((state) => state.calendars);
   const ui = useUi();
   // Under 670 px a cell is under 90 px wide: up to three colour dots and "+n" replace the text chips (Planner Designs v69 p-narrow-month-480).
   const { dots } = useContentFlags();

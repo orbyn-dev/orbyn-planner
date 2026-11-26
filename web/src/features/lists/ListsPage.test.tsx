@@ -19,6 +19,8 @@ async function open(path: string) {
       <App store={store} />
     </ClockProvider>,
   );
+  if (path === "/lists") await screen.findByRole("navigation", { name: "Your lists" });
+  if (path === "/completed") await screen.findByRole("tablist", { name: "Completed and deleted" });
   return store;
 }
 
@@ -161,6 +163,8 @@ describe("Lists states (Planner Designs p-lists-empty, p-lists-loading, p-lists-
   });
 
   it("loading: the header and its actions stay, nothing shows for 400 ms, then Loading tasks and bars for the rows", async () => {
+    // Resolve the lazy page before freezing time; the timing assertion measures its loading UI, not module loading.
+    await import("./ListsPage");
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
       window.history.replaceState(null, "", "/lists");
@@ -169,7 +173,7 @@ describe("Lists states (Planner Designs p-lists-empty, p-lists-loading, p-lists-
       await store.ready;
       const notReady = { ...store.getState(), ready: false }; // one object: a new one each call would loop
       const loading = Object.assign(Object.create(store) as LocalStore, { getState: () => notReady });
-      render(<ClockProvider value={() => NOW}><App store={loading} /></ClockProvider>);
+      await act(async () => { render(<ClockProvider value={() => NOW}><App store={loading} /></ClockProvider>); await vi.dynamicImportSettled(); });
       expect(screen.getByRole("button", { name: "Add a task" })).toBeInTheDocument(); // the header stays
       expect(document.querySelector(".skel")).toBeNull();
       expect(screen.queryByText("Loading tasks")).toBeNull();

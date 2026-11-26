@@ -2,8 +2,10 @@
 //
 // Sync through the engine's real module against the mock record store: two paired devices, their stores
 // in memory, a server that versions records and refuses stale writes like the real one.
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { emptySyncState } from "../../data/account/keyStore";
+import { createEngineHost } from "../../data/account/engineHost";
+import { StaleOperation } from "../../data/local/persistence";
 import { runCycle } from "./syncCycle";
 import { removeDevice } from "./flows";
 import { createSyncRig, type SyncRig, type TestDevice } from "../../testing/syncRig";
@@ -472,5 +474,55 @@ describe("an account nobody used stays unused on the server", () => {
     await sync(r, r.b);
     expect(unused(r)).toBe(true);
     expect(r.engine.calls.filter((c) => c.path === "/v1/keychain/protection" && c.method === "POST")).toEqual([]);
+  });
+});
+
+describe("storage mirror preparation races", () => {
+  it("retries the same engine page after a stale mirror and retains its records", async () => {
+    const r = await createSyncRig(); r.a.store.addTask({ title: "raced page" }); await sync(r, r.a);
+    const apply = r.b.store.applyRemote.bind(r.b.store);
+    const spy = vi.spyOn(r.b.store, "applyRemote").mockRejectedValueOnce(new StaleOperation()).mockImplementation(apply);
+    await sync(r, r.b);
+    expect(titles(r.b)).toEqual(["raced page"]); expect(spy.mock.calls.length).toBeGreaterThan(1); spy.mockRestore();
+  });
+
+  it("refetches after bounded mirror retries instead of losing records behind an advanced token", async () => {
+    const r = await createSyncRig(); r.a.store.addTask({ title: "retry next pass" }); await sync(r, r.a);
+    const spy = vi.spyOn(r.b.store, "applyRemote").mockRejectedValue(new StaleOperation());
+    await expect(sync(r, r.b)).rejects.toThrow("changed");
+    expect(spy).toHaveBeenCalledTimes(3); spy.mockRestore();
+    expect((await r.b.keys.loadSyncState())?.mirrorPending?.some(intent => intent.applied)).toBe(true);
+    r.b.store = await r.reload(r.b);
+    r.b.services.engine = createEngineHost({ keys: r.b.services.keys, crypto: r.b.services.crypto, wrapSecret: r.b.services.wrapSecret, now: r.b.services.now, wrapKeyPresent: async () => true });
+    await sync(r, r.b);
+    expect(titles(r.b)).toEqual(["retry next pass"]);
+  });
+});
+
+describe("durable mirror restart", () => {
+  it("keeps a pending intent if the engine snapshot commit fails, then recovers with a new host", async () => {
+    const r = await createSyncRig(); r.a.store.addTask({ title: "before snapshot failure" }); await sync(r, r.a);
+    const save = r.b.keys.saveSnapshot.bind(r.b.keys);
+    const spy = vi.spyOn(r.b.keys, "saveSnapshot").mockImplementation(async (bytes, applied) => { if (applied) throw new Error("snapshot refused"); return save(bytes, applied); });
+    await expect(sync(r, r.b)).rejects.toThrow("snapshot refused");
+    expect((await r.b.keys.loadSyncState())?.mirrorPending?.length).toBeGreaterThan(0);
+    expect((await r.b.keys.loadSyncState())?.mirrorPending?.every(intent => !intent.applied)).toBe(true);
+    spy.mockRestore();
+    r.b.store = await r.reload(r.b);
+    r.b.services.engine = createEngineHost({ keys: r.b.services.keys, crypto: r.b.services.crypto, wrapSecret: r.b.services.wrapSecret, now: r.b.services.now, wrapKeyPresent: async () => true });
+    await sync(r, r.b); expect(titles(r.b)).toEqual(["before snapshot failure"]);
+    expect((await r.b.keys.loadSyncState())?.mirrorPending).toEqual([]);
+  });
+
+  it("replays canonical removals after a controller restart without resurrecting pending edits", async () => {
+    const r = await createSyncRig(); const t = r.a.store.addTask({ title: "deleted remotely" }); await sync(r, r.a); await sync(r, r.b);
+    r.b.store.updateTask(t.id, { notes: "unsent edit" }); await r.b.store.flush();
+    await r.a.persistence.apply({ at: new Date(r.clock.now).toISOString(), patches: [{ type: "task", id: t.id, op: "purge", key: "delete" }] });
+    r.a.store = await r.reload(r.a); await sync(r, r.a);
+    const spy = vi.spyOn(r.b.store, "applyRemote").mockRejectedValue(new StaleOperation()); await expect(sync(r, r.b)).rejects.toThrow("changed"); spy.mockRestore();
+    r.b.store = await r.reload(r.b);
+    r.b.services.engine = createEngineHost({ keys: r.b.services.keys, crypto: r.b.services.crypto, wrapSecret: r.b.services.wrapSecret, now: r.b.services.now, wrapKeyPresent: async () => true });
+    await sync(r, r.b);
+    expect(titles(r.b)).toEqual([]); expect(r.b.store.getState().outbox.some(o => o.id === t.id)).toBe(false);
   });
 });

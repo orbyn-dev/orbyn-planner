@@ -1,6 +1,6 @@
-import { takeSettingsTarget } from "../../state/settingsTarget";
+import { consumeSettingsTarget, peekSettingsTarget } from "../../state/settingsTarget";
 import { ProtectionSettings } from "../account";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { applyChoice, chooseTheme, readDarkTheme, readStoredChoice, setDarkTheme, type DarkTheme, type ThemeChoice } from "../../ui/theme";
 import { usePrefs } from "../../state/prefs";
 import { InstallHint } from "../../ui/product/InstallHint";
@@ -30,11 +30,9 @@ const CATEGORIES = ["Account", "Planning", "Notifications", "Connected apps", "C
 const SETTING_ROW = { height: "var(--sp-44)", borderBottom: "var(--bw) solid var(--line)" } as const;
 
 export function SettingsPage() {
-  const [category, setCategory] = useState<(typeof CATEGORIES)[number]>(() => {
-    // Taken once: reading it inside the find would consume it for the first category only.
-    const wanted = takeSettingsTarget();
-    return CATEGORIES.find((c) => c === wanted) ?? "Planning";
-  });
+  const [wanted] = useState(peekSettingsTarget);
+  const [category, setCategory] = useState<(typeof CATEGORIES)[number]>(() => CATEGORIES.find((c) => c === wanted.category) ?? "Planning");
+  useEffect(() => consumeSettingsTarget(wanted), [wanted]);
   const [find, setFind] = useState("");
   const [choice, setChoice] = useState<ThemeChoice>(readStoredChoice);
   const [darkTheme, setDark] = useState<DarkTheme>(readDarkTheme);

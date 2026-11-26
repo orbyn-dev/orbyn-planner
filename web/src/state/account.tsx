@@ -7,6 +7,7 @@ import { signOut as signOutFlow } from "./services/flows";
 import { holdMemoryOnly } from "../lib/browserStorage";
 import { forgetProtectionNotice } from "./protectionNotice";
 import type { AuthServices } from "./services/auth";
+import { cryptoLoad } from "./crypto";
 
 export type AuthStatus =
   /** Reading the saved session. */
@@ -35,6 +36,8 @@ interface AuthApiValue {
   signOut: (options?: { removePlanner?: boolean; keepDevice?: boolean }) => Promise<void>;
   /** Something that went wrong while signing out, to show. */
   problem: string | null;
+  bootstrapProblem: string | null;
+  retryBootstrap: () => void;
   /** The account's keys and session are held in this tab's memory only, because this browser would not store them. */
   keysInMemory: boolean;
   /** The person went on with the keys held in this tab only: the planner opens, and they sign in again next time. */
@@ -58,10 +61,15 @@ function readLocalOnly(): boolean {
  * and the planner always runs on this device.
  */
 export function AuthProvider({ services, children }: { services: AuthServices | null; children: ReactNode }) {
-  const [loaded, setLoaded] = useState(services === null);
+  const [loadedServices, setLoadedServices] = useState<AuthServices | null>(null);
+  const loaded = services === null || loadedServices === services;
   const [localOnly, setLocalOnly] = useState(readLocalOnly);
   const [overlay, setOverlay] = useState<AuthScreen | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
+  const [bootstrapError, setBootstrapError] = useState<{ services: AuthServices; message: string } | null>(null);
+  const [bootstrapAttempt, setBootstrapAttempt] = useState(0);
+  const bootstrapProblem = bootstrapError?.services === services ? bootstrapError.message : null;
+  const retryBootstrap = useCallback(() => { setBootstrapError(null); setBootstrapAttempt((attempt) => attempt + 1); }, []);
   const [accepted, setAccepted] = useState(false);
   const none = useMemo(() => ({ subscribe: () => () => undefined, get: () => null as StoredSession | null }), []);
   const session = useSyncExternalStore(services ? services.tokens.subscribe : none.subscribe, services ? services.tokens.getSession : none.get);
@@ -71,21 +79,50 @@ export function AuthProvider({ services, children }: { services: AuthServices | 
   useEffect(() => {
     if (!services) return;
     let live = true;
+    let finished = false;
+    let stopRetry: () => void = () => undefined;
+    let stopSession: () => void = () => undefined;
+    const finish = async () => {
+      if (!live || finished) return;
+      finished = true;
+      stopRetry();
+      stopSession();
+      // A sign-out while crypto is loading owns the new identity too.
+      if (!services.tokens.getSession()) {
+        const identity = await services.keys.loadIdentity().catch(() => null);
+        if (live && identity?.email) void askWhetherDeleted(services.api, { accountId: identity.accountId, email: identity.email }, services.keys.inMemory);
+      }
+      if (live) setLoadedServices(services);
+    };
     void services.ready
-      .then(() => services.tokens.load(services.now()))
+      .then(() => live ? services.tokens.load(services.now()) : undefined)
       .then(async () => {
-        // A device that kept its keys but has no session (a 401 ended it, then the page was closed before the check answered) asks
-        // once whether its account was deleted. Started before the landing shows, so nothing flashes.
-        if (!services.tokens.getSession()) {
-          const identity = await services.keys.loadIdentity().catch(() => null);
-          if (live && identity?.email) void askWhetherDeleted(services.api, { accountId: identity.accountId, email: identity.email }, services.keys.inMemory);
+        if (!live) return;
+        if (services.tokens.getSession()) {
+          stopSession = services.tokens.subscribe(() => {
+            if (!services.tokens.getSession()) void finish();
+          });
+          try {
+            await services.ensureCrypto();
+          } catch {
+            if (!live || finished) return;
+            // Keep the saved account blocked; the existing CryptoProblem retries the shared module loader.
+            stopRetry = cryptoLoad.subscribe(() => {
+              if (cryptoLoad.get() === "ready") void finish();
+            });
+            return;
+          }
         }
-        if (live) setLoaded(true);
+        await finish();
+      }).catch((error: unknown) => {
+        if (live) setBootstrapError({ services, message: error instanceof Error ? error.message : "Couldn’t open this device’s storage." });
       });
     return () => {
       live = false;
+      stopRetry();
+      stopSession();
     };
-  }, [services]);
+  }, [services, bootstrapAttempt]);
 
   // While the keys are held in this tab's memory only, nothing the account screens remember reaches storage either.
   useEffect(() => (keysInMemory ? holdMemoryOnly() : undefined), [keysInMemory]);
@@ -98,7 +135,7 @@ export function AuthProvider({ services, children }: { services: AuthServices | 
 
   // Engine requests made outside the auth screens (calendar feeds) read the token from here. Only a
   // trusted device's session is passed on: the engine refuses the rest.
-  const engineToken = session?.deviceState === "trusted" ? session.token : null;
+  const engineToken = loaded && session?.deviceState === "trusted" ? session.token : null;
   useEffect(() => {
     setSessionToken(engineToken);
     return () => setSessionToken(null);
@@ -137,6 +174,8 @@ export function AuthProvider({ services, children }: { services: AuthServices | 
       closeAuth: () => setOverlay(null),
       useWithoutAccount,
       problem,
+      bootstrapProblem,
+      retryBootstrap,
       keysInMemory,
       memoryAccepted: accepted && keysInMemory,
       acceptMemoryOnly: () => setAccepted(true),
@@ -157,7 +196,7 @@ export function AuthProvider({ services, children }: { services: AuthServices | 
         setOverlay(null);
       },
     };
-  }, [services, status, session, overlay, problem, keysInMemory, accepted, useWithoutAccount]);
+  }, [services, status, session, overlay, problem, bootstrapProblem, retryBootstrap, keysInMemory, accepted, useWithoutAccount]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

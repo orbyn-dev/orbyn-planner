@@ -1,6 +1,6 @@
 import { ApiFailure } from "../../core/account/errors";
 import type { ApprovalEngine, SyncApi } from "../../core/account/authCrypto";
-import { emptySyncState, type StoredSession, type SyncState } from "../../data/account/keyStore";
+import { emptySyncState, type MirrorIntent, type StoredSession, type SyncState } from "../../data/account/keyStore";
 import { signStandardProtection } from "./flows";
 import type { AuthServices } from "./auth";
 import type { DeviceList } from "../../generated/DeviceList";
@@ -10,10 +10,11 @@ import type { UploadResult } from "../../generated/UploadResult";
 import type { Zone } from "../../generated/Zone";
 import type { ZoneChanges } from "../../generated/ZoneChanges";
 import type { ZoneList } from "../../generated/ZoneList";
+import { StaleOperation } from "../../data/local/persistence";
 import { INBOX_ID, PERSONAL_CALENDAR_ID } from "../../data/local/LocalStore";
 import { refKey } from "../../core/planner/outbox";
 import { storedOf } from "../../core/planner/records";
-import type { OutboxEntry, PlannerStore, RecordType, RemoteChange } from "../../core/planner/types";
+import type { OutboxEntry, PlannerState, PlannerStore, RecordType, RemoteChange } from "../../core/planner/types";
 import { acceptable, sanitizeFields, stampFields, valuesOf, zoneOf, type Accepted, type Applied, type Stamp, type StampedFields, type ZoneCheck } from "../../core/sync/mapping";
 import { pinnedTokens, type ZoneTokens } from "../../core/sync/tokens";
 
@@ -95,6 +96,9 @@ export async function runCycle(
   tokens: ZoneTokens = pinnedTokens,
   signal: { aborted: boolean } = { aborted: false },
 ): Promise<CycleReport> {
+  await store.ready;
+  if (!store.getState().ready) throw new SyncError("failed", "The planner is still loading.");
+  let stageSnapshot = store.getState();
   const { api, keys: keyStore } = services;
   const now = () => services.now();
   const state: SyncState = (await keyStore.loadSyncState()) ?? emptySyncState();
@@ -110,11 +114,12 @@ export async function runCycle(
     await services.engine.exclusive(async () => {
       alive();
       if (!(await keyStore.loadKeys())) throw new Aborted(); // forgotten: the state must not come back
-      await keyStore.saveSyncState(state);
+      const latest = await keyStore.loadSyncState();
+      await keyStore.saveSyncState({ ...state, mirrorPending: latest?.mirrorPending });
     });
   };
 
-  const withEngine = async <T>(fn: (e: Engine) => T): Promise<T> => {
+  const withEngine = async <T>(fn: (e: Engine) => T | Promise<T>, mirror?: Omit<MirrorIntent, "applied">): Promise<T> => {
     alive();
     const result = await services.engine.run(
       session,
@@ -122,6 +127,7 @@ export async function runCycle(
         if (!e.sync) throw new SyncError("sync_unavailable", "This build can't sync: the engine's module isn't loaded.");
         return fn(e as Engine);
       },
+      mirror,
     );
     alive();
     return result;
@@ -211,11 +217,11 @@ export async function runCycle(
     return out;
   }
 
-  async function show(changes: RemoteChange[]): Promise<void> {
+  async function show(changes: RemoteChange[], prepared?: PlannerState): Promise<void> {
     if (changes.length === 0) return;
     alive();
+    await store.applyRemote(changes, prepared);
     report.received += changes.length;
-    await store.applyRemote(changes);
     if (dropped.length > 0) {
       const gone = dropped.splice(0);
       const entries = store
@@ -230,6 +236,70 @@ export async function runCycle(
     }
   }
 
+  /** The engine page has already advanced its token. If local storage races, collect the same
+   * engine result again against a fresh authoritative outbox, rather than dropping its mirror update. */
+  async function mergeApplied(zone: string, applied: Applied, options: { retried?: boolean; types?: Map<string, string> } = {}): Promise<void> {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      alive();
+      const prepared = store.prepareSync ? await store.prepareSync() : undefined;
+      const droppedBefore = dropped.length;
+      const noticesBefore = report.trashedEdits.length;
+      const changes = await withEngine(e => collect(e, zone, applied, options));
+      try { await show(changes, prepared); return; }
+      catch (error) {
+        // An applied intent survives exhaustion. A new controller replays canonical engine ids,
+        // even when the server has no new fields behind the token which already advanced.
+        if (!(error instanceof StaleOperation) || attempt === 2) throw error;
+        dropped.length = droppedBefore;
+        report.trashedEdits.length = noticesBefore;
+      }
+    }
+  }
+
+  async function mirrorIntent(zone: string, records: { id: string; type?: string }[]): Promise<Omit<MirrorIntent, "applied">> {
+    const snapshot = store.prepareSync ? await store.prepareSync() : store.getState();
+    const refs = new Map(records.map(record => [record.id, record]));
+    for (const [type, key] of Object.entries(STORE_KEY)) {
+      for (const record of snapshot[key] as readonly { id: string; listId?: string; calendarId?: string }[]) {
+        if (zoneOf(type as RecordType, record) === zone && !refs.has(record.id)) refs.set(record.id, { id: record.id, type });
+      }
+    }
+    return { id: crypto.randomUUID(), zone, records: [...refs.values()] };
+  }
+
+  async function clearMirror(id: string): Promise<void> {
+    alive();
+    await services.engine.exclusive(async () => {
+      alive();
+      if (!(await keyStore.loadKeys())) throw new Aborted();
+      const latest = await keyStore.loadSyncState();
+      if (latest) await keyStore.saveSyncState({ ...latest, mirrorPending: latest.mirrorPending?.filter(intent => intent.id !== id) });
+    });
+  }
+
+  async function replayMirrors(): Promise<void> {
+    const pending = (await keyStore.loadSyncState())?.mirrorPending ?? [];
+    for (const intent of pending) {
+      alive();
+      if (!intent.applied) { await clearMirror(intent.id); continue; }
+      const applied = await withEngine(async e => {
+        // Restoring a missing/unreadable engine snapshot clears its obsolete mirror queue. Check
+        // again after restore before treating an old intent as proof of a canonical absence.
+        if (!(await keyStore.loadSyncState())?.mirrorPending?.some(i => i.id === intent.id && i.applied)) return null;
+        const quarantined = new Set(parse<{ record_id: string }[]>(e.sync.quarantined(intent.zone)).map(r => r.record_id));
+        const changed: string[] = []; const removed: string[] = [];
+        for (const record of intent.records) {
+          if (quarantined.has(record.id)) continue;
+          if (e.sync.record(intent.zone, record.id)) changed.push(record.id); else removed.push(record.id);
+        }
+        return { changed, removed, trashed: removed, quarantined: [...quarantined], unverified_deletes: [], evicted: [], rejected: [], more: false } satisfies Applied;
+      });
+      if (applied) await mergeApplied(intent.zone, applied, { types: new Map(intent.records.flatMap(r => r.type ? [[r.id, r.type] as const] : [])) });
+      await save();
+      await clearMirror(intent.id);
+    }
+  }
+
   // 0. Stage the outbox ------------------------------------------------------------------------------------
   // First, before anything is fetched: the engine's clock moves past every stamp it receives, so an edit
   // staged after a fetch would be stamped later than edits other devices made after it. Staged now, each field
@@ -237,7 +307,9 @@ export async function runCycle(
   // An account nobody has used sends nothing: the Inbox and the Personal calendar every device makes stay local until the first real
   // action (a task, an event, a list of its own), so the server sees no zone and no protection setting for it. The first real action
   // signs the first protection setting and releases everything.
-  const outbox = store.getState().outbox;
+  await replayMirrors();
+  stageSnapshot = store.prepareSync ? await store.prepareSync() : store.getState();
+  const outbox = stageSnapshot.outbox;
   if (!state.opened && (state.zones.length > 0 || outbox.some((o) => !isDefaultRecord(o)))) {
     // Never fatal, as it was at sign-up: if signing fails, Settings says the level is not set and offers to set it.
     if (state.zones.length === 0) await signStandardProtection(services, session);
@@ -259,7 +331,7 @@ export async function runCycle(
 
   function stage(e: Engine, entry: OutboxEntry): void {
     const key = refKey(entry);
-    const here = store.getState()[STORE_KEY[entry.type]].find((r) => r.id === entry.id) as { id: string; listId?: string; calendarId?: string } | undefined;
+    const here = stageSnapshot[STORE_KEY[entry.type]].find((r) => r.id === entry.id) as { id: string; listId?: string; calendarId?: string } | undefined;
     const previous = state.zoneOf[key];
     const zone = here ? zoneOf(entry.type, here) : previous;
     if (!zone) {
@@ -341,13 +413,14 @@ export async function runCycle(
   if (reapproved) state.keysSent = {};
   const envelopes = await api.keyEnvelopes();
   if (envelopes.envelopes.length > 0) {
-    const opened = await withEngine((e) => {
-      const accepted = parse<Accepted>(e.sync.acceptEnvelopes(JSON.stringify(envelopes), JSON.stringify(devices)));
-      return accepted.zones.map((zone) => ({ zone, changes: collect(e, zone, parse<Applied>(e.sync.retryQuarantined(zone, now())), { retried: true }) }));
-    });
-    for (const o of opened) {
-      if (!state.zones.includes(o.zone)) state.zones.push(o.zone);
-      await show(o.changes);
+    const accepted = await withEngine(e => parse<Accepted>(e.sync.acceptEnvelopes(JSON.stringify(envelopes), JSON.stringify(devices))));
+    for (const zone of accepted.zones) {
+      if (!state.zones.includes(zone)) state.zones.push(zone);
+      const ids = await withEngine(e => parse<{ record_id: string }[]>(e.sync.quarantined(zone)).map(r => ({ id: r.record_id })));
+      const intent = await mirrorIntent(zone, ids);
+      const applied = await withEngine(e => parse<Applied>(e.sync.retryQuarantined(zone, now())), intent);
+      await mergeApplied(zone, applied, { retried: true });
+      await save(); await clearMirror(intent.id);
     }
   }
 
@@ -401,9 +474,10 @@ export async function runCycle(
         continue; // restarted: fetch the zone again from the start
       }
       const types = new Map(body.records.map((r) => [r.record_id, r.record_type] as const));
-      const changes = await withEngine((e) => collect(e, zone, tokens.applyPage(e, zone, since, body, now()), { types }));
-      await show(changes);
-      await save();
+      const intent = await mirrorIntent(zone, body.records.map(record => ({ id: record.record_id, type: record.record_type })));
+      const applied = await withEngine((e) => tokens.applyPage(e, zone, since, body, now()), intent);
+      await mergeApplied(zone, applied, { types });
+      await save(); await clearMirror(intent.id);
       if (!body.more) break;
     }
   }
@@ -534,8 +608,10 @@ export async function runCycle(
           // Someone changed those records first: merge their copies and send again.
           const conflict = error.body as RecordChanged;
           const types = new Map(conflict.conflicts.flatMap((c) => (c.server_record ? [[c.record_id, c.server_record.record_type] as const] : [])));
-          const changes = await withEngine((e) => collect(e, zone, parse<Applied>(e.sync.uploadConflicted(zone, JSON.stringify(conflict), now())), { types }));
-          await show(changes);
+          const intent = await mirrorIntent(zone, conflict.conflicts.map(record => ({ id: record.record_id, type: record.server_record?.record_type })));
+          const applied = await withEngine((e) => parse<Applied>(e.sync.uploadConflicted(zone, JSON.stringify(conflict), now())), intent);
+          await mergeApplied(zone, applied, { types });
+          await save(); await clearMirror(intent.id);
           continue;
         }
         throw error;
@@ -546,40 +622,42 @@ export async function runCycle(
 
   /** A list or calendar was deleted on another device: the delete wins. Its local records and unsent changes are dropped, and the person is told. */
   async function dropZone(zone: string): Promise<void> {
-    const mine: { type: RecordType; id: string }[] = [];
-    const s = store.getState();
-    for (const [type, list] of [["task", s.tasks], ["list", s.lists], ["event", s.events], ["calendar", s.calendars], ["project", s.projects], ["tag", s.tags]] as const) {
-      for (const r of list as readonly { id: string; listId?: string; calendarId?: string; isInbox?: boolean; kind?: { type: string } }[]) {
-        // The inbox and the personal calendar are the planner's own: they stay, and make their zone again.
-        if (r.isInbox || (type === "calendar" && r.kind?.type === "local" && r.id === zone.slice(zone.indexOf(":") + 1))) continue;
-        if (zoneOf(type, r) === zone) mine.push({ type, id: r.id });
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const prepared = store.prepareSync ? await store.prepareSync() : undefined;
+      const mine: { type: RecordType; id: string }[] = [];
+      const s = prepared ?? store.getState();
+      for (const [type, list] of [["task", s.tasks], ["list", s.lists], ["event", s.events], ["calendar", s.calendars], ["project", s.projects], ["tag", s.tags]] as const) {
+        for (const r of list as readonly { id: string; listId?: string; calendarId?: string; isInbox?: boolean; kind?: { type: string } }[]) {
+          // The inbox and the personal calendar are the planner's own: they stay, and make their zone again.
+          if (r.isInbox || (type === "calendar" && r.kind?.type === "local" && r.id === zone.slice(zone.indexOf(":") + 1))) continue;
+          if (zoneOf(type, r) === zone) mine.push({ type, id: r.id });
+        }
       }
+      await withEngine((e) => e.sync.abandonUpload(zone));
+      alive();
+      try { await show(mine.map((m) => ({ ...m, fields: null })), prepared); }
+      catch (error) { if (error instanceof StaleOperation && attempt < 2) continue; throw error; }
+      const sentKeys = s.outbox.filter((o) => mine.some((m) => m.type === o.type && m.id === o.id))
+        .map((o) => ({ type: o.type, id: o.id, idempotencyKey: o.idempotencyKey }));
+      await store.acknowledge(sentKeys);
+      for (const m of mine) {
+        delete state.staged[refKey(m)];
+        delete state.stagedZone[refKey(m)];
+        delete state.zoneOf[refKey(m)];
+      }
+      state.zones = state.zones.filter((z) => z !== zone);
+      delete state.keysSent[zone];
+      delete state.made[zone];
+      delete state.quarantined[zone];
+      report.dropped.push({ zone, records: mine.length });
+      return;
     }
-    await withEngine((e) => e.sync.abandonUpload(zone));
-    alive();
-    await show(mine.map((m) => ({ ...m, fields: null })));
-    const sentKeys = store
-      .getState()
-      .outbox.filter((o) => mine.some((m) => m.type === o.type && m.id === o.id))
-      .map((o) => ({ type: o.type, id: o.id, idempotencyKey: o.idempotencyKey }));
-    await store.acknowledge(sentKeys);
-    for (const m of mine) {
-      delete state.staged[refKey(m)];
-      delete state.stagedZone[refKey(m)];
-      delete state.zoneOf[refKey(m)];
-    }
-    state.zones = state.zones.filter((z) => z !== zone);
-    delete state.keysSent[zone];
-    delete state.made[zone];
-    delete state.quarantined[zone];
-    report.dropped.push({ zone, records: mine.length });
   }
 
   // 6. Clear what was acknowledged ------------------------------------------------------------------------
   alive();
-  const sent = store
-    .getState()
-    .outbox.filter((o) => state.staged[refKey(o)] === o.idempotencyKey && (state.stagedZone[refKey(o)] === undefined || sentZones.has(state.stagedZone[refKey(o)]!)))
+  const acknowledgedSnapshot = store.prepareSync ? await store.prepareSync() : store.getState();
+  const sent = acknowledgedSnapshot.outbox.filter((o) => state.staged[refKey(o)] === o.idempotencyKey && (state.stagedZone[refKey(o)] === undefined || sentZones.has(state.stagedZone[refKey(o)]!)))
     .map((o) => ({ type: o.type, id: o.id, idempotencyKey: o.idempotencyKey }));
   await store.acknowledge(sent);
   for (const s of sent) {

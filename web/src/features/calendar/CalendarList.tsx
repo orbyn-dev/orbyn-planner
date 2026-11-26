@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { formatTime } from "../../core/planner/dates";
-import { usePlanner, useStore } from "../../state/store";
+import { usePlannerSelector, useStore } from "../../state/store";
 import { LIST_COLOURS, type ListColour, type PlannerCalendar } from "../../core/planner/types";
 import { Swatch } from "../../ui/product/Swatch";
 import { NEEDS_ENGINE } from "../../lib/engine";
@@ -85,7 +85,7 @@ function Row({ calendar }: { calendar: PlannerCalendar }) {
 
 /** Every calendar, with its colour, name and whether it is shown. Subscribed ones show their refresh state. */
 export function CalendarList() {
-  const { calendars } = usePlanner();
+  const calendars = usePlannerSelector((state) => state.calendars);
   return (
     <ul className="cal-list" aria-label="Calendars">
       {calendars.map((c) => (
@@ -98,7 +98,7 @@ export function CalendarList() {
 /** The forms to add a calendar or subscribe to one. */
 export function CalendarForms({ onDone }: { onDone?: () => void }) {
   const store = useStore();
-  const { calendars } = usePlanner();
+  const calendars = usePlannerSelector((state) => state.calendars);
   const [mode, setMode] = useState<null | "new" | "subscribe">(null);
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
@@ -163,7 +163,8 @@ export function CalendarForms({ onDone }: { onDone?: () => void }) {
 
 /** Subscribed events with a repeat this app cannot say: only their first date shows. */
 export function UnsupportedRepeats() {
-  const { events, calendars } = usePlanner();
+  const events = usePlannerSelector((state) => state.events);
+  const calendars = usePlannerSelector((state) => state.calendars);
   const unsupported = events.filter((e) => e.readOnly && e.deletedAt === null && e.notes.includes(NOT_SUPPORTED));
   if (unsupported.length === 0) return null;
   return (

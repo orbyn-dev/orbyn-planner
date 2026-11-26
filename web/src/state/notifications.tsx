@@ -5,7 +5,7 @@ import { readProtection } from "./services/flows";
 import { pendingChange, readKey, recordReport } from "./protectionNotice";
 import { browserStorage } from "../lib/browserStorage";
 import { MONTHS, WEEKDAYS, addDays, formatTime, parseDue, startOfDay } from "../core/planner/dates";
-import { usePlanner } from "./store";
+import { usePlannerSelector } from "./store";
 import { reminderTime } from "../core/planner/reminderSchedule";
 
 const KEEP = 200;
@@ -56,6 +56,7 @@ export interface Notifications {
 }
 
 const Context = createContext<Notifications | null>(null);
+const UnreadContext = createContext(0);
 
 export const protectionId = (seq: number) => `protection:${seq}`;
 
@@ -64,7 +65,7 @@ export const protectionId = (seq: number) => `protection:${seq}`;
  * come due (tasks with a due time), and a protection change another device made. What was read is remembered in this browser.
  */
 export function NotificationsProvider({ children }: { children: ReactNode }) {
-  const { tasks } = usePlanner();
+  const tasks = usePlannerSelector((state) => state.tasks);
   const now = useNow();
   const auth = useAuth();
   const [protection, setProtection] = useState<ReturnType<typeof pendingChange>>(null);
@@ -121,7 +122,12 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     markRead,
     markAllRead: () => save([...new Set([...read, ...ids])]),
   };
-  return <Context.Provider value={value}>{children}</Context.Provider>;
+  return <UnreadContext.Provider value={value.unread}><Context.Provider value={value}>{children}</Context.Provider></UnreadContext.Provider>;
+}
+
+/** The shell only needs a badge, not a subscription to every reminder record. */
+export function useUnreadNotifications(): number {
+  return useContext(UnreadContext);
 }
 
 export function useNotifications(): Notifications {

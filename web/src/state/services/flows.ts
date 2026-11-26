@@ -81,9 +81,18 @@ export interface PendingSignUp {
 export const NO_MEMORY = "This browser can’t hold the keys of an Orbyn account.";
 export const KEYS_NOT_SAVED = "Account created, but this browser couldn’t save its keys. Sign in with your email and password to continue.";
 
+async function accountCrypto(services: AuthServices, signal?: AbortSignal): Promise<AuthCrypto> {
+  const generation = services.tokens.getGeneration();
+  if (signal?.aborted) throw new DOMException("Account entry cancelled.", "AbortError");
+  await services.ensureCrypto();
+  if (signal?.aborted) throw new DOMException("Account entry cancelled.", "AbortError");
+  if (generation !== services.tokens.getGeneration()) throw new ApiFailure("session_changed", 0, "Something went wrong with the sign-in. Try again.");
+  return services.crypto();
+}
+
 /** Starts a sign-up: the password steps and the device's first signature, then the engine sends a code to the address. */
-export async function signUp(services: AuthServices, input: { name: string; email: string; password: string; invite?: string }): Promise<PendingSignUp> {
-  const crypto = services.crypto(); // refuses before anything is sent when sign-in is not in this build
+export async function signUp(services: AuthServices, input: { name: string; email: string; password: string; invite?: string }, signal?: AbortSignal): Promise<PendingSignUp> {
+  const crypto = await accountCrypto(services, signal); // refuses before anything is sent when sign-in is not in this build
   // Before anything is created: if this browser cannot even hold the keys in memory, say so while nothing exists yet.
   try {
     (await services.freshWrap()).secret.fill(0);
@@ -349,8 +358,8 @@ export function maskEmail(email: string): string {
  * wrapping key are not touched unless the sign-in succeeds; only then are they replaced. A mistyped
  * email or password therefore never costs a trusted device its keys.
  */
-export async function signIn(services: AuthServices, input: { email: string; password: string; name?: string; replaceKeys?: boolean }): Promise<StoredSession> {
-  const crypto = services.crypto();
+export async function signIn(services: AuthServices, input: { email: string; password: string; name?: string; replaceKeys?: boolean }, signal?: AbortSignal): Promise<StoredSession> {
+  const crypto = await accountCrypto(services, signal);
   let keys: DeviceKeys | null = null;
   let known = null as DeviceKeys | null;
   /** True while a code step holds this attempt's keys: they are released when it finishes or is cancelled. */

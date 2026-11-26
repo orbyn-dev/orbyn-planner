@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNow } from "../../state/clock";
+import { VirtualList } from "../../ui/primitives/VirtualList";
 import { PageHeader } from "../../ui/primitives/EmptyState";
 import { formatDue, makeDue } from "../../core/planner/dates";
-import { usePlanner, useStore } from "../../state/store";
+import { usePlannerSelector, useStore } from "../../state/store";
 import { RESTORE_DAYS } from "../../core/planner/types";
 import { TaskRow } from "./TaskRow";
 import { Swatch } from "../../ui/product/Swatch";
@@ -11,7 +12,8 @@ type Tab = "completed" | "deleted";
 
 export function CompletedPage() {
   const store = useStore();
-  const { tasks, lists } = usePlanner();
+  const tasks = usePlannerSelector((state) => state.tasks);
+  const lists = usePlannerSelector((state) => state.lists);
   const now = useNow();
   const [tab, setTab] = useState<Tab>("completed");
 
@@ -39,17 +41,15 @@ export function CompletedPage() {
           completed.length === 0 ? (
             <p className="quiet note">Nothing completed yet. Tasks you finish will appear here.</p>
           ) : (
-            <ul className="tbl">
-              {completed.map((t) => (
-                <TaskRow key={t.id} task={t} layout="completed" extra={day(t.completedAt)} />
-              ))}
-            </ul>
+            <VirtualList className="tbl" items={completed} getKey={(t) => t.id}>
+              {(t) => <TaskRow task={t} layout="completed" extra={day(t.completedAt)} />}
+            </VirtualList>
           )
         ) : deleted.length === 0 ? (
           <p className="quiet note">Nothing deleted. Deleted tasks stay here for {RESTORE_DAYS} days.</p>
         ) : (
-          <ul className="tbl">
-            {deleted.map((t) => {
+          <VirtualList className="tbl" items={deleted} getKey={(t) => t.id}>
+            {(t) => {
               const list = lists.find((l) => l.id === t.listId);
               return (
                 <li key={t.id} className="tr" style={{ gridTemplateColumns: "minmax(0,1fr) var(--sp-140) var(--sp-120) auto" }}>
@@ -68,8 +68,8 @@ export function CompletedPage() {
                   </button>
                 </li>
               );
-            })}
-          </ul>
+            }}
+          </VirtualList>
         )}
       </div>
       <p className="note t3" style={{ padding: "var(--sp-14) var(--sp-28)" }}>

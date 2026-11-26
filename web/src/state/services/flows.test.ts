@@ -2,12 +2,55 @@ import { describe, expect, it } from "vitest";
 import { createMemoryKeyStore, emptySyncState } from "../../data/account/keyStore";
 import { FakeAuthCrypto } from "../../testing/FakeAuthCrypto";
 import { createMockEngine } from "../../testing/MockEngine";
-import { KeysForAnotherAccount, signIn, signOut } from "./flows";
+import { KeysForAnotherAccount, signIn, signOut, signUp } from "./flows";
 import { createAuthServices } from "./auth";
 import { signedUp } from "../../testing/signedUp";
 
 const crypto = new FakeAuthCrypto();
 const SAM = { name: "Sam", email: "sam@example.com", password: "correct horse battery" };
+
+describe("account entry waits for the shared crypto loader", () => {
+  it.each([signIn, signUp])("does not use crypto or send requests until the module is ready", async (enter) => {
+    const engine = createMockEngine();
+    const keys = createMemoryKeyStore();
+    let release!: () => void;
+    let ready = false;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const services = createAuthServices({ keys, fetch: engine.fetch, baseUrl: "http://e.test", ensureCrypto: () => gate, crypto: () => { if (!ready) throw new Error("too early"); return crypto; }, wrapSecret: async () => new Uint8Array(32).fill(4) });
+    const pending = enter(services, SAM).catch((error: unknown) => error);
+    expect(engine.calls).toHaveLength(0);
+    ready = true;
+    release();
+    const result = await pending;
+    expect(engine.calls.length).toBeGreaterThan(0);
+    if (typeof result === "object" && result && "cancel" in result && typeof result.cancel === "function") result.cancel();
+  });
+
+  it("does not start a stale sign-in after a sign-out during module loading", async () => {
+    const engine = createMockEngine();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const services = createAuthServices({ keys: createMemoryKeyStore(), fetch: engine.fetch, baseUrl: "http://e.test", ensureCrypto: () => gate, crypto: () => crypto });
+    const pending = signIn(services, SAM);
+    await services.tokens.clear();
+    release();
+    await expect(pending).rejects.toMatchObject({ code: "session_changed" });
+    expect(engine.calls).toHaveLength(0);
+  });
+
+  it.each([signIn, signUp])("does not send an account entry after its screen leaves during module loading", async (enter) => {
+    const engine = createMockEngine();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const services = createAuthServices({ keys: createMemoryKeyStore(), fetch: engine.fetch, baseUrl: "http://e.test", ensureCrypto: () => gate, crypto: () => crypto });
+    const controller = new AbortController();
+    const pending = enter(services, SAM, controller.signal);
+    controller.abort();
+    release();
+    await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    expect(engine.calls).toHaveLength(0);
+  });
+});
 
 async function signedUpAndOut() {
   const engine = createMockEngine();

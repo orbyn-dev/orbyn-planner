@@ -109,6 +109,7 @@ async function openApp(seed: (s: LocalStore) => void) {
     </ClockProvider>,
     { container: root },
   );
+  await screen.findByRole("textbox", { name: "Add a task" });
   return store;
 }
 

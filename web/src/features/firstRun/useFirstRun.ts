@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../state/account";
 import { browserStorage } from "../../lib/browserStorage";
-import { usePlanner } from "../../state/store";
+import { usePlannerSelector } from "../../state/store";
 
 /**
  * Whether first run has been done, kept on this device only (never on a server): per account when signed in, otherwise for the
@@ -33,11 +33,12 @@ export function markFirstRunDone(accountId: string | null): void {
 export function useFirstRun(): { active: boolean; finish: () => void } {
   const auth = useAuth();
   const accountId = auth?.session?.accountId ?? null;
-  const { tasks, events, lists, calendars, ready } = usePlanner();
   const [done, setDone] = useState(() => isFirstRunDone(accountId));
   /** Decided once, when the planner has loaded: what first run itself adds (a calendar, a list) must not end it half way through. */
   const [show, setShow] = useState<boolean | null>(null);
-  const untouched = tasks.length === 0 && events.length === 0 && lists.length <= 1 && calendars.length <= 1;
+  const deciding = !done && show === null;
+  const ready = usePlannerSelector((state) => !deciding || state.ready);
+  const untouched = usePlannerSelector((state) => deciding && state.tasks.length === 0 && state.events.length === 0 && state.lists.length <= 1 && state.calendars.length <= 1);
   useEffect(() => {
     if (!ready || show !== null) return;
     // In a timer, not at once: the decision is made after the planner has drawn, and never again.

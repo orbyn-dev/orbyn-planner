@@ -1,7 +1,7 @@
 import { IDBFactory } from "fake-indexeddb";
 import "fake-indexeddb/auto";
-import { beforeEach, describe, expect, it } from "vitest";
-import { KEY_DB_NAME, createIdbKeyStore, createMemoryKeyStore, type StoredSession } from "./keyStore";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { KEY_DB_NAME, KEY_DB_VERSION, KeyStoreUnavailable, emptySyncState, createIdbKeyStore, createMemoryKeyStore, type StoredSession } from "./keyStore";
 import { TokenStore } from "./tokenStore";
 import { wrapSecretFrom } from "./wrapSecret";
 
@@ -135,4 +135,63 @@ describe("the token store", () => {
     await tokens.clear();
     expect(calls).toBe(3);
   });
+});
+
+describe("snapshot and mirror atomic writer boundary", () => {
+  it("commits a sealed snapshot and applied intent together and preserves legacy session data", async () => {
+    const old = await new Promise<IDBDatabase>((resolve, reject) => {
+      const req = indexedDB.open(KEY_DB_NAME, 4);
+      req.onupgradeneeded = () => { for (const name of ["device", "session", "snapshot", "wrap", "identity", "quarantine", "sync"]) req.result.createObjectStore(name); };
+      req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error);
+    });
+    const tx = old.transaction(["session", "snapshot", "sync"], "readwrite");
+    const intent = { id: "intent", zone: "list:inbox", records: [{ id: "task", type: "task" }], applied: false };
+    tx.objectStore("session").put(session, "current"); tx.objectStore("snapshot").put(new Uint8Array([1]), "current"); tx.objectStore("sync").put({ ...emptySyncState(), mirrorPending: [intent] }, "current");
+    await new Promise<void>((resolve, reject) => { tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error); });
+    old.onversionchange = () => old.close();
+    const current = createIdbKeyStore(); expect(await current.loadSession()).toEqual(session);
+    await current.saveSnapshot(new Uint8Array([2]), intent.id);
+    expect([...(await current.loadSnapshot())!]).toEqual([2]);
+    expect((await current.loadSyncState())?.mirrorPending).toEqual([{ ...intent, applied: true }]);
+    expect((await indexedDB.databases())[0]?.version).toBe(KEY_DB_VERSION);
+    await expect(new Promise((resolve, reject) => { const req = indexedDB.open(KEY_DB_NAME, 4); req.onsuccess = () => { req.result.close(); resolve(true); }; req.onerror = () => reject(req.error); })).rejects.toMatchObject({ name: "VersionError" });
+  });
+});
+
+it("rolls back snapshot bytes and the applied marker together when their transaction aborts", async () => {
+  const current = createIdbKeyStore();
+  const intent = { id: "abort-intent", zone: "list:inbox", records: [{ id: "task" }], applied: false };
+  await current.saveSyncState({ ...emptySyncState(), mirrorPending: [intent] }); await current.saveSnapshot(new Uint8Array([1]));
+  const put = IDBObjectStore.prototype.put;
+  const spy = vi.spyOn(IDBObjectStore.prototype, "put").mockImplementation(function(this: IDBObjectStore, value: unknown, key?: IDBValidKey) {
+    const result = put.call(this, value, key);
+    if (this.name === "snapshot") result.addEventListener("success", () => this.transaction.abort());
+    return result;
+  });
+  try { await expect(current.saveSnapshot(new Uint8Array([2]), intent.id)).rejects.toThrow("snapshot write was aborted"); }
+  finally { spy.mockRestore(); }
+  expect([...(await current.loadSnapshot())!]).toEqual([1]);
+  expect((await current.loadSyncState())?.mirrorPending).toEqual([intent]);
+});
+
+it("rejects a blocked key upgrade explicitly, then retries without losing the saved identity", async () => {
+  const old = await new Promise<IDBDatabase>((resolve, reject) => {
+    const req = indexedDB.open(KEY_DB_NAME, 4);
+    req.onupgradeneeded = () => { for (const name of ["device", "session", "snapshot", "wrap", "identity", "quarantine", "sync"]) req.result.createObjectStore(name); };
+    req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error);
+  });
+  const tx = old.transaction("session", "readwrite"); tx.objectStore("session").put(session, "current");
+  await new Promise<void>(resolve => { tx.oncomplete = () => resolve(); });
+  const store = createIdbKeyStore(); const tokens = new TokenStore(store); const changed = vi.fn(); tokens.subscribe(changed);
+  await expect(tokens.load()).rejects.toMatchObject({ name: "KeyStoreUnavailable", reason: "blocked" });
+  expect(tokens.getSession()).toBeNull(); expect(changed).not.toHaveBeenCalled();
+  old.close();
+  expect(await tokens.load()).toEqual(session);
+  expect(tokens.getSession()?.accountId).toBe(session.accountId);
+});
+
+it("rejects a failed account read as unknown identity instead of publishing signed-out", async () => {
+  const store = createMemoryKeyStore(); vi.spyOn(store, "loadSession").mockRejectedValue(new KeyStoreUnavailable("open"));
+  const tokens = new TokenStore(store); const changed = vi.fn(); tokens.subscribe(changed);
+  await expect(tokens.load()).rejects.toMatchObject({ reason: "open" }); expect(changed).not.toHaveBeenCalled();
 });
