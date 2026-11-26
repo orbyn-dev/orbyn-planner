@@ -177,7 +177,8 @@ jobs:
           ORBYN_ENGINE_DIR: ${{ github.workspace }}/engine
       # Types and lint ran in "Cheap checks". The task-status vectors are read from the pinned engine checkout (the one generate:check uses).
       - if: env.RUN == 'true'
-        run: npm test
+        # Bound parallel DOM/crypto suites on shared runners; keep every test and its timeout unchanged.
+        run: npm test -- --maxWorkers=4
         env:
           ORBYN_ENGINE_DIR: ${{ github.workspace }}/engine
       - if: env.RUN == 'true'
