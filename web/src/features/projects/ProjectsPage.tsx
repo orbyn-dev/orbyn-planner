@@ -5,7 +5,7 @@ import { useRouter } from "../../state/router";
 import { EmptyState, PageHeader } from "../../ui/primitives/EmptyState";
 import { Icon } from "../../ui/primitives/Icon";
 import { formatDue, isDueToday, isOverdue } from "../../core/planner/dates";
-import { usePlanner } from "../../state/store";
+import { usePlannerSelector } from "../../state/store";
 import { Swatch } from "../../ui/product/Swatch";
 import { ProjectDialog } from "./ProjectDialog";
 import { projectStats } from "./stats";
@@ -13,7 +13,8 @@ import { projectStats } from "./stats";
 const COLS = "minmax(0,1.4fr) minmax(0,1.2fr) var(--sp-110) var(--sp-120)";
 
 export function ProjectsPage() {
-  const { projects, tasks } = usePlanner();
+  const projects = usePlannerSelector((state) => state.projects);
+  const tasks = usePlannerSelector((state) => state.tasks);
   const { navigate } = useRouter();
   const { table } = useContentFlags();
   const now = useNow();

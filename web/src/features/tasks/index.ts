@@ -1,5 +1,4 @@
 export * from "./CardMenu";
-export * from "./CompletedPage";
 export * from "./FilterChip";
 export * from "./NewTaskDialog";
 export * from "./RepeatPicker";
@@ -9,7 +8,6 @@ export * from "./TagsRow";
 export * from "./TagsSettings";
 export * from "./TaskPanel";
 export * from "./TaskRow";
-export * from "./TasksPage";
 export * from "./ViewOptionsButton";
 export * from "./quickAdd";
 export * from "./reminder";
@@ -17,3 +15,4 @@ export * from "./selectors";
 export * from "./useComplete";
 export * from "./useMoveTask";
 export * from "./viewOptions";
+export * from "./QuickAddField";

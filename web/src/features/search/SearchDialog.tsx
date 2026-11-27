@@ -6,7 +6,7 @@ import { Icon } from "../../ui/primitives/Icon";
 import { Portal } from "../../ui/primitives/Portal";
 import { useDialog } from "../../ui/primitives/useDialog";
 import { MONTHS, WEEKDAYS, dateKey, dateOf, makeDue, parseDue } from "../../core/planner/dates";
-import { usePlanner, useStore } from "../../state/store";
+import { usePlannerSelector, useStore } from "../../state/store";
 import type { CalendarEvent, Project, Task, TaskList } from "../../core/planner/types";
 import { describeRepeat, parseQuickAdd } from "../tasks";
 import { isLive } from "../tasks";
@@ -36,7 +36,12 @@ function dayText(day: string, now: Date): string {
 /** Search or add (Planner Designs `search`, `p-search-none`): one field that finds any task, event, list or project, or adds a task or an event in plain words. */
 export function SearchDialog() {
   const store = useStore();
-  const { tasks, lists, events, projects } = usePlanner();
+  const ready = usePlannerSelector((state) => state.ready);
+  const failed = usePlannerSelector((state) => state.coverage?.phase === "failed");
+  const tasks = usePlannerSelector((state) => state.tasks);
+  const lists = usePlannerSelector((state) => state.lists);
+  const events = usePlannerSelector((state) => state.events);
+  const projects = usePlannerSelector((state) => state.projects);
   const ui = useUi();
   const router = useRouter();
   const now = useNow();
@@ -56,7 +61,7 @@ export function SearchDialog() {
   }, [q, now, lists]);
 
   const { sections, found } = useMemo(() => {
-    if (!q) return { sections: [] as Section[], found: false };
+    if (!ready || !q) return { sections: [] as Section[], found: false };
     // The search is for the words, not the date written after them: "dentist friday 3pm" looks for "dentist" (Planner Designs `search`).
     const needle = (parsed.title.trim() || q).toLowerCase();
     const hit = (text: string) => text.toLowerCase().includes(needle);
@@ -90,13 +95,13 @@ export function SearchDialog() {
     if (matchedLists.length) out.push({ title: "Lists", items: matchedLists.map((l) => ({ kind: "list" as const, id: `list-${l.id}`, list: l })) });
     if (matchedProjects.length) out.push({ title: "Projects", items: matchedProjects.map((p) => ({ kind: "project" as const, id: `project-${p.id}`, project: p })) });
     return { sections: out, found: matchedTasks.length + matchedEvents.length + matchedLists.length + matchedProjects.length > 0 };
-  }, [q, tasks, lists, events, projects, now, parsed]);
+  }, [ready, q, tasks, lists, events, projects, now, parsed]);
 
   const flat = sections.flatMap((s) => s.items);
   const current = Math.min(active, Math.max(flat.length - 1, 0));
 
   const pick = (item: Item | undefined) => {
-    if (!item) return;
+    if (!ready || !item) return;
     if (item.kind === "add-task") {
       const task = store.addTask({ title: parsed.title, due: parsed.due, listId: parsed.listId ?? undefined, priority: parsed.priority, repeat: parsed.repeat });
       ui.closeSearch();
@@ -195,13 +200,14 @@ export function SearchDialog() {
             </div>
           ))}
         </div>
-        {q && !found && (
+        {!ready && (failed ? <p role="alert" className="t3">Couldn’t load search data.</p> : <p role="status" className="t3">Loading search data</p>)}
+        {ready && q && !found && (
           <div className="no-results" role="status">
             <b>No results for “{q}”</b>
             <span className="t3">Nothing in tasks, events, lists or projects matches. Search covers completed tasks and the last 30 days of deleted ones.</span>
           </div>
         )}
-        {!q && <p className="t3 search-hint">Type to search, or add a task in plain words.</p>}
+        {ready && !q && <p className="t3 search-hint">Type to search, or add a task in plain words.</p>}
       </div>
     </div>
     </Portal>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { TOAST_MS, TOAST_UNDO_MS, useUi, type ToastState } from "../product/UiProvider";
+import { TOAST_MS, TOAST_UNDO_MS, useToasts, type ToastState } from "../product/UiProvider";
 import { focusRow } from "../../lib/focus";
 import { Icon } from "./Icon";
 
@@ -78,7 +78,7 @@ function ToastBody({ toast, dismissToast }: { toast: ToastState; dismissToast: (
 
 /** The live region stays mounted, so a screen reader hears each new message as it appears. Escape dismisses the newest toast. */
 export function Toast() {
-  const { toasts, dismissToast } = useUi();
+  const { toasts, dismissToast } = useToasts();
   const newest = toasts.filter((t) => !t.leaving).at(-1);
   useEffect(() => {
     if (!newest) return;

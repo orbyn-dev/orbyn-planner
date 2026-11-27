@@ -1,5 +1,13 @@
 import { LocalStore } from "./LocalStore";
-import { DEVICE_DB, MemoryPersistence } from "./persistence";
+import { DEVICE_DB, MemoryPersistence, type InitialView } from "./persistence";
+import { addDays, dateKey, startOfDay, startOfWeek } from "../../core/planner/dates";
+
+/** The initial address decides which records take priority; later navigation uses explicit coverage. */
+export function initialViewFor(path: string, now = new Date()): InitialView {
+  const day = startOfDay(now);
+  const kind = path === "/" || path === "/today" ? "today" : path === "/calendar" ? "calendar" : path === "/tasks" ? "tasks" : "all";
+  return { kind, start: dateKey(kind === "calendar" ? addDays(day, -6) : day), end: dateKey(addDays(day, 6)), completedSince: startOfWeek(day).toISOString() };
+}
 
 /**
  * Whose planner is open. The planner kept on this device alone is one IndexedDB database; each account has
@@ -12,11 +20,11 @@ export const accountDb = (accountId: string) => `orbyn-planner-account-${account
 const open = new Map<string, LocalStore>();
 
 /** The planner for an account (or, with null, for this device alone). One store per database in a page. */
-export function plannerFor(accountId: string | null): LocalStore {
+export function plannerFor(accountId: string | null, initialView?: InitialView): LocalStore {
   const name = accountId === null ? DEVICE_DB : accountDb(accountId);
   let store = open.get(name);
   if (!store) {
-    store = new LocalStore({ dbName: name });
+    store = new LocalStore({ dbName: name, initialView });
     open.set(name, store);
   }
   return store;

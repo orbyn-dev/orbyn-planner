@@ -1,5 +1,7 @@
 // @vitest-environment node
 import { build } from "vite";
+const nodeUrl = "node:url";
+const { fileURLToPath } = await import(/* @vite-ignore */ nodeUrl) as { fileURLToPath(url: URL): string };
 import { describe, expect, it } from "vitest";
 import { FIXTURE_MARKER, LOCALE, PINNED_NOW, SCENARIOS, TIME_ZONE, sampleStrings } from "./fixture";
 import { seededStore } from "./mount";
@@ -57,7 +59,7 @@ describe("the match kit stays out of the app", () => {
 
 describe("the production and staging builds contain none of it", () => {
   async function output(define: Record<string, string>): Promise<{ names: string[]; text: string }> {
-    const root = new URL("../..", import.meta.url).pathname;
+    const root = fileURLToPath(new URL("../..", import.meta.url));
     const result = await build({ root, logLevel: "silent", build: { write: false }, define });
     const outputs = Array.isArray(result) ? result : "output" in result ? [result] : [];
     const items = outputs.flatMap((r) => r.output);

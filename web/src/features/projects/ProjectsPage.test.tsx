@@ -26,6 +26,9 @@ async function open(path = "/projects", seed?: (s: LocalStore) => { projectId: s
     </ClockProvider>,
     { container: root },
   );
+  if (path === "/projects") await screen.findByRole("heading", { name: "Projects", level: 1 });
+  else if (path === "/projects/missing") await screen.findByRole("heading", { name: "Project not found" });
+  else await screen.findByRole("heading", { name: /Home renovation/, level: 1 });
   return store;
 }
 
@@ -220,4 +223,18 @@ describe("Project page", () => {
     await openHome();
     expect(within(screen.getByRole("navigation", { name: "Primary" })).getByRole("link", { name: "Projects" })).toHaveAttribute("aria-current", "page");
   });
+});
+
+
+it("keeps a project board unavailable until the full planner is ready", async () => {
+  const store = new LocalStore({ persistence: new MemoryPersistence(), now: () => NOW, broadcast: false });
+  await store.ready;
+  const { projectId } = seedHome(store);
+  const partial = { ...store.getState(), ready: false };
+  const loading = Object.assign(Object.create(store) as LocalStore, { getState: () => partial });
+  window.history.replaceState(null, "", `/projects/${projectId}`);
+  render(<ClockProvider value={() => NOW}><App store={loading} /></ClockProvider>);
+  expect(await screen.findByText("Loading page…")).toHaveAttribute("role", "status");
+  expect(screen.queryByRole("tab", { name: "Board" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "Home renovation" })).not.toBeInTheDocument();
 });

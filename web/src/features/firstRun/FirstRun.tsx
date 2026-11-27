@@ -3,7 +3,7 @@ import { usePrefs } from "../../state/prefs";
 import { NotAvailable, Planned } from "../../ui/product/Planned";
 import { localeWeekStart, type WeekStart } from "../../core/planner/dates";
 import { PERSONAL_CALENDAR_ID } from "../../data/local/LocalStore";
-import { usePlanner, useStore } from "../../state/store";
+import { usePlannerSelector, useStore } from "../../state/store";
 import { LIST_COLOURS, type ListColour } from "../../core/planner/types";
 import { NEEDS_ENGINE } from "../../lib/engine";
 import { feedAddress, fetchFeed, subscriptionsAvailable } from "../../state/subscriptions";
@@ -36,7 +36,7 @@ type Source = "create" | "subscribe";
  */
 export function FirstRun({ onDone }: { onDone: () => void }) {
   const store = useStore();
-  const { calendars } = usePlanner();
+  const calendars = usePlannerSelector((state) => state.calendars);
   const { setPrefs } = usePrefs();
   /** 0 is the welcome. */
   const [step, setStep] = useState(0);

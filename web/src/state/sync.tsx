@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useSyncExternalStore, ty
 import { authCryptoAvailable } from "../core/account/authCrypto";
 import { configuredEngine } from "../data/remote/feeds";
 import { useAuth } from "./account";
-import { useStore } from "./store";
+import { usePlannerSelector, useStore } from "./store";
 import { SyncController, type SyncState } from "./services/syncController";
 
 const SyncContext = createContext<SyncController | null>(null);
@@ -16,9 +16,10 @@ export const SyncContextForTests = SyncContext;
 export function SyncProvider({ children }: { children: ReactNode }) {
   const auth = useAuth();
   const store = useStore();
+  const ready = usePlannerSelector(s => s.ready);
   const services = auth?.services;
   const deviceId = auth?.session?.deviceId;
-  const enabled = auth?.status === "signedIn" && auth.session?.deviceState === "trusted" && configuredEngine() !== null && authCryptoAvailable();
+  const enabled = ready && auth?.status === "signedIn" && auth.session?.deviceState === "trusted" && configuredEngine() !== null && authCryptoAvailable();
   // eslint-disable-next-line react-hooks/exhaustive-deps -- a new controller per signed-in device, not per render
   const controller = useMemo(() => (enabled && services ? new SyncController(services, store) : null), [enabled, services, store, deviceId]);
 

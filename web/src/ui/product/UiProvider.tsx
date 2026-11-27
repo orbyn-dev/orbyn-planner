@@ -73,13 +73,12 @@ interface Ui {
   searchOpen: boolean;
   openSearch: () => void;
   closeSearch: () => void;
-  /** Oldest first, so the newest is at the bottom. */
-  toasts: ToastState[];
   showToast: (message: string, undo?: () => void, options?: ToastOptions) => void;
   dismissToast: (id: number) => void;
 }
 
 const UiContext = createContext<Ui | null>(null);
+const ToastContext = createContext<{ toasts: ToastState[]; dismissToast: (id: number) => void } | null>(null);
 let toastCounter = 0;
 
 export function UiProvider({ children }: { children: ReactNode }) {
@@ -166,13 +165,19 @@ export function UiProvider({ children }: { children: ReactNode }) {
       searchOpen,
       openSearch: () => setSearchOpen(true),
       closeSearch: () => setSearchOpen(false),
-      toasts,
       showToast,
       dismissToast,
     }),
-    [newTaskDefaults, taskId, eventKey, dayKey, newEventDate, newEventTime, newEventTitle, listId, newTaskOpen, searchOpen, menuOpen, toasts, showToast, dismissToast],
+    [newTaskDefaults, taskId, eventKey, dayKey, newEventDate, newEventTime, newEventTitle, listId, newTaskOpen, searchOpen, menuOpen, showToast, dismissToast],
   );
-  return <UiContext.Provider value={value}>{children}</UiContext.Provider>;
+  const toastState = useMemo(() => ({ toasts, dismissToast }), [toasts, dismissToast]);
+  return <UiContext.Provider value={value}><ToastContext.Provider value={toastState}>{children}</ToastContext.Provider></UiContext.Provider>;
+}
+
+export function useToasts() {
+  const value = useContext(ToastContext);
+  if (!value) throw new Error("useToasts needs a UiProvider");
+  return value;
 }
 
 export function useUi(): Ui {

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { MotionList } from "../../ui/primitives/MotionList";
+import { VirtualList } from "../../ui/primitives/VirtualList";
 import { useNow } from "../../state/clock";
 import { Link } from "../../state/router";
 import { useUi } from "../../ui/product/UiProvider";
@@ -10,7 +10,7 @@ import { useSyncController, useSyncState } from "../../state/sync";
 import { QuickAddField } from "../tasks";
 import { Icon } from "../../ui/primitives/Icon";
 import { usePopover } from "../../ui/primitives/usePopover";
-import { usePlanner, useStore } from "../../state/store";
+import { usePlannerSelector, useStore } from "../../state/store";
 import { StrandedZones } from "../sync";
 import { LIST_COLOURS, type ListColour, type TaskList } from "../../core/planner/types";
 import { activeTasks, openCount, sortByDue } from "../tasks";
@@ -111,7 +111,11 @@ export function ListError({ name, onRetry, onOther }: { name: string; onRetry: (
 
 export function ListsPage() {
   const store = useStore();
-  const { lists, tasks, ready, outbox, persistence } = usePlanner();
+  const lists = usePlannerSelector((state) => state.lists);
+  const tasks = usePlannerSelector((state) => state.tasks);
+  const ready = usePlannerSelector((state) => state.ready);
+  const outbox = usePlannerSelector((state) => state.outbox);
+  const persistence = usePlannerSelector((state) => state.persistence);
   const ui = useUi();
   const now = useNow();
   const [adding, setAdding] = useState(false);
@@ -239,11 +243,9 @@ export function ListsPage() {
           </EmptyState>
         ) : (
           <div className="tbl-wrap">
-            <MotionList className="tbl">
-              {shown.map((t) => (
-                <TaskRow key={t.id} task={t} layout="list" unsynced={unsynced.has(t.id)} />
-              ))}
-            </MotionList>
+            <VirtualList className="tbl" items={shown} getKey={(t) => t.id}>
+              {(t) => <TaskRow task={t} layout="list" unsynced={unsynced.has(t.id)} />}
+            </VirtualList>
           </div>
         )}
         {selected && <QuickAddField listId={selected.id} example="Post the parcel tomorrow" />}

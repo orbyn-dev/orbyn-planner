@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useUi } from "../../ui/product/UiProvider";
 import { MONTHS } from "../../core/planner/dates";
-import { usePlanner, useStore } from "../../state/store";
+import { usePlannerSelector, useStore } from "../../state/store";
 import { DuplicateTagName, LIST_COLOURS, type ListColour, type Tag } from "../../core/planner/types";
 import { TAG_COLOUR_NAMES, tagLabels } from "./TagChips";
 import { Swatch } from "../../ui/product/Swatch";
@@ -96,7 +96,8 @@ const shortDate = (iso: string): string => {
 export function TagsSettings() {
   const store = useStore();
   const ui = useUi();
-  const { tags, tasks } = usePlanner();
+  const tags = usePlannerSelector((state) => state.tags);
+  const tasks = usePlannerSelector((state) => state.tasks);
   const [name, setName] = useState("");
   const [colour, setColour] = useState<ListColour>(LIST_COLOURS[0]);
   const live = tags.filter((t) => t.deletedAt === null);

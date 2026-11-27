@@ -1,13 +1,56 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createMemoryKeyStore, emptySyncState } from "../../data/account/keyStore";
-import { FakeAuthCrypto } from "../../testing/FakeAuthCrypto";
+import { FakeAuthCrypto, fakeFreed } from "../../testing/FakeAuthCrypto";
 import { createMockEngine } from "../../testing/MockEngine";
-import { KeysForAnotherAccount, signIn, signOut } from "./flows";
+import { KeysForAnotherAccount, signIn, signOut, signUp } from "./flows";
 import { createAuthServices } from "./auth";
 import { signedUp } from "../../testing/signedUp";
 
 const crypto = new FakeAuthCrypto();
 const SAM = { name: "Sam", email: "sam@example.com", password: "correct horse battery" };
+
+describe("account entry waits for the shared crypto loader", () => {
+  it.each([signIn, signUp])("does not use crypto or send requests until the module is ready", async (enter) => {
+    const engine = createMockEngine();
+    const keys = createMemoryKeyStore();
+    let release!: () => void;
+    let ready = false;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const services = createAuthServices({ keys, fetch: engine.fetch, baseUrl: "http://e.test", ensureCrypto: () => gate, crypto: () => { if (!ready) throw new Error("too early"); return crypto; }, wrapSecret: async () => new Uint8Array(32).fill(4) });
+    const pending = enter(services, SAM).catch((error: unknown) => error);
+    expect(engine.calls).toHaveLength(0);
+    ready = true;
+    release();
+    const result = await pending;
+    expect(engine.calls.length).toBeGreaterThan(0);
+    if (typeof result === "object" && result && "cancel" in result && typeof result.cancel === "function") result.cancel();
+  });
+
+  it("does not start a stale sign-in after a sign-out during module loading", async () => {
+    const engine = createMockEngine();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const services = createAuthServices({ keys: createMemoryKeyStore(), fetch: engine.fetch, baseUrl: "http://e.test", ensureCrypto: () => gate, crypto: () => crypto });
+    const pending = signIn(services, SAM);
+    await services.tokens.clear();
+    release();
+    await expect(pending).rejects.toMatchObject({ code: "session_changed" });
+    expect(engine.calls).toHaveLength(0);
+  });
+
+  it.each([signIn, signUp])("does not send an account entry after its screen leaves during module loading", async (enter) => {
+    const engine = createMockEngine();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const services = createAuthServices({ keys: createMemoryKeyStore(), fetch: engine.fetch, baseUrl: "http://e.test", ensureCrypto: () => gate, crypto: () => crypto });
+    const controller = new AbortController();
+    const pending = enter(services, SAM, controller.signal);
+    controller.abort();
+    release();
+    await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    expect(engine.calls).toHaveLength(0);
+  });
+});
 
 async function signedUpAndOut() {
   const engine = createMockEngine();
@@ -20,6 +63,100 @@ async function signedUpAndOut() {
   await services.tokens.clear();
   return { engine, keys, services, first };
 }
+
+describe("sign-in cancellation after crypto is ready", () => {
+  it.each(["identity", "replacement"] as const)("finishes a consistent session when cancellation arrives after the %s binding commits", async (phase) => {
+    const { engine, services, keys } = await signedUpAndOut();
+    const input = phase === "replacement" ? { name: "Other", email: "other@example.com", password: SAM.password, replaceKeys: true } : SAM;
+    if (phase === "replacement") {
+      const other = createAuthServices({ keys: createMemoryKeyStore(), fetch: engine.fetch, baseUrl: "http://e.test", crypto: () => crypto, wrapSecret: async () => new Uint8Array(32).fill(4) });
+      await signedUp(engine, other, input);
+    }
+    let entered!: () => void;
+    let release!: () => void;
+    const waiting = new Promise<void>((resolve) => { entered = resolve; });
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    if (phase === "replacement") {
+      const original = keys.replaceDevice;
+      vi.spyOn(keys, "replaceDevice").mockImplementationOnce(async (device) => {
+        await original(device); entered(); await gate;
+      });
+    } else {
+      const original = keys.saveIdentity;
+      vi.spyOn(keys, "saveIdentity").mockImplementationOnce(async (identity) => {
+        await original(identity); entered(); await gate;
+      });
+    }
+    const controller = new AbortController();
+    const result = signIn(services, input, controller.signal);
+    const settled = result.catch((error: unknown) => error);
+    await waiting;
+    controller.abort();
+    release();
+    await settled;
+    const session = await result;
+    expect(session).toMatchObject({ email: input.email });
+    expect(services.tokens.getSession()).toEqual(session);
+    expect(await services.keys.loadSession()).toEqual(session);
+    expect(await services.keys.loadIdentity()).toMatchObject({ accountId: session.accountId, deviceId: session.deviceId, email: input.email });
+  });
+
+  it("rechecks cancellation after waiting for the engine lock before binding keys", async () => {
+    const { services, keys } = await signedUpAndOut();
+    const before = await keys.loadIdentity();
+    const exclusive = services.engine.exclusive;
+    let entered!: () => void;
+    let release!: () => void;
+    const waiting = new Promise<void>((resolve) => { entered = resolve; });
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    vi.spyOn(services.engine, "exclusive").mockImplementationOnce(async (action) => {
+      entered(); await gate; return exclusive(action);
+    });
+    const controller = new AbortController();
+    const result = signIn(services, SAM, controller.signal).catch((error: unknown) => error);
+    await waiting;
+    controller.abort();
+    release();
+    expect(await result).toMatchObject({ name: "AbortError" });
+    expect(services.tokens.getSession()).toBeNull();
+    expect(await keys.loadIdentity()).toEqual(before);
+  });
+
+  it.each(["start", "finish"] as const)("does not bind keys or publish a session after cancellation during login %s", async (phase) => {
+    const { services, keys } = await signedUpAndOut();
+    const before = await keys.loadKeys();
+    const beforeIdentity = await keys.loadIdentity();
+    const beforeSnapshot = await keys.loadSnapshot();
+    const releasedBefore = fakeFreed.keys;
+    let entered!: () => void;
+    let release!: () => void;
+    const waiting = new Promise<void>((resolve) => { entered = resolve; });
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    if (phase === "start") {
+      const original = services.api.loginStart;
+      vi.spyOn(services.api, "loginStart").mockImplementationOnce(async (input) => {
+        const result = await original(input); entered(); await gate; return result;
+      });
+    } else {
+      const original = services.api.loginFinish;
+      vi.spyOn(services.api, "loginFinish").mockImplementationOnce(async (input) => {
+        const result = await original(input); entered(); await gate; return result;
+      });
+    }
+    const controller = new AbortController();
+    const result = signIn(services, SAM, controller.signal).catch((error: unknown) => error);
+    await waiting;
+    controller.abort();
+    release();
+    expect(await result).toMatchObject({ name: "AbortError" });
+    expect(services.tokens.getSession()).toBeNull();
+    expect(await keys.loadSession()).toBeNull();
+    expect(await keys.loadKeys()).toEqual(before);
+    expect(await keys.loadIdentity()).toEqual(beforeIdentity);
+    expect(await keys.loadSnapshot()).toEqual(beforeSnapshot);
+    expect(fakeFreed.keys).toBe(releasedBefore + 1);
+  });
+});
 
 describe("signing in binds the stored state to the account and device", () => {
   it("an engine action keeps the email, so signing in again to the same account asks nothing", async () => {

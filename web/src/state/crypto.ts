@@ -12,11 +12,13 @@ export async function ensureRealAuthCrypto(): Promise<void> {
   await attempt();
 }
 
-/** Where loading the module stands, for the screens that need it. "idle" is a build with no engine, which never loads it. */
+/** Where loading the module stands. "idle" also covers a signed-out build that has not needed crypto yet. */
 export type CryptoLoad = "idle" | "loading" | "ready" | "failed";
 let load: CryptoLoad = "idle";
 /** How many loads have failed in a row. */
 let failures = 0;
+let pending: Promise<void> | null = null;
+let generation = 0;
 const listeners = new Set<() => void>();
 const set = (next: CryptoLoad) => {
   load = next;
@@ -24,6 +26,8 @@ const set = (next: CryptoLoad) => {
 };
 /** Puts the state back to "idle". For tests. */
 export function resetCryptoLoad(): void {
+  generation += 1;
+  pending = null;
   failures = 0;
   set("idle");
 }
@@ -43,21 +47,29 @@ export function setCryptoLoader(next: () => Promise<AuthCrypto>): void {
   loader = next;
 }
 
-async function attempt(): Promise<void> {
+function attempt(): Promise<void> {
+  if (load === "ready") return Promise.resolve();
+  if (pending) return pending;
+  const mine = generation;
   set("loading");
-  try {
-    registerAuthCrypto(await loader());
-    failures = 0;
-    set("ready");
-  } catch {
-    // Not a build without sign-in: the module itself would not load (a blocked request, a browser without WebAssembly).
-    failures += 1;
-    set("failed");
-  }
+  pending = Promise.resolve().then(loader)
+    .then((crypto) => {
+      if (mine !== generation) return;
+      registerAuthCrypto(crypto);
+      failures = 0;
+      set("ready");
+    }).catch(() => {
+      if (mine !== generation) return;
+      // Keep failure visible to the existing Retry/Reload presentation.
+      failures += 1;
+      set("failed");
+    }).finally(() => {
+      if (mine === generation) pending = null;
+    });
+  return pending;
 }
 
 /** Tries the import again, for the Retry button. */
 export async function retryRealAuthCrypto(): Promise<void> {
-  if (!import.meta.env.VITE_ENGINE_URL) return; // as above: a build without an engine address has no import to retry
-  await attempt();
+  await ensureRealAuthCrypto();
 }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePrefs } from "./prefs";
 import { formatDue } from "../core/planner/dates";
-import { usePlanner } from "./store";
+import { usePlannerSelector } from "./store";
 import { ReminderScheduler, type Reminder } from "../core/planner/reminderSchedule";
 import { listenShown, loadShown, rememberShown } from "../data/local/remindersShown";
 
@@ -51,7 +51,8 @@ function useLeader(active: boolean): boolean {
  * reminders on in Settings and the browser allows it. This never asks for permission: Settings does.
  */
 export function useReminders(onProblem?: (message: string) => void): void {
-  const { tasks } = usePlanner();
+  const tasks = usePlannerSelector(s => s.tasks);
+  const ready = usePlannerSelector(s => s.ready);
   const { prefs } = usePrefs();
   const quiet = useRef(prefs.quiet);
   const latest = useRef(tasks);
@@ -62,7 +63,7 @@ export function useReminders(onProblem?: (message: string) => void): void {
     latest.current = tasks;
     problem.current = onProblem;
   });
-  const wanted = prefs.reminders && permissionState() === "granted";
+  const wanted = ready && prefs.reminders && permissionState() === "granted";
   const enabled = useLeader(wanted);
 
   useEffect(() => {

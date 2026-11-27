@@ -1,3 +1,4 @@
+import "fake-indexeddb/auto";
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -91,7 +92,7 @@ describe("Search or add", () => {
     await userEvent.type(screen.getByRole("combobox", { name: "Search or add" }), "errands");
     await userEvent.click(screen.getByRole("option", { name: "Errands" }));
     expect(window.location.pathname).toBe("/lists");
-    expect(screen.getByRole("heading", { level: 1, name: "Errands" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Errands" })).toBeInTheDocument();
     expect(errands.name).toBe("Errands");
   });
 
@@ -198,4 +199,37 @@ describe("Search or add", () => {
     await userEvent.type(screen.getByRole("combobox", { name: "Search or add" }), "plumber invoice");
     expect(options()).toEqual(["Add task “plumber invoice”", "Add event “plumber invoice”"]);
   });
+});
+
+it("waits for full history before searching or offering to add", async () => {
+  const { IdbPersistence } = await import("../../data/local/persistence");
+  const { IDBFactory } = await import("fake-indexeddb");
+  const original = globalThis.indexedDB;
+  globalThis.indexedDB = new IDBFactory();
+  let release!: () => void;
+  let paused!: () => void;
+  const reached = new Promise<void>((resolve) => { paused = resolve; });
+  const resume = new Promise<void>((resolve) => { release = resolve; });
+  class Paused extends IdbPersistence {
+    override async scan(...args: Parameters<InstanceType<typeof IdbPersistence>["scan"]>) { paused(); await resume; return super.scan(...args); }
+  }
+  const seed = new LocalStore({ persistence: new IdbPersistence(), now: () => NOW, broadcast: false });
+  await seed.ready;
+  expect(seed.getState().persistence).toEqual({ status: "ok" });
+  const historical = seed.addTask({ title: "Historical task", due: "2020-01-01" });
+  seed.updateTask(historical.id, { done: true, completedAt: "2020-01-01T10:00:00Z" });
+  await seed.flush(); seed.close();
+  const store = new LocalStore({ persistence: new Paused(), now: () => NOW, broadcast: false });
+  await reached;
+  window.history.replaceState(null, "", "/today");
+  render(<ClockProvider value={() => NOW}><App store={store} /></ClockProvider>);
+  await userEvent.click(screen.getByRole("button", { name: "Search or add" }));
+  await userEvent.type(screen.getByRole("combobox", { name: "Search or add" }), "Historical task");
+  expect(within(screen.getByRole("dialog", { name: "Search or add" })).getByRole("status")).toHaveTextContent(/loading/i);
+  expect(screen.queryByText(/No results/)).not.toBeInTheDocument();
+  expect(screen.queryByRole("option", { name: /Add task/ })).not.toBeInTheDocument();
+  await userEvent.keyboard("{Enter}");
+  await act(async () => { release(); await store.ready; });
+  expect(await screen.findByRole("option", { name: /Historical task/ })).toBeInTheDocument();
+  store.close(); globalThis.indexedDB = original;
 });

@@ -23,7 +23,7 @@ export const cardLabel = (title: string, lane: string, index: number, of: number
  * one checked and disabled. It shows on hover and on focus. Enter or Space opens it, the arrows move, Enter picks, Escape closes and puts
  * focus back on the button (the shared popover code).
  */
-export function CardMenu({ title, lanes, current, done, onOpen, onMarkDone, onMove }: { title: string; lanes: readonly CardLane[]; current: string; done: boolean; onOpen: () => void; onMarkDone: () => void; onMove: (key: string) => void }) {
+export function CardMenu({ title, lanes, current, done, canMarkDone = true, onOpen, onMarkDone, onMove }: { title: string; lanes: readonly CardLane[]; current: string; done: boolean; canMarkDone?: boolean; onOpen: () => void; onMarkDone: () => void; onMove: (key: string) => void }) {
   const [open, setOpen] = useState(false);
   const [moving, setMoving] = useState(false);
   const anchor = useRef<HTMLButtonElement>(null);
@@ -83,7 +83,7 @@ export function CardMenu({ title, lanes, current, done, onOpen, onMarkDone, onMo
         <div ref={pop} className="card popover chip-menu card-menu" style={place?.menu}>
           <div ref={menu} role="menu" aria-label={`${title}`} onKeyDown={onKey}>
             <button type="button" role="menuitem" className="opt" onClick={() => { close(); onOpen(); }}>Open</button>
-            <button type="button" role="menuitem" className="opt" disabled={done} onClick={() => { close(); onMarkDone(); }}>Mark done</button>
+            <button type="button" role="menuitem" className="opt" disabled={done || !canMarkDone} onClick={() => { close(); onMarkDone(); }}>Mark done</button>
             <div className="cm-sep" role="separator" />
             <div className="cm-row" ref={row}>
               <button type="button" role="menuitem" className="opt" data-sub="move" aria-haspopup="menu" aria-expanded={moving} onClick={() => setMoving(!moving)}>
@@ -93,7 +93,7 @@ export function CardMenu({ title, lanes, current, done, onOpen, onMarkDone, onMo
               {moving && (
                 <div className="card popover card-sub" role="menu" aria-label="Move to" style={place?.sub}>
                   {lanes.map((l) => (
-                    <button key={l.key} type="button" role="menuitemradio" aria-checked={l.key === current} disabled={l.key === current} className="opt" onClick={() => { close(); onMove(l.key); }}>
+                    <button key={l.key} type="button" role="menuitemradio" aria-checked={l.key === current} disabled={l.key === current || (l.key === "done" && !canMarkDone)} className="opt" onClick={() => { close(); onMove(l.key); }}>
                       {l.key === current && (
                         <svg className="ic sm" viewBox="0 0 16 16" aria-hidden="true">
                           <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />

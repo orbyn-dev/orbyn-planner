@@ -10,7 +10,8 @@ import { setSettingsTarget } from "../../state/settingsTarget";
 import { useRouter } from "../../state/router";
 import { useSlow } from "../../lib/useSlow";
 import { useContentFlags } from "../../lib/contentWidth";
-import { usePlanner, useStore } from "../../state/store";
+import { usePlannerSelector, useStore } from "../../state/store";
+import { coversWindow } from "../../core/planner/coverage";
 import { expandEvents } from "../../core/planner/occurrences";
 import { AgendaView } from "./AgendaView";
 import { CalendarsMenu } from "./CalendarsMenu";
@@ -74,7 +75,7 @@ function shift(view: View, anchor: string, direction: 1 | -1, threeDays = false)
  * p-cal-sync-error): one banner per failed calendar, with Open settings and Try again.
  */
 function CalendarSyncErrors() {
-  const { calendars } = usePlanner();
+  const calendars = usePlannerSelector((state) => state.calendars);
   const store = useStore();
   const router = useRouter();
   const failed = calendars.filter((c) => c.kind.type === "subscribed" && c.kind.error);
@@ -107,8 +108,9 @@ export function CalendarPage() {
 }
 
 function CalendarGrid() {
-  const { events, calendars, ready } = usePlanner();
-  const loading = useSlow(!ready);
+  const fullReady = usePlannerSelector((state) => state.ready);
+  const events = usePlannerSelector((state) => state.events);
+  const calendars = usePlannerSelector((state) => state.calendars);
   const now = useNow();
   const ui = useUi();
   const { prefs } = usePrefs();
@@ -127,6 +129,8 @@ function CalendarGrid() {
   useEffect(() => () => closeDay.current(), []);
 
   const days = useMemo(() => viewDays(view, anchor, prefs.weekStart, prefs.weekDays, threeDays), [view, anchor, prefs.weekStart, prefs.weekDays, threeDays]);
+  const ready = usePlannerSelector((state) => coversWindow(state, "calendar", days[0]!, days.at(-1)!));
+  const loading = useSlow(!ready);
   const shown = useMemo(() => {
     const visible = new Set(calendars.filter((c) => c.visible).map((c) => c.id));
     return events.filter((e) => visible.has(e.calendarId));
@@ -176,7 +180,7 @@ function CalendarGrid() {
         <>
           <PageHeader title={title} sub={sub}>
             <CalendarsMenu />
-            <button type="button" className="btn keep" onClick={() => ui.openNewEvent(view === "day" ? anchor : today)}>
+            <button type="button" className="btn keep" disabled={!fullReady} onClick={() => ui.openNewEvent(view === "day" ? anchor : today)}>
               <Icon name="plus" small />
               New event
             </button>
@@ -208,7 +212,7 @@ function CalendarGrid() {
           </button>
           {views(false)}
           <CalendarsMenu />
-          <button type="button" className="btn keep" onClick={() => ui.openNewEvent(view === "day" ? anchor : today)}>
+          <button type="button" className="btn keep" disabled={!fullReady} onClick={() => ui.openNewEvent(view === "day" ? anchor : today)}>
             <Icon name="plus" small />
             New event
           </button>
@@ -221,13 +225,13 @@ function CalendarGrid() {
         </div>
       )}
       <CalendarSyncErrors />
-      {view === "month" ? (
+      {ready && (view === "month" ? (
         <MonthView days={days} anchor={anchor} occurrences={occurrences} today={today} weekStart={prefs.weekStart} onDay={(d) => { setAnchor(d); setView("day"); }} />
       ) : view === "agenda" ? (
         <AgendaView days={days} occurrences={occurrences} today={today} />
       ) : (
         <TimeGrid days={days} occurrences={occurrences} today={today} now={now} mode={view} side={!threeDays} />
-      )}
+      ))}
     </>
   );
 }

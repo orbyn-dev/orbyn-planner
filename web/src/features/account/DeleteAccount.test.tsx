@@ -5,6 +5,7 @@ import { ApiFailure } from "../../core/account/errors";
 import { deletionNotice } from "../../state/deletionNotice";
 import { DeleteAccountRow } from "./DeleteAccount";
 import { DeletionBanner } from "./DeletionBanner";
+import type { PlannerState } from "../../core/planner/types";
 
 const schedule = vi.fn();
 const cancel = vi.fn();
@@ -16,7 +17,7 @@ const auth = vi.hoisted(() => ({
 vi.mock("../../state/services/flows", () => ({ scheduleDeletion: (...a: unknown[]) => schedule(...a), cancelDeletion: (...a: unknown[]) => cancel(...a) }));
 vi.mock("../../state/account", () => ({ useAuth: () => auth.current }));
 vi.mock("../../ui/product/UiProvider", () => ({ useUi: () => ({ showToast }) }));
-vi.mock("../../state/store", () => ({ usePlanner: () => ({ tasks: [], lists: [], projects: [], calendars: [] }) }));
+vi.mock("../../state/store", () => ({ usePlannerSelector: (selector: (state: Pick<PlannerState, "tasks" | "lists" | "projects" | "calendars">) => unknown) => selector({ tasks: [], lists: [], projects: [], calendars: [] }) }));
 
 const currentDevice = vi.fn();
 const setAuth = (deviceState: "trusted" | "pending") => {

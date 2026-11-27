@@ -10,7 +10,7 @@ import { dateKey } from "../../core/planner/dates";
 import { formatWhen, type When } from "../../core/planner/whenParser";
 import { PHONE_QUERY, useMediaQuery } from "../../ui/primitives/useMediaQuery";
 import { useDialog } from "../../ui/primitives/useDialog";
-import { usePlanner, useStore } from "../../state/store";
+import { usePlannerSelector, useStore } from "../../state/store";
 import { CannotMoveSeries, undoableEvents, deleteOccurrence, duplicateOccurrence, editOccurrence, type Scope } from "../../core/planner/eventScope";
 import { expandEvents, type Occurrence } from "../../core/planner/occurrences";
 import type { Repeat } from "../../core/planner/repeat";
@@ -22,9 +22,9 @@ import { EventScopeDialog } from "./EventScopeDialog";
 
 const timePart = (value: string) => (value.length > 10 ? value.slice(11, 16) : "");
 
-function Panel({ occ }: { occ: Occurrence }) {
+function Panel({ occ, ready }: { occ: Occurrence; ready: boolean }) {
   const store = useStore();
-  const { calendars } = usePlanner();
+  const calendars = usePlannerSelector((state) => state.calendars);
   const ui = useUi();
   const ref = useRef<HTMLElement>(null);
   const phone = useMediaQuery(PHONE_QUERY);
@@ -62,6 +62,7 @@ function Panel({ occ }: { occ: Occurrence }) {
   const editable = useMemo(() => calendars.filter((c) => c.kind.type === "local" || c.id === event.calendarId), [calendars, event.calendarId]);
 
   const save = (scope: Scope) => {
+    if (!ready) return;
     let created: ReturnType<typeof editOccurrence>;
     let undo: (() => void) | undefined;
     try {
@@ -94,6 +95,7 @@ function Panel({ occ }: { occ: Occurrence }) {
   };
 
   const remove = (scope: Scope) => {
+    if (!ready) return;
     const undo = deleteOccurrence(store, occ, scope);
     setAsk(null);
     ui.closeEvent();
@@ -101,6 +103,7 @@ function Panel({ occ }: { occ: Occurrence }) {
   };
 
   const duplicate = () => {
+    if (!ready) return;
     const copy = duplicateOccurrence(store, occ);
     ui.openEvent(copy.id, copy.start.slice(0, 10));
     ui.showToast("Event duplicated");
@@ -167,12 +170,13 @@ function Panel({ occ }: { occ: Occurrence }) {
       <div className="bh"><b>Notes</b><span></span></div>
       <textarea className="field notes" aria-label="Notes" rows={4} value={notes} disabled={locked} onChange={(e) => setNotes(e.target.value)} />
 
+      {!ready && <p role="status" className="t3">Loading event data</p>}
       {saveError && <p className="err" role="alert">{saveError}</p>}
       <div className="tp-foot">
-        {!locked && <button type="button" className="ghost red" onClick={() => (event.repeat ? setAsk("delete") : remove("all"))}>Delete</button>}
-        <button type="button" className="ghost" onClick={duplicate}>Duplicate</button>
+        {!locked && <button type="button" className="ghost red" disabled={!ready} onClick={() => (event.repeat ? setAsk("delete") : remove("all"))}>Delete</button>}
+        <button type="button" className="ghost" disabled={!ready} onClick={duplicate}>Duplicate</button>
         {!locked && (
-          <button type="button" className="btn" disabled={invalid} onClick={() => (event.repeat ? setAsk("save") : save("all"))}>
+          <button type="button" className="btn" disabled={invalid || !ready} onClick={() => (event.repeat ? setAsk("save") : save("all"))}>
             Save
           </button>
         )}
@@ -185,7 +189,8 @@ function Panel({ occ }: { occ: Occurrence }) {
 }
 
 export function EventPanel() {
-  const { events } = usePlanner();
+  const events = usePlannerSelector((state) => state.events);
+  const ready = usePlannerSelector((state) => state.ready);
   const { eventKey } = useUi();
   const occ = useMemo(() => {
     if (!eventKey) return null;
@@ -193,5 +198,5 @@ export function EventPanel() {
     return event ? (expandEvents([event], eventKey.date, eventKey.date).find((o) => o.date === eventKey.date) ?? null) : null;
   }, [events, eventKey]);
   // A fresh form for each occurrence and each saved version of the event.
-  return occ ? <Panel key={`${occ.event.id}-${occ.date}-${occ.event.updatedAt}`} occ={occ} /> : null;
+  return occ ? <Panel key={`${occ.event.id}-${occ.date}-${occ.event.updatedAt}`} occ={occ} ready={ready} /> : null;
 }

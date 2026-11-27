@@ -22,6 +22,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdir
 import { homedir, tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { binaryenTool } from "./binaryen.mjs";
 
 const check = process.argv.includes("--check");
 // --local: a run on a machine other than Linux, where the same source can lay out the .wasm differently. It lets
@@ -31,6 +32,10 @@ const local = process.argv.includes("--local") && process.platform !== "linux" &
 if (process.argv.includes("--local") && !local) console.warn("wasm: --local is ignored on Linux and in CI; the check is strict.");
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const lock = JSON.parse(readFileSync(join(root, "wasm.lock.json"), "utf8"));
+if (!check && (process.platform !== "linux" || process.arch !== "x64")) {
+  console.error("wasm: generate committed artifacts on Linux amd64. Other platforms may run wasm:check:local.");
+  process.exit(1);
+}
 const target = join(root, "src/generated/wasm");
 const FILES = ["orbyn_wasm.js", "orbyn_wasm.d.ts", "orbyn_wasm_bg.wasm", "orbyn_wasm_bg.wasm.d.ts"];
 const MANIFEST = "manifest.json";
@@ -52,12 +57,16 @@ if (head.status !== 0 || !/^[0-9a-f]{40}$/.test(head.stdout.trim())) {
   process.exit(1);
 }
 const commit = head.stdout.trim();
+const dirty = spawnSync("git", ["-C", engine, "status", "--porcelain"], { encoding: "utf8" });
+if (dirty.status !== 0 || dirty.stdout.trim() !== "") {
+  console.error("wasm: the engine checkout must be clean before building.");
+  process.exit(1);
+}
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, { stdio: ["ignore", "inherit", "inherit"], ...options });
   if (result.status !== 0) {
-    console.error(`wasm: \`${command} ${args.join(" ")}\` failed.`);
-    process.exit(result.status ?? 1);
+    throw new Error(`wasm: \`${command} ${args.join(" ")}\` failed (exit ${result.status ?? "unavailable"}).`);
   }
 }
 
@@ -92,12 +101,21 @@ run("cargo", [`+${lock.rust}`, "build", "-p", "orbyn-wasm", "--release", "--targ
 // own build doesn't reproduce can be compared, or replaced by CI's build).
 const keep = process.env.ORBYN_WASM_KEEP;
 const out = keep ? (mkdirSync(keep, { recursive: true }), keep) : mkdtempSync(join(tmpdir(), "orbyn-wasm-"));
+const optimizer = await binaryenTool(lock.binaryen);
 try {
   run("wasm-bindgen", ["--target", "web", "--out-dir", out, join(env.CARGO_BUILD_TARGET_DIR, "wasm32-unknown-unknown/release/orbyn_wasm.wasm")]);
+  const unoptimized = join(out, "orbyn_wasm_bg.wasm");
+  const optimized = join(out, "orbyn_wasm_optimized.wasm");
+  const before = readFileSync(unoptimized).length;
+  run(optimizer.executable, [...lock.binaryen.flags, unoptimized, "-o", optimized]);
+  const after = readFileSync(optimized).length;
+  if (after >= before) throw new Error(`wasm-opt did not reduce the module: ${before} -> ${after} bytes.`);
+  copyFileSync(optimized, unoptimized);
+  rmSync(optimized);
+  console.log(`wasm-opt ${lock.binaryen.version} ${lock.binaryen.flags.join(" ")}: ${before} -> ${after} bytes`);
   const missing = FILES.filter((f) => !existsSync(join(out, f)));
   if (missing.length > 0) {
-    console.error(`wasm: wasm-bindgen did not make ${missing.join(", ")}`);
-    process.exit(1);
+    throw new Error(`wasm: wasm-bindgen did not make ${missing.join(", ")}`);
   }
   if (check) {
     const have = existsSync(target) ? readdirSync(target) : [];
@@ -105,6 +123,7 @@ try {
     const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, "utf8")) : null;
     const problems = [];
     if (!manifest) problems.push(`${MANIFEST} is missing`);
+    if (manifest && (manifest.rust !== lock.rust || manifest.wasmBindgen !== lock.wasmBindgen || manifest.binaryen !== lock.binaryen.version || JSON.stringify(manifest.optimizerFlags) !== JSON.stringify(lock.binaryen.flags))) problems.push("manifest toolchain does not match wasm.lock.json");
     // What is committed must be what the manifest says.
     for (const f of FILES) {
       if (!have.includes(f)) problems.push(`${f} is missing`);
@@ -132,17 +151,17 @@ try {
       else problems.push("orbyn_wasm_bg.wasm differs from a fresh build of the pinned commit. The committed one is the Linux build; rebuild it on Linux (see docs/architecture.md) and commit it.");
     }
     if (problems.length > 0) {
-      console.error(`wasm:check: src/generated/wasm is out of date:\n  - ${problems.join("\n  - ")}\nRun npm run wasm.`);
-      process.exit(1);
+      throw new Error(`wasm:check: src/generated/wasm is out of date:\n  - ${problems.join("\n  - ")}\nRun npm run wasm.`);
     }
     console.log(`wasm:check: ${FILES.length} file(s) match a fresh build of ${engine}`);
   } else {
     mkdirSync(target, { recursive: true });
     for (const f of FILES) copyFileSync(join(out, f), join(target, f));
     const files = Object.fromEntries(FILES.map((f) => [f, sha(join(target, f))]));
-    writeFileSync(join(target, MANIFEST), `${JSON.stringify({ engine: commit, rust: lock.rust, wasmBindgen: lock.wasmBindgen, files }, null, 2)}\n`);
+    writeFileSync(join(target, MANIFEST), `${JSON.stringify({ engine: commit, rust: lock.rust, wasmBindgen: lock.wasmBindgen, binaryen: lock.binaryen.version, optimizerFlags: lock.binaryen.flags, files }, null, 2)}\n`);
     console.log(`wasm: wrote ${FILES.length} file(s) and ${MANIFEST} to src/generated/wasm`);
   }
 } finally {
+  optimizer.dispose();
   if (!keep) rmSync(out, { recursive: true, force: true });
 }

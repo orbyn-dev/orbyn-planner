@@ -7,6 +7,7 @@ import { CheckingAccount, DeletedAccountScreen } from "./DeletedAccount";
 import { DeletionBanner, DeletionWatcher } from "./DeletionBanner";
 import { KeysNotSaved } from "./KeysNotSaved";
 import { PendingScreen } from "./PendingScreen";
+import { CryptoProblem } from "./CryptoProblem";
 
 /**
  * A trusted device can be asked to pair again (another device no longer trusts it). The server
@@ -93,7 +94,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
       />
     );
   }
-  if (auth.status === "loading") return null;
+  if (auth.status === "loading") return auth.bootstrapProblem ? (
+    <p className="err" role="alert">{auth.bootstrapProblem}{" "}<button type="button" className="link-btn" onClick={auth.retryBootstrap}>Retry</button></p>
+  ) : <CryptoProblem />;
   // A 401 just ended the session and the status check is under way: nothing of the landing shows until it answers.
   if (checking && auth.status === "landing") return <CheckingAccount />;
   if (auth.status === "landing") {

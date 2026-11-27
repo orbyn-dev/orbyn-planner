@@ -18,8 +18,9 @@ interface Seen {
  * space. Under reduced motion a new row only fades in, the rows jump, and a deleted row only fades. Rows are the children that carry
  * `data-row-id`; the list itself is a positioned element. Only transform and opacity animate.
  */
-export function useRowMotion(list: RefObject<HTMLElement | null>): void {
+export function useRowMotion(list: RefObject<HTMLElement | null>, logicalKeys?: readonly string[]): void {
   const before = useRef<Map<string, Seen> | null>(null);
+  const previousKeys = useRef<readonly string[] | undefined>(undefined);
   useLayoutEffect(() => {
     const el = list.current;
     if (!el) return;
@@ -29,6 +30,10 @@ export function useRowMotion(list: RefObject<HTMLElement | null>): void {
     for (const row of rows) now.set(row.dataset.rowId!, { top: row.getBoundingClientRect().top - base, node: row });
     const was = before.current;
     before.current = new Map([...now].map(([id, s]) => [id, { top: s.top, node: s.node.cloneNode(true) as HTMLElement }]));
+    const keys = previousKeys.current;
+    previousKeys.current = logicalKeys;
+    // A viewport moving through the same logical list is not a person adding or deleting a record.
+    if (logicalKeys && keys && logicalKeys.length === keys.length && logicalKeys.every((key, index) => key === keys[index])) return;
     if (!was || typeof el.animate !== "function") return;
 
     const arrived = [...now.keys()].filter((id) => !was.has(id));
@@ -50,6 +55,7 @@ export function useRowMotion(list: RefObject<HTMLElement | null>): void {
       const gone = was.get(id)!;
       // A copy where the row was, over the list, so it can fade while the list has already closed up.
       const ghost = gone.node;
+      ghost.dataset.motionGhost = "";
       ghost.setAttribute("aria-hidden", "true");
       ghost.removeAttribute("data-row-id");
       ghost.style.cssText = `position:absolute;left:0;right:0;top:${gone.top}px;pointer-events:none;`;

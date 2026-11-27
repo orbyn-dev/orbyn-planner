@@ -3,6 +3,7 @@ import { NotAvailable, Planned } from "../../ui/product/Planned";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { ApiFailure } from "../../core/account/errors";
 import { authCryptoAvailable, SIGN_IN_UNAVAILABLE } from "../../core/account/authCrypto";
+import { configuredEngine } from "../../lib/engine";
 import { cryptoLoad } from "../../state/crypto";
 import { CryptoProblem } from "./CryptoProblem";
 import { SyncSettings } from "../sync";
@@ -455,7 +456,7 @@ export function AccountSettings({ onOpenPrivacy }: { onOpenPrivacy?: () => void 
       <div className="card" style={{ gap: "var(--sp-6)" }}>
         <b style={{ fontWeight: "var(--fw-medium)" }}>This device only</b>
         <span className="t3">Your planner is saved on this device. An account keeps it on your other devices too.</span>
-        {!authCryptoAvailable() && cryptoLoad.get() !== "failed" && <span className="t3 small">{SIGN_IN_UNAVAILABLE}.</span>}
+        {!authCryptoAvailable() && !configuredEngine() && cryptoLoad.get() !== "failed" && <span className="t3 small">{SIGN_IN_UNAVAILABLE}.</span>}
         <CryptoProblem />
       </div>
       <div className="account-actions">

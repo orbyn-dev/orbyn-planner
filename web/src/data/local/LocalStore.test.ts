@@ -177,7 +177,9 @@ describe("when storage fails", () => {
     const store = new LocalStore({ persistence, broadcast: false });
     await store.ready;
     expect(store.getState().persistence).toEqual({ status: "failed", reason: "Couldn’t open this device’s storage." });
-    store.addTask({ title: "on screen only" });
+    expect(store.getState().ready).toBe(false);
+    expect(store.getState().coverage?.phase).toBe("failed");
+    expect(() => store.addTask({ title: "on screen only" })).toThrow("still loading");
     await store.flush();
     expect(apply).not.toHaveBeenCalled();
     expect(store.getState().persistence.status).toBe("failed");

@@ -30,6 +30,7 @@ async function open(path = "/tasks", seed?: (store: LocalStore, water: Task) => 
     </ClockProvider>,
     { container: root },
   );
+  if (path === "/tasks") await screen.findByRole("button", { name: "water plants" });
   return { store, water, mail };
 }
 

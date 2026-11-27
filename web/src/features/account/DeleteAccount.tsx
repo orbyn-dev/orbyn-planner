@@ -7,7 +7,7 @@ import { scheduleDeletion } from "../../state/services/flows";
 import { BusyButton } from "../../ui/primitives/BusyButton";
 import { Icon } from "../../ui/primitives/Icon";
 import { Modal } from "../../ui/primitives/Modal";
-import { usePlanner } from "../../state/store";
+import { usePlannerSelector } from "../../state/store";
 import { describeError } from "./messages";
 import { refreshDeletionNotice, useCancelDeletion } from "./DeletionBanner";
 
@@ -24,14 +24,16 @@ type Step = "form" | "stale" | "scheduled";
 
 /** What Orbyn Planner holds, in the words of the list of what each app loses. */
 function PlannerScope() {
-  const { tasks, lists, projects, calendars } = usePlanner();
-  const open = tasks.filter((t) => t.deletedAt === null).length;
+  const open = usePlannerSelector((state) => state.tasks.filter((task) => task.deletedAt === null).length);
+  const lists = usePlannerSelector((state) => state.lists.length);
+  const projects = usePlannerSelector((state) => state.projects.length);
+  const calendars = usePlannerSelector((state) => state.calendars.length);
   return (
     <div className="scope2">
       <span className="appi" aria-hidden="true"><Icon name="check" small /></span>
       <div>
         <b>Orbyn Planner</b>
-        <small>{count(open, "task", "tasks")}, {count(lists.length, "list", "lists")}, {count(projects.length, "project", "projects")}, {count(calendars.length, "calendar", "calendars")}</small>
+        <small>{count(open, "task", "tasks")}, {count(lists, "list", "lists")}, {count(projects, "project", "projects")}, {count(calendars, "calendar", "calendars")}</small>
         <span className="t3">And anything you’ve saved in other Orbyn apps.</span>
       </div>
     </div>

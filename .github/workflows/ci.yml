@@ -177,7 +177,8 @@ jobs:
           ORBYN_ENGINE_DIR: ${{ github.workspace }}/engine
       # Types and lint ran in "Cheap checks". The task-status vectors are read from the pinned engine checkout (the one generate:check uses).
       - if: env.RUN == 'true'
-        run: npm test
+        # Bound parallel DOM/crypto suites on shared runners; keep every test and its timeout unchanged.
+        run: npm test -- --maxWorkers=4
         env:
           ORBYN_ENGINE_DIR: ${{ github.workspace }}/engine
       - if: env.RUN == 'true'
@@ -251,7 +252,8 @@ jobs:
         if: env.RUN == 'true' && steps.bindgen.outputs.cache-hit != 'true'
         working-directory: .
         run: cargo +1.99.1 install wasm-bindgen-cli --version 0.2.130 --locked
-      # Exactly the pinned commit, with nothing changed: the check is byte for byte.
+      # wasm.mjs acquires Binaryen from wasm.lock.json and verifies its official archive SHA-256 before -Oz.
+      # Exactly the pinned commit, with nothing changed: the check is byte for byte on Linux amd64.
       - name: The engine checkout is clean and at the pin
         if: env.RUN == 'true'
         working-directory: engine

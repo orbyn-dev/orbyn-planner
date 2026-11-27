@@ -1,17 +1,18 @@
 import { useMemo, useState } from "react";
-import { MotionList } from "../../ui/primitives/MotionList";
+import { VirtualList } from "../../ui/primitives/VirtualList";
 import { useNow } from "../../state/clock";
 import { useUi } from "../../ui/product/UiProvider";
 import { EmptyState, PageHeader } from "../../ui/primitives/EmptyState";
 import { Icon } from "../../ui/primitives/Icon";
 import { formatDue } from "../../core/planner/dates";
-import { usePlanner, useStore } from "../../state/store";
-import { describeParse, parseQuickAdd } from "./quickAdd";
+import { usePlannerSelector } from "../../state/store";
+import { QuickAddField } from "./QuickAddField";
 import { DUE_FILTERS, completedGroups, isOpen, type DueFilter } from "./selectors";
 import { NO_FILTERS, applyFilters, filterCount, type TaskFilters } from "./taskFilters";
 import { FiltersSheet, ActiveFilters, matchesQuery } from "./FiltersSheet";
 import { useContentFlags } from "../../lib/contentWidth";
 import { FilterChip } from "./FilterChip";
+import { canCompleteTask } from "../../core/planner/coverage";
 import { LANES, LANE_LABELS, laneOf, type Lane } from "../../core/planner/taskStatus";
 import { focusCard } from "../../lib/focus";
 import { useMoveTask } from "./useMoveTask";
@@ -25,57 +26,10 @@ import type { Priority, Task } from "../../core/planner/types";
 
 type View = "list" | "board";
 
-/** `listId` is where a task goes when the words name no list of their own (the open list on the Lists page). */
-export function QuickAddField({ listId, example = "Call Sam tomorrow 3pm #work !high" }: { listId?: string; example?: string } = {}) {
-  const store = useStore();
-  const { lists, ready } = usePlanner();
-  const ui = useUi();
-  const now = useNow();
-  const [text, setText] = useState("");
-  const [keep, setKeep] = useState(false);
-  const typed = text.trim();
-  const parsed = useMemo(
-    () => (keep ? { title: typed, due: null, listId: null, priority: "none" as const, repeat: null } : parseQuickAdd(text, now, lists)),
-    [text, typed, keep, now, lists],
-  );
-  const preview = keep ? "" : describeParse(parsed, lists, now);
-
-  return (
-    <div className="addbar">
-    <form
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (!typed) return;
-        const task = store.addTask({ title: parsed.title, due: parsed.due, listId: parsed.listId ?? listId, priority: parsed.priority, repeat: parsed.repeat });
-        ui.showToast(`Added “${task.title}”`);
-        setText("");
-      }}
-    >
-      <input
-        className="field"
-        aria-label="Add a task"
-        placeholder={`Add a task: ${example}`}
-        value={text}
-        disabled={!ready}
-        onChange={(e) => setText(e.target.value)}
-      />
-    </form>
-    <div className="hint-row">
-      <p className="hint" aria-live="polite">{preview}</p>
-      {(preview !== "" || keep) && (
-        <label className="check-row">
-          <input type="checkbox" className="check" checked={keep} onChange={(e) => setKeep(e.target.checked)} />
-          Keep as typed
-        </label>
-      )}
-    </div>
-    </div>
-  );
-}
-
 /** A card of the Tasks board: draggable to another lane; the "…" menu and Alt+Left / Alt+Right move it for the keyboard (Planner Designs v52). */
 function BoardCard({ task, index, of, onDragging }: { task: Task; index: number; of: number; onDragging: (id: string | null) => void }) {
-  const { lists } = usePlanner();
+  const lists = usePlannerSelector((state) => state.lists);
+  const canMarkDone = usePlannerSelector((state) => canCompleteTask(state, task));
   const { open } = useTaskActions(task);
   const move = useMoveTask();
   const now = useNow();
@@ -93,7 +47,7 @@ function BoardCard({ task, index, of, onDragging }: { task: Task; index: number;
       aria-label={cardLabel(task.title, LANE_LABELS[here], index, of)}
       onKeyDown={(e) => {
         const to = laneForKey(e, cardLanes, here);
-        if (to === null) return;
+        if (to === null || (to === "done" && !canMarkDone)) return;
         e.preventDefault();
         move(task, to as Lane);
         focusCard(task.id);
@@ -117,13 +71,15 @@ function BoardCard({ task, index, of, onDragging }: { task: Task; index: number;
           <i style={{ width: `${steps.percent}%` }} />
         </div>
       )}
-      <CardMenu title={task.title} lanes={cardLanes} current={here} done={task.done} onOpen={open} onMarkDone={() => { move(task, "done"); focusCard(task.id); }} onMove={(l) => { move(task, l as Lane); focusCard(task.id); }} />
+      <CardMenu title={task.title} lanes={cardLanes} current={here} done={task.done} canMarkDone={canMarkDone} onOpen={open} onMarkDone={() => { move(task, "done"); focusCard(task.id); }} onMove={(l) => { move(task, l as Lane); focusCard(task.id); }} />
     </li>
   );
 }
 
 export function TasksPage() {
-  const { tasks, lists, tags } = usePlanner();
+  const tasks = usePlannerSelector((state) => state.tasks);
+  const lists = usePlannerSelector((state) => state.lists);
+  const tags = usePlannerSelector((state) => state.tags);
   const ui = useUi();
   const now = useNow();
   const [view, setView] = useState<View>("list");
@@ -166,6 +122,9 @@ export function TasksPage() {
   const [over, setOver] = useState<Lane | null>(null);
   const openCount = tasks.filter(isOpen).length;
   const anyTask = tasks.some((t) => t.deletedAt === null);
+  const ready = usePlannerSelector((state) => state.ready || !options.showCompleted && state.coverage?.phase === "partial" && state.coverage.openTasks === true);
+
+  if (!ready) return <><PageHeader title="Tasks" /><div className="empty" role="status">Loading tasks</div></>;
 
   return (
     <>
@@ -283,11 +242,9 @@ export function TasksPage() {
                   <span>{g.tasks.filter((t) => !t.done).length}</span>
                 </div>
               )}
-              <MotionList className="tbl">
-                {g.tasks.map((t) => (
-                  <TaskRow key={t.id} task={t} query={typed} />
-                ))}
-              </MotionList>
+              <VirtualList className="tbl" totalCount={shown.length} items={g.tasks} getKey={(t) => t.id}>
+                {(t) => <TaskRow task={t} query={typed} />}
+              </VirtualList>
             </section>
           ))}
           {completed.length > 0 && (
@@ -301,11 +258,9 @@ export function TasksPage() {
                   <div className="bh sub" style={{ padding: "var(--sp-4) var(--sp-4) var(--sp-2)" }}>
                     <span>{g.label}</span>
                   </div>
-                  <MotionList className="tbl">
-                    {g.tasks.map((t) => (
-                      <TaskRow key={t.id} task={t} query={typed} />
-                    ))}
-                  </MotionList>
+                  <VirtualList className="tbl" totalCount={shown.length} items={g.tasks} getKey={(t) => t.id}>
+                    {(t) => <TaskRow task={t} query={typed} />}
+                  </VirtualList>
                 </div>
               ))}
             </section>
@@ -333,11 +288,9 @@ export function TasksPage() {
               }}
             >
               <h2 className="lane-h">{label}<span>{cards.length}</span></h2>
-              <ul className="cards">
-                {cards.map((t, i) => (
-                  <BoardCard key={t.id} task={t} index={i} of={cards.length} onDragging={setDragging} />
-                ))}
-              </ul>
+              <VirtualList totalCount={shown.length} className="cards" items={cards} getKey={(t) => t.id} pinnedKeys={dragging ? [dragging] : []}>
+                {(t, i) => <BoardCard task={t} index={i} of={cards.length} onDragging={setDragging} />}
+              </VirtualList>
               {over === lane && dragging !== null && <p className="t3 drop-hint">Drop to move to {label}</p>}
             </section>
           ))}

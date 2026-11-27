@@ -7,7 +7,7 @@ import { WhenField } from "../../ui/primitives/WhenField";
 import type { When } from "../../core/planner/whenParser";
 import { useDialog } from "../../ui/primitives/useDialog";
 import { dateKey, makeDue, parseDue } from "../../core/planner/dates";
-import { usePlanner, useStore } from "../../state/store";
+import { usePlannerSelector, useStore } from "../../state/store";
 import { inOrder } from "../../core/planner/order";
 import type { Repeat } from "../../core/planner/repeat";
 import { PRIORITIES, type Priority } from "../../core/planner/types";
@@ -17,7 +17,9 @@ import { TASK_REMINDERS } from "./reminder";
 /** The "New task" card: a title, and the details a person can fill in right away. */
 export function NewTaskDialog() {
   const store = useStore();
-  const { lists, projects } = usePlanner();
+  const ready = usePlannerSelector((state) => state.ready);
+  const lists = usePlannerSelector((state) => state.lists);
+  const projects = usePlannerSelector((state) => state.projects);
   const ui = useUi();
   const now = useNow();
   const ref = useRef<HTMLDivElement>(null);
@@ -39,7 +41,7 @@ export function NewTaskDialog() {
 
   const submit = () => {
     const text = title.trim();
-    if (!text) return;
+    if (!text || !ready) return;
     let due: string | null = null;
     if (day || time) {
       const base = day ? parseDue(day).date : new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -142,7 +144,7 @@ export function NewTaskDialog() {
           )}
           <div className="dialog-actions">
             <button type="button" className="ghost" onClick={ui.closeNewTask}>Cancel</button>
-            <button type="submit" className="btn" disabled={!title.trim()}>Add task</button>
+            <button type="submit" className="btn" disabled={!ready || !title.trim()}>Add task</button>
           </div>
         </form>
       </div>
