@@ -25,7 +25,7 @@ export function AgendaView({ days, occurrences, today }: { days: string[]; occur
           <div className="bh" style={i === 0 ? { paddingTop: 0 } : undefined}>
             <b>{g.day === today ? `Today · ${shortDay(dateOf(g.day))}` : shortDay(dateOf(g.day))}</b>
           </div>
-          <VirtualList className="agenda-rows" items={g.items} getKey={(o) => `event:${o.event.id}:${o.date}:${g.day}`}>
+          <VirtualList className="agenda-rows" totalCount={groups.reduce((n, group) => n + group.items.length, 0)} items={g.items} getKey={(o) => `event:${o.event.id}:${o.date}:${g.day}`}>
             {(o) => {
               const meta = eventMeta(o);
               return (

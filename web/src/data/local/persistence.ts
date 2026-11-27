@@ -54,9 +54,9 @@ export interface Persistence {
   apply(batch: PatchBatch, expected?: DatabaseStamp, covered?: CoveredTaskGuard[]): Promise<ApplyResult>;
   /** Indexed first view, then bounded scans; optional for legacy/test adapters. */
   bootstrap?(view: InitialView): Promise<Snapshot>;
-  scan?(type: RecordType, after?: string, limit?: number): Promise<{ records: ApplyResult["records"]; last?: string; done: boolean }>;
+  scan?(type: RecordType, after?: string, limit?: number): Promise<{ records: ApplyResult["records"]; last?: string; done: boolean; stamp?: DatabaseStamp }>;
   changes?(since: DatabaseStamp): Promise<ApplyResult>;
-  scanOutbox?(after?: number, limit?: number): Promise<{ entries: OutboxEntry[]; last?: number; done: boolean }>;
+  scanOutbox?(after?: number, limit?: number): Promise<{ entries: OutboxEntry[]; last?: number; done: boolean; stamp?: DatabaseStamp }>;
   /** The current state of some records, after another tab changed them. */
   read(refs: Ref[]): Promise<ApplyResult>;
   /**
@@ -160,7 +160,7 @@ export class MemoryPersistence implements Persistence {
 
 /** The planner kept on this device alone; each account has a database of its own (see `planners.ts`). */
 export const DEVICE_DB = "orbyn-planner";
-export const PLANNER_DB_VERSION = 7;
+export const PLANNER_DB_VERSION = 8;
 
 type Rec = AnyRecord & Record<string, unknown>;
 const JOURNAL_LIMIT = 4096;
@@ -183,7 +183,7 @@ function writeJournal(tx: IDBTransaction, stamp: DatabaseStamp, refs: Ref[]): Da
   const next = { ...stamp, revision: stamp.revision + 1 };
   tx.objectStore("meta").put(next, "stamp");
   const journal = tx.objectStore("journal");
-  journal.put({ revision: next.revision, refs: [...new Map(refs.map(r => [refKey(r), r])).values()] } satisfies JournalEntry);
+  journal.put({ revision: next.revision, refs: [...new Map(refs.map(({ type, id }) => [refKey({ type, id }), { type, id }])).values()] } satisfies JournalEntry);
   if (next.revision > JOURNAL_LIMIT) journal.delete(IDBKeyRange.upperBound(next.revision - JOURNAL_LIMIT));
   return next;
 }
@@ -221,6 +221,17 @@ export class IdbPersistence implements Persistence {
         if (!db.objectStoreNames.contains("meta")) {
           db.createObjectStore("meta").put({ generation: crypto.randomUUID(), revision: 0 } satisfies DatabaseStamp, "stamp");
           db.createObjectStore("journal", { keyPath: "revision" });
+        }
+        if (event.oldVersion === 7) {
+          // Version 7 accidentally persisted ApplyResult objects as refs. Strip historical record/
+          // outbox payloads atomically; keep every source record, revision and journal reference.
+          tx.objectStore("journal").openCursor().onsuccess = (event) => {
+            const cursor = (event.target as IDBRequest<IDBCursorWithValue | null>).result;
+            if (!cursor) return;
+            const entry = cursor.value as JournalEntry;
+            cursor.update({ revision: entry.revision, refs: entry.refs.map(({ type, id }) => ({ type, id })) } satisfies JournalEntry);
+            cursor.continue();
+          };
         }
         for (const [type, names] of [["task", ["due", "status", "completed", "recurring"]], ["event", ["start", "end", "conservative"]]] as const) {
           const name = type + "Index";
@@ -336,24 +347,28 @@ export class IdbPersistence implements Persistence {
     });
   }
 
-  async scan(type: RecordType, after?: string, limit = 256): Promise<{ records: ApplyResult["records"]; last?: string; done: boolean }> {
+  async scan(type: RecordType, after?: string, limit = 256): Promise<{ records: ApplyResult["records"]; last?: string; done: boolean; stamp?: DatabaseStamp }> {
     const db = await this.open();
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(storeOf(type), "readonly");
+      const tx = db.transaction([storeOf(type), "meta"], "readonly");
       let records: AnyRecord[] = [];
+      let stamp: DatabaseStamp;
+      tx.objectStore("meta").get("stamp").onsuccess = (e) => { stamp = (e.target as IDBRequest<DatabaseStamp>).result; };
       tx.objectStore(storeOf(type)).getAll(after === undefined ? undefined : IDBKeyRange.lowerBound(after, true), limit).onsuccess = (e) => { records = (e.target as IDBRequest<AnyRecord[]>).result; };
-      tx.oncomplete = () => resolve({ records: records.map(record => ({ type, id: record.id, record })), last: records.at(-1)?.id, done: records.length < limit });
+      tx.oncomplete = () => resolve({ records: records.map(record => ({ type, id: record.id, record })), last: records.at(-1)?.id, done: records.length < limit, stamp });
       tx.onerror = tx.onabort = () => reject(tx.error ?? new Error("The background read was aborted"));
     });
   }
 
-  async scanOutbox(after?: number, limit = 256): Promise<{ entries: OutboxEntry[]; last?: number; done: boolean }> {
+  async scanOutbox(after?: number, limit = 256): Promise<{ entries: OutboxEntry[]; last?: number; done: boolean; stamp?: DatabaseStamp }> {
     const db = await this.open();
     return new Promise((resolve, reject) => {
-      const tx = db.transaction("outbox", "readonly");
+      const tx = db.transaction(["outbox", "meta"], "readonly");
       let entries: OutboxEntry[] = [];
+      let stamp: DatabaseStamp;
+      tx.objectStore("meta").get("stamp").onsuccess = (e) => { stamp = (e.target as IDBRequest<DatabaseStamp>).result; };
       tx.objectStore("outbox").getAll(after === undefined ? undefined : IDBKeyRange.lowerBound(after, true), limit).onsuccess = (e) => { entries = (e.target as IDBRequest<OutboxEntry[]>).result; };
-      tx.oncomplete = () => resolve({ entries, last: entries.at(-1)?.seq, done: entries.length < limit });
+      tx.oncomplete = () => resolve({ entries, last: entries.at(-1)?.seq, done: entries.length < limit, stamp });
       tx.onerror = tx.onabort = () => reject(tx.error ?? new Error("The pending changes could not be read"));
     });
   }
@@ -375,7 +390,7 @@ export class IdbPersistence implements Persistence {
           if (entries.length !== stamp.revision - since.revision || entries.some((x, i) => x.revision !== since.revision + i + 1)) {
             failure = new Error("Planner changes could not be reconciled. Reload to try again."); tx.abort(); return;
           }
-          const refs = new Map(entries.flatMap(entry => entry.refs).map(r => [refKey(r), r]));
+          const refs = new Map(entries.flatMap(entry => entry.refs).map(({ type, id }) => [refKey({ type, id }), { type, id }]));
           for (const r of refs.values()) {
             tx.objectStore(storeOf(r.type)).get(r.id).onsuccess = (e) => result.records.push({ ...r, record: (e.target as IDBRequest<AnyRecord | undefined>).result ?? null });
             tx.objectStore("outbox").index("record").get([r.type, r.id]).onsuccess = (e) => result.outbox.push({ ...r, entry: (e.target as IDBRequest<OutboxEntry | undefined>).result ?? null });
@@ -513,6 +528,8 @@ export class IdbPersistence implements Persistence {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(ALL_STORES, "readonly");
       const result: ApplyResult = { records: [], outbox: [] };
+      tx.objectStore("meta").get("stamp").onsuccess = (e) => { result.stamp = (e.target as IDBRequest<DatabaseStamp>).result; };
+      tx.objectStore("purgedTags").getAllKeys().onsuccess = (e) => { result.purgedTags = (e.target as IDBRequest<IDBValidKey[]>).result.map(String); };
       for (const r of refs) {
         tx.objectStore(storeOf(r.type)).get(r.id).onsuccess = (e) =>
           result.records.push({ ...r, record: (e.target as IDBRequest<AnyRecord | undefined>).result ?? null });

@@ -12,6 +12,7 @@ import { NO_FILTERS, applyFilters, filterCount, type TaskFilters } from "./taskF
 import { FiltersSheet, ActiveFilters, matchesQuery } from "./FiltersSheet";
 import { useContentFlags } from "../../lib/contentWidth";
 import { FilterChip } from "./FilterChip";
+import { canCompleteTask } from "../../core/planner/coverage";
 import { LANES, LANE_LABELS, laneOf, type Lane } from "../../core/planner/taskStatus";
 import { focusCard } from "../../lib/focus";
 import { useMoveTask } from "./useMoveTask";
@@ -28,6 +29,7 @@ type View = "list" | "board";
 /** A card of the Tasks board: draggable to another lane; the "…" menu and Alt+Left / Alt+Right move it for the keyboard (Planner Designs v52). */
 function BoardCard({ task, index, of, onDragging }: { task: Task; index: number; of: number; onDragging: (id: string | null) => void }) {
   const lists = usePlannerSelector((state) => state.lists);
+  const canMarkDone = usePlannerSelector((state) => canCompleteTask(state, task));
   const { open } = useTaskActions(task);
   const move = useMoveTask();
   const now = useNow();
@@ -45,7 +47,7 @@ function BoardCard({ task, index, of, onDragging }: { task: Task; index: number;
       aria-label={cardLabel(task.title, LANE_LABELS[here], index, of)}
       onKeyDown={(e) => {
         const to = laneForKey(e, cardLanes, here);
-        if (to === null) return;
+        if (to === null || (to === "done" && !canMarkDone)) return;
         e.preventDefault();
         move(task, to as Lane);
         focusCard(task.id);
@@ -69,7 +71,7 @@ function BoardCard({ task, index, of, onDragging }: { task: Task; index: number;
           <i style={{ width: `${steps.percent}%` }} />
         </div>
       )}
-      <CardMenu title={task.title} lanes={cardLanes} current={here} done={task.done} onOpen={open} onMarkDone={() => { move(task, "done"); focusCard(task.id); }} onMove={(l) => { move(task, l as Lane); focusCard(task.id); }} />
+      <CardMenu title={task.title} lanes={cardLanes} current={here} done={task.done} canMarkDone={canMarkDone} onOpen={open} onMarkDone={() => { move(task, "done"); focusCard(task.id); }} onMove={(l) => { move(task, l as Lane); focusCard(task.id); }} />
     </li>
   );
 }

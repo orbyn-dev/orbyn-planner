@@ -32,6 +32,7 @@ const NO_KEYS: readonly string[] = [];
 export function VirtualList<T>({ items, getKey, getRowId = getKey, children, className, label, estimateSize = 40, pinnedKeys = NO_KEYS, totalCount = items.length, as = "ul" }: VirtualListProps<T>) {
   "use no memo";
   const list = useRef<HTMLElement | null>(null);
+  const managedAria = useRef(new WeakMap<HTMLElement, Map<string, string>>());
   const List = as;
   const Gap = as === "ul" ? "li" : "div";
   const [port, setPort] = useState<HTMLElement | null>(null);
@@ -82,11 +83,25 @@ export function VirtualList<T>({ items, getKey, getRowId = getKey, children, cla
     };
     measure();
     const observer = new ResizeObserver(measure);
+    const watch = () => {
+    observer.disconnect();
     // Changes in preceding groups alter this list's offset, even when its own width stays the same.
     observer.observe(parent);
-    if (element.parentElement) observer.observe(element.parentElement);
+    let child: HTMLElement | null = element;
+    while (child && child !== parent) {
+      let sibling = child.previousElementSibling;
+      while (sibling) { observer.observe(sibling); sibling = sibling.previousElementSibling; }
+      child = child.parentElement;
+      if (child && child !== parent) observer.observe(child);
+    }
+    };
+    watch();
+    const mutation = new MutationObserver(() => { watch(); measure(); });
+    let ancestor = element.parentElement;
+    while (ancestor) { mutation.observe(ancestor, { childList: true }); if (ancestor === parent) break; ancestor = ancestor.parentElement; }
+    parent.addEventListener("scroll", measure, { passive: true });
     window.addEventListener("resize", measure);
-    return () => { observer.disconnect(); window.removeEventListener("resize", measure); };
+    return () => { mutation.disconnect(); observer.disconnect(); parent.removeEventListener("scroll", measure); window.removeEventListener("resize", measure); };
   }, [enabled]);
 
   const rows = enabled ? virtual.getVirtualItems() : items.map((item, index) => ({ index, key: getKey(item), start: 0, end: 0 }));
@@ -100,9 +115,25 @@ export function VirtualList<T>({ items, getKey, getRowId = getKey, children, cla
       element.dataset.virtualKey = getKey(items[index]!);
       if (enabled) element.style.marginBottom = index === items.length - 1 ? "0px" : `${gap}px`;
       else element.style.removeProperty("margin-bottom");
+      const attributes = managedAria.current.get(element);
       if (enabled && element.tagName === "LI") {
-        element.setAttribute("aria-posinset", String(index + 1));
-        element.setAttribute("aria-setsize", String(items.length));
+        const owned = attributes ?? new Map<string, string>();
+        const values: [string, string][] = [["aria-posinset", String(index + 1)], ["aria-setsize", String(items.length)]];
+        for (const [name, value] of values) {
+          const current = element.getAttribute(name);
+          const applied = owned.get(name);
+          if (applied !== undefined && current !== applied) owned.delete(name);
+          else if (applied !== undefined || current === null) {
+            element.setAttribute(name, value);
+            owned.set(name, value);
+          }
+        }
+        managedAria.current.set(element, owned);
+      } else if (attributes) {
+        for (const [name, applied] of attributes) {
+          if (element.getAttribute(name) === applied) element.removeAttribute(name);
+        }
+        managedAria.current.delete(element);
       }
       if (enabled) virtual.measureElement(element);
     });
@@ -111,7 +142,7 @@ export function VirtualList<T>({ items, getKey, getRowId = getKey, children, cla
       const row = elements.find((element) => element.dataset.virtualKey === target.key);
       if (row) {
         const targets = [...row.querySelectorAll<HTMLElement>(focusable)];
-        const element = row.matches(focusable) ? row : target.last ? targets.at(-1) : targets[0];
+        const element = target.last ? (targets.at(-1) ?? (row.matches(focusable) ? row : undefined)) : (row.matches(focusable) ? row : targets[0]);
         element?.focus({ preventScroll: true });
         pendingFocus.current = null;
       }
@@ -165,11 +196,22 @@ export function VirtualList<T>({ items, getKey, getRowId = getKey, children, cla
     virtual.scrollToIndex(index, { align: "auto" });
   };
 
+  const enter = () => {
+    if (!items.length) return;
+    const last = entryDirection.current === "last";
+    const index = last ? items.length - 1 : 0;
+    const key = keys[index]!;
+    pendingFocus.current = { key, last };
+    setRequestedKey(key);
+    virtual.scrollToIndex(index, { align: "auto" });
+  };
+
   let end = 0;
   const content = rows.map((row) => {
     const gap = enabled ? row.start - margin - end : 0;
+    const firstGap = end === 0;
     end = enabled ? row.end - margin + (row.index === items.length - 1 ? 0 : virtual.options.gap) : 0;
-    return <Fragment key={row.key}>{gap > 0 && <Gap data-virtual-gap aria-hidden="true" style={{ height: gap, padding: 0, border: 0 }} />}{children(items[row.index]!, row.index)}</Fragment>;
+    return <Fragment key={row.key}>{gap > 0 && <Gap data-virtual-gap tabIndex={row.index > 0 && firstGap ? 0 : undefined} aria-label={row.index > 0 && firstGap ? "More items" : undefined} aria-hidden={row.index > 0 && firstGap ? undefined : true} onFocus={enter} style={{ height: gap, padding: 0, border: 0 }} />}{children(items[row.index]!, row.index)}</Fragment>;
   });
   return <List ref={(element: HTMLElement | null) => { list.current = element; }} className={className} aria-label={label} style={enabled ? { rowGap: 0 } : undefined} onKeyDown={onKeyDown}
     onFocusCapture={(event) => {
@@ -187,6 +229,6 @@ export function VirtualList<T>({ items, getKey, getRowId = getKey, children, cla
     }}
     onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) { setFocusedKey(null); setRequestedKey(null); } }}>
     {content}
-    {enabled && virtual.getTotalSize() > end && <Gap data-virtual-gap aria-hidden="true" style={{ height: virtual.getTotalSize() - end, padding: 0, border: 0 }} />}
+    {enabled && virtual.getTotalSize() > end && <Gap data-virtual-gap tabIndex={0} aria-label="More items" onFocus={enter} style={{ height: virtual.getTotalSize() - end, padding: 0, border: 0 }} />}
   </List>;
 }

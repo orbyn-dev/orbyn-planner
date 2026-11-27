@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../app/App";
 import { ClockProvider } from "../../state/clock";
 import { formatDue } from "../../core/planner/dates";
+import { repeatEvery } from "../../core/planner/repeat";
 import { TOAST_MS } from "../../ui/product/UiProvider";
 import { LocalStore } from "../../data/local/LocalStore";
 import { MemoryPersistence } from "../../data/local/persistence";
@@ -338,4 +339,21 @@ describe("quick add preview", () => {
       expect(done().getByRole("button", { name: "yesterday one" })).toBeInTheDocument();
     });
   });
+});
+
+it("disables completing a recurring board task while hydration is partial", async () => {
+  window.history.replaceState(null, "", "/tasks");
+  const store = new LocalStore({ persistence: new MemoryPersistence(), now: () => NOW, broadcast: false });
+  await store.ready;
+  const task = store.addTask({ title: "Recurring work", due: "2026-11-07", repeat: repeatEvery("daily") });
+  const full = store.getState();
+  const partial = { ...full, ready: false, coverage: { phase: "partial" as const, metadata: true, openTasks: true, taskRecords: "partial" as const, eventRecords: "partial" as const, outbox: "loading" as const } };
+  const loading = Object.assign(Object.create(store) as LocalStore, { getState: () => partial });
+  render(<ClockProvider value={() => NOW}><App store={loading} /></ClockProvider>);
+  await userEvent.click(await screen.findByRole("radio", { name: "Board" }));
+  await userEvent.click(screen.getByRole("button", { name: "More for Recurring work" }));
+  expect(screen.getByRole("menuitem", { name: "Mark done" })).toBeDisabled();
+  await userEvent.click(screen.getByRole("menuitem", { name: "Move to" }));
+  expect(screen.getByRole("menuitemradio", { name: "Done" })).toBeDisabled();
+  expect(store.getState().tasks.find((t) => t.id === task.id)?.done).toBe(false);
 });

@@ -1,9 +1,10 @@
 import type { ApprovalEngine, AuthCrypto, DeviceKeys } from "../../core/account/authCrypto";
-import { emptySyncState, type MirrorIntent, type KeyStore, type StoredSession } from "./keyStore";
+import { emptySyncState, type MirrorOutcome, type PreparedMirrorIntent, type KeyStore, type StoredSession } from "./keyStore";
 import { ApiFailure } from "../../core/account/errors";
 
 /** Runs `fn` with nothing else in the same browser running one at the same time. */
 export type Lock = <T>(fn: () => Promise<T>) => Promise<T>;
+export type MirrorRequest<T> = PreparedMirrorIntent & { capture(result: T): MirrorOutcome };
 
 const LOCK_NAME = "orbyn-planner-engine";
 let chain: Promise<unknown> = Promise.resolve();
@@ -44,7 +45,7 @@ export interface EngineHost {
    * If the save fails, `run` fails, so a step that needs the new state (a signed removal, a
    * confirmation) is never sent. Do not call `run` from inside `fn`.
    */
-  run<T>(session: StoredSession, fn: (engine: ApprovalEngine) => T | Promise<T>, mirror?: Omit<MirrorIntent, "applied">): Promise<T>;
+  run<T>(session: StoredSession, fn: (engine: ApprovalEngine) => T | Promise<T>, mirror?: MirrorRequest<T>): Promise<T>;
   /** Forgets this device (keys, snapshot, wrapping key), under the same lock so no action is half-saved. Rejects if it could not. */
   forget(): Promise<void>;
   /** Runs `fn` under the engine's lock, for changes to the stored state that must not interleave with an action. Do not call `run` or `forget` from inside. */
@@ -123,7 +124,7 @@ export function createEngineHost(deps: {
     notice,
     forget: () => lock(() => deps.keys.clearDevice()),
     exclusive: (fn) => lock(fn),
-    run: (session, fn, mirror) =>
+    run: <T>(session: StoredSession, fn: (engine: ApprovalEngine) => T | Promise<T>, mirror?: MirrorRequest<T>) =>
       lock(async () => {
         const crypto = deps.crypto();
         // The keys come first: a device that has been signed out has none, and must not get a new wrapping key here.
@@ -164,7 +165,7 @@ export function createEngineHost(deps: {
 
           if (mirror) {
             const sync = (await deps.keys.loadSyncState()) ?? emptySyncState();
-            await deps.keys.saveSyncState({ ...sync, mirrorPending: [...(sync.mirrorPending ?? []).filter(intent => intent.id !== mirror.id), { ...mirror, applied: false }] });
+            await deps.keys.saveSyncState({ ...sync, mirrorPending: [...(sync.mirrorPending ?? []).filter(pending => pending.id !== mirror.id), { id: mirror.id, zone: mirror.zone, records: mirror.records, applied: false }] });
           }
           let result: Awaited<ReturnType<typeof fn>> | undefined;
           let failure: unknown;
@@ -178,7 +179,8 @@ export function createEngineHost(deps: {
           // Saved also after a refusal: counting a list or pinning a device is not undone by one. A
           // failed save is an error of its own unless the action already failed.
           try {
-            await deps.keys.saveSnapshot(running.snapshot(wrap), failed ? undefined : mirror?.id);
+            // A successful callback assigned result, including when T is void; a refused callback has no outcome to commit.
+            await deps.keys.saveSnapshot(running.snapshot(wrap), failed ? undefined : mirror?.id, !failed && mirror ? mirror.capture(result as T) : undefined);
             // Keep the email the keys were made for: without it the next sign-in to this same account
             // would look like another account's and ask to replace the person's own keys.
             const email = identity?.accountId === session.accountId ? identity.email : undefined;
@@ -187,7 +189,7 @@ export function createEngineHost(deps: {
             if (!failed) throw e;
           }
           if (failed) throw failure;
-          return result as never;
+          return result as T;
         } finally {
           // The module's memory goes back, whatever happened; the state was saved (or the save failed) above.
           engine?.free();

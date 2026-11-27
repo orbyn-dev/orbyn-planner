@@ -150,9 +150,10 @@ describe("snapshot and mirror atomic writer boundary", () => {
     await new Promise<void>((resolve, reject) => { tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error); });
     old.onversionchange = () => old.close();
     const current = createIdbKeyStore(); expect(await current.loadSession()).toEqual(session);
-    await current.saveSnapshot(new Uint8Array([2]), intent.id);
+    const outcome = { removed: ["task"], trashed: ["task"] };
+    await current.saveSnapshot(new Uint8Array([2]), intent.id, outcome);
     expect([...(await current.loadSnapshot())!]).toEqual([2]);
-    expect((await current.loadSyncState())?.mirrorPending).toEqual([{ ...intent, applied: true }]);
+    expect((await current.loadSyncState())?.mirrorPending).toEqual([{ ...intent, applied: true, outcome }]);
     expect((await indexedDB.databases())[0]?.version).toBe(KEY_DB_VERSION);
     await expect(new Promise((resolve, reject) => { const req = indexedDB.open(KEY_DB_NAME, 4); req.onsuccess = () => { req.result.close(); resolve(true); }; req.onerror = () => reject(req.error); })).rejects.toMatchObject({ name: "VersionError" });
   });
@@ -163,13 +164,15 @@ it("rolls back snapshot bytes and the applied marker together when their transac
   const intent = { id: "abort-intent", zone: "list:inbox", records: [{ id: "task" }], applied: false };
   await current.saveSyncState({ ...emptySyncState(), mirrorPending: [intent] }); await current.saveSnapshot(new Uint8Array([1]));
   const put = IDBObjectStore.prototype.put;
+  const writes: string[] = [];
   const spy = vi.spyOn(IDBObjectStore.prototype, "put").mockImplementation(function(this: IDBObjectStore, value: unknown, key?: IDBValidKey) {
     const result = put.call(this, value, key);
-    if (this.name === "snapshot") result.addEventListener("success", () => this.transaction.abort());
+    result.addEventListener("success", () => { writes.push(this.name); if (this.name === "sync") this.transaction.abort(); });
     return result;
   });
-  try { await expect(current.saveSnapshot(new Uint8Array([2]), intent.id)).rejects.toThrow("snapshot write was aborted"); }
+  try { await expect(current.saveSnapshot(new Uint8Array([2]), intent.id, { removed: ["task"], trashed: ["task"] })).rejects.toThrow("snapshot write was aborted"); }
   finally { spy.mockRestore(); }
+  expect(writes).toEqual(["snapshot", "sync"]);
   expect([...(await current.loadSnapshot())!]).toEqual([1]);
   expect((await current.loadSyncState())?.mirrorPending).toEqual([intent]);
 });

@@ -22,8 +22,14 @@ export interface MirrorIntent {
   records: { id: string; type?: string }[];
   /** Set atomically with the engine snapshot which may have advanced past these records. */
   applied: boolean;
+  /** Confirmed engine outcomes, committed with the snapshot. Absence alone is never a deletion. */
+  outcome?: MirrorOutcome;
 }
+export interface MirrorOutcome { removed: string[]; trashed: string[] }
+export type PreparedMirrorIntent = Omit<MirrorIntent, "applied" | "outcome">;
 export interface SyncState {
+  /** Increases when engine-side metadata is reset; older passes cannot write it back. Legacy state is generation zero. */
+  snapshotGeneration?: number;
   /** Durable local-mirror work; ids/types only, never record fields or keys. */
   mirrorPending?: MirrorIntent[];
   /** Zones this device writes to or reads, by name. */
@@ -72,7 +78,7 @@ export interface SyncState {
 
 /** What only the engine's snapshot can vouch for. Dropping or replacing the snapshot makes it untrue. */
 export function withoutEngineSide(state: SyncState): SyncState {
-  return { ...state, mirrorPending: [], staged: {}, stagedZone: {}, keysSent: {}, keysReached: {}, made: {}, quarantined: {}, verified: [], reset: true };
+  return { ...state, snapshotGeneration: (state.snapshotGeneration ?? 0) + 1, mirrorPending: [], staged: {}, stagedZone: {}, keysSent: {}, keysReached: {}, made: {}, quarantined: {}, verified: [], reset: true };
 }
 
 export const emptySyncState = (): SyncState => ({ zones: [], zoneOf: {}, staged: {}, stagedZone: {}, keysSent: {}, made: {}, approvals: {}, resentAt: {}, failed: {}, backoff: {}, quarantined: {}, lastSyncedAt: null });
@@ -99,7 +105,7 @@ export interface KeyStore {
   clearKeys(): Promise<void>;
   /** The sync engine's state, sealed by the module under the wrapping secret. Never stored unsealed. */
   loadSnapshot(): Promise<Uint8Array | null>;
-  saveSnapshot(sealed: Uint8Array, appliedMirror?: string): Promise<void>;
+  saveSnapshot(sealed: Uint8Array, appliedMirror?: string, outcome?: MirrorOutcome): Promise<void>;
   /**
    * Drops the snapshot. The sync state's engine-side parts (what was staged, which keys were sent or made) are reset in the
    * same step, since the engine that knew them is gone: every outbox entry is then staged again from the outbox.
@@ -275,7 +281,7 @@ export function createIdbKeyStore(factory: IDBFactory = indexedDB): KeyStore {
     saveKeys: (bytes) => put("device", bytes),
     clearKeys: () => remove("device"),
     loadSnapshot: () => get<Uint8Array>("snapshot"),
-    saveSnapshot: async (b, appliedMirror) => {
+    saveSnapshot: async (b, appliedMirror, outcome) => {
       if (!appliedMirror) return put("snapshot", b);
       const database = await open();
       const tx = database.transaction(["snapshot", "sync"], "readwrite");
@@ -283,7 +289,7 @@ export function createIdbKeyStore(factory: IDBFactory = indexedDB): KeyStore {
       const sync = tx.objectStore("sync");
       const read = sync.get("current") as IDBRequest<SyncState | undefined>;
       read.onsuccess = () => {
-        if (read.result) sync.put({ ...read.result, mirrorPending: read.result.mirrorPending?.map(intent => intent.id === appliedMirror ? { ...intent, applied: true } : intent) }, "current");
+        if (read.result) sync.put({ ...read.result, mirrorPending: read.result.mirrorPending?.map(intent => intent.id === appliedMirror ? { ...intent, applied: true, ...(outcome ? { outcome } : {}) } : intent) }, "current");
       };
       await new Promise<void>((resolve, reject) => {
         tx.oncomplete = () => resolve(); tx.onerror = tx.onabort = () => reject(tx.error ?? new Error("The snapshot write was aborted"));
@@ -361,9 +367,9 @@ export function createMemoryKeyStore(): KeyStore {
     saveKeys: async (b) => void (keys = b),
     clearKeys: async () => void (keys = null),
     loadSnapshot: async () => snapshot,
-    saveSnapshot: async (b, appliedMirror) => {
+    saveSnapshot: async (b, appliedMirror, outcome) => {
       snapshot = b;
-      if (appliedMirror && sync) sync = { ...sync, mirrorPending: sync.mirrorPending?.map(intent => intent.id === appliedMirror ? { ...intent, applied: true } : intent) };
+      if (appliedMirror && sync) sync = { ...sync, mirrorPending: sync.mirrorPending?.map(intent => intent.id === appliedMirror ? { ...intent, applied: true, ...(outcome ? { outcome } : {}) } : intent) };
     },
     clearSnapshot: async () => {
       snapshot = null;

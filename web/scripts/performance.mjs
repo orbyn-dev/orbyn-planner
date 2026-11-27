@@ -6,6 +6,7 @@ import { mkdtemp, readFile, rm, writeFile, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve, join, extname } from "node:path";
 import { parseArgs } from "node:util";
+import { navigatePage } from "./navigation.mjs";
 
 const { values } = parseArgs({ options: { dist: { type: "string" }, browser: { type: "string" }, out: { type: "string" }, runs: { type: "string", default: "10" }, label: { type: "string", default: "candidate" }, fixtures: { type: "string", default: "small,large" }, smoke: { type: "boolean", default: false }, screenshots: { type: "string" } } });
 if (!values.dist || !values.browser || !values.out) throw new Error("Pass --dist path/to/dist --browser existing/chromium.exe --out results.json [--runs 10]");
@@ -82,9 +83,7 @@ try {
         handlers.add(listen);
         await send("Network.setCacheDisabled", { cacheDisabled: mode !== "warm" }, sessionId);
         if (mode !== "warm") await send("Network.clearBrowserCache", {}, sessionId);
-        const loaded = new Promise((done) => { const onLoad = (m) => { if (m.sessionId === sessionId && m.method === "Page.loadEventFired") { handlers.delete(onLoad); done(); } }; handlers.add(onLoad); });
-        await send("Page.navigate", { url: `${origin}/today` }, sessionId);
-        await loaded;
+        await navigatePage(send, handlers, socket, sessionId, `${origin}/today`);
         const metrics = await evaluate(sessionId, `(${measurePage.toString()})()`);
         handlers.delete(listen);
         const result = { label: values.label, fixture, run: run + 1, mode, seed, ...metrics, requests, errors };
@@ -181,11 +180,32 @@ function observeUsability() {
 }
 
 async function smokeReview(send, evaluate, session, screenshots, fixture) {
-  const wait = async (predicate) => evaluate(session, `new Promise((resolve,reject)=>{const started=performance.now();function check(){if(${predicate})resolve(true);else if(performance.now()-started>15000)reject(new Error('UI condition timed out: '+${JSON.stringify(predicate)}));else requestAnimationFrame(check)}check()})`);
+  // Pass values through DevTools arguments rather than constructing executable source from them.
+  const call = async (fn, ...args) => {
+    const global = await send("Runtime.evaluate", { expression: "globalThis" }, session);
+    const objectId = global.result.objectId;
+    try {
+      const result = await send("Runtime.callFunctionOn", { objectId, functionDeclaration: fn.toString(), arguments: args.map((value) => ({ value })), awaitPromise: true, returnByValue: true }, session);
+      if (result.exceptionDetails) throw new Error(JSON.stringify(result.exceptionDetails));
+      return result.result.value;
+    } finally { await send("Runtime.releaseObject", { objectId }, session); }
+  };
+  const wait = (kind, value) => call((kind, value) => new Promise((resolve, reject) => {
+    const started = performance.now();
+    function check() {
+      const ready = kind === "heading" ? [...document.querySelectorAll("h1")].some((h) => h.textContent.includes(value))
+        : kind === "selector" ? document.querySelector(value) !== null
+          : document.activeElement?.closest("[data-row-id]")?.dataset.rowId === value;
+      if (ready) resolve(true);
+      else if (performance.now() - started > 15000) reject(new Error(`UI condition timed out: ${kind}`));
+      else requestAnimationFrame(check);
+    }
+    check();
+  }), kind, value);
   const frames = () => evaluate(session, "new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))");
   const clickRoute = async (path, heading) => {
-    await evaluate(session, `document.querySelector('a[href="${path}"]').click()`);
-    await wait(`[...document.querySelectorAll('h1')].some(h=>h.textContent.includes(${JSON.stringify(heading)}))`);
+    await call((path) => [...document.querySelectorAll("a")].find((a) => a.getAttribute("href") === path).click(), path);
+    await wait("heading", heading);
     await frames();
   };
   const capture = async (name) => {
@@ -200,13 +220,18 @@ async function smokeReview(send, evaluate, session, screenshots, fixture) {
   const listCount = await evaluate(session, "document.querySelectorAll('[data-row-id]').length");
   if (fixture !== "small" && listCount > 250) throw new Error(`Tasks mounted ${listCount} rows`);
   await evaluate(session, "[...document.querySelectorAll('[role=radio]')].find(b=>b.textContent==='Board').click()");
-  await wait("document.querySelector('.cards [data-row-id]') !== null");
+  await wait("selector", ".cards [data-row-id]");
   await frames();
   const geometry = await evaluate(session, `(()=>{for(const list of document.querySelectorAll('.cards')) {const rows=[...list.querySelectorAll(':scope > [data-row-id]')];for(let i=1;i<rows.length;i++){if(+rows[i].dataset.index===+rows[i-1].dataset.index+1){const gap=rows[i].getBoundingClientRect().top-rows[i-1].getBoundingClientRect().bottom;return {gap,expected:parseFloat(getComputedStyle(rows[i-1]).marginBottom),containerGap:getComputedStyle(list).rowGap}}}}return null})()`);
   if (fixture !== "small" && (!geometry || Math.abs(geometry.gap - 8) > 1)) throw new Error(`Card geometry mismatch: ${JSON.stringify(geometry)}`);
   const target = fixture === "small" ? "fixture-task-99" : "fixture-task-9999";
-  await evaluate(session, `document.dispatchEvent(new CustomEvent('planner:reveal-row',{detail:${JSON.stringify(target)}}))`);
-  await wait(`document.activeElement?.closest('[data-row-id]')?.dataset.rowId===${JSON.stringify(target)}`);
+  await call((id) => {
+    document.dispatchEvent(new CustomEvent("planner:reveal-row", { detail: id }));
+    // Small lists have no reveal subscription because all their rows are already mounted.
+    const row = [...document.querySelectorAll("[data-row-id]")].find((element) => element.dataset.rowId === id);
+    (row?.matches('[tabindex="0"]') ? row : row?.querySelector("button, input, [tabindex='0']"))?.focus();
+  }, target);
+  await wait("focus", target);
   const focusGeometry = await evaluate(session, `(()=>{const row=document.activeElement.closest('[data-row-id]');const box=row.getBoundingClientRect();const port=document.querySelector('.sheet-main').getBoundingClientRect();return {top:box.top,bottom:box.bottom,portTop:port.top,portBottom:port.bottom}})()`);
   if (focusGeometry.bottom < focusGeometry.portTop || focusGeometry.top > focusGeometry.portBottom) throw new Error(`Focused row outside viewport: ${JSON.stringify(focusGeometry)}`);
   await capture("board-focus");

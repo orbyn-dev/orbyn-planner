@@ -359,7 +359,19 @@ export function maskEmail(email: string): string {
  * email or password therefore never costs a trusted device its keys.
  */
 export async function signIn(services: AuthServices, input: { email: string; password: string; name?: string; replaceKeys?: boolean }, signal?: AbortSignal): Promise<StoredSession> {
+  const generation = services.tokens.getGeneration();
+  let committing = false;
+  const checkEntry = () => {
+    if (!committing && signal?.aborted) throw new DOMException("Account entry cancelled.", "AbortError");
+    if (generation !== services.tokens.getGeneration()) throw new ApiFailure("session_changed", 0, "Something went wrong with the sign-in. Try again.");
+  };
+  const beginCommit = () => {
+    checkEntry();
+    // Once binding starts, finish that identity and session together rather than reporting a cancellation after replacing keys.
+    committing = true;
+  };
   const crypto = await accountCrypto(services, signal);
+  checkEntry();
   let keys: DeviceKeys | null = null;
   let known = null as DeviceKeys | null;
   /** True while a code step holds this attempt's keys: they are released when it finishes or is cancelled. */
@@ -369,12 +381,15 @@ export async function signIn(services: AuthServices, input: { email: string; pas
     const email = emailOrFail(crypto, input.email);
     password = utf8(input.password);
     const saved = await services.keys.loadKeys();
+    checkEntry();
     const identity = saved ? await services.keys.loadIdentity() : null;
+    checkEntry();
     const foreign = saved !== null && identity?.email !== email;
     if (foreign && !input.replaceKeys) throw new KeysForAnotherAccount(identity?.email ? maskEmail(identity.email) : null);
     if (saved && !foreign) {
       const wrap = await services.wrapSecret();
       try {
+        checkEntry();
         known = crypto.deviceKeys.import(saved, wrap);
       } finally {
         wrap.fill(0);
@@ -391,10 +406,12 @@ export async function signIn(services: AuthServices, input: { email: string; pas
         signature: encodeBytes(known.signTrustedStart(email, pending.request, signedAt)),
       };
     }
-    const started = await services.api.loginStart({ email, credential_request: encodeBytes(pending.request), trusted_device: trusted });
-    // A wrong password fails here, on the device, and nothing more is sent.
+    let started: Awaited<ReturnType<AuthServices["api"]["loginStart"]>>;
     let finalization: Uint8Array;
     try {
+      started = await services.api.loginStart({ email, credential_request: encodeBytes(pending.request), trusted_device: trusted });
+      checkEntry();
+      // A wrong password fails here, on the device, and nothing more is sent.
       finalization = crypto.finishLogin(pending, password, decodeBytes(started.credential_response));
     } finally {
       pending.free?.(); // also after a wrong password: the module's memory goes back whatever happened
@@ -410,6 +427,7 @@ export async function signIn(services: AuthServices, input: { email: string; pas
         device_signature: encodeBytes(keys.signLogin(started.login_id)),
       });
     } catch (e) {
+      checkEntry();
       if (!(e instanceof ApiFailure && e.code === "second_factor_required")) throw e;
       // Two-factor is on: no session yet. The keys stay in memory for the code step, and the finally below must not release them.
       const held = keys;
@@ -420,27 +438,36 @@ export async function signIn(services: AuthServices, input: { email: string; pas
       const release = () => {
         if (released) return;
         released = true;
+        signal?.removeEventListener("abort", cancel);
         held.free();
+      };
+      const cancel = () => { if (!committing) release(); };
+      signal?.addEventListener("abort", cancel, { once: true });
+      const checkSecond = () => {
+        checkEntry();
+        if (released) throw new DOMException("Account entry cancelled.", "AbortError");
       };
       throw new SecondFactorNeeded(async (factor) => {
         const body: SecondFactorLogin = { login_id: loginId, code: factor.code ?? null, recovery_code: factor.recoveryCode ?? null };
         try {
+          checkSecond();
           const done = await services.api.loginSecondFactor(body);
-          await bindKeys(services, held, wasKnown, done, email, foreign);
+          checkSecond();
           const session = toStored(done, email, input.name ?? "");
-          await services.tokens.set(session);
+          await bindKeys(services, held, wasKnown, done, email, foreign, { check: checkSecond, beginCommit, session });
           release();
           return session;
         } catch (err) {
+          try { checkSecond(); } catch (cancelled) { release(); throw cancelled; }
           // A wrong code leaves the sign-in open for another try; anything else ends it.
           if (!(err instanceof ApiFailure && err.code === "second_factor_failed")) release();
           throw err;
         }
-      }, release);
+      }, cancel);
     }
-    await bindKeys(services, keys, known !== null, created, email, foreign);
+    checkEntry();
     const session = toStored(created, email, input.name ?? "");
-    await services.tokens.set(session);
+    await bindKeys(services, keys, known !== null, created, email, foreign, { check: checkEntry, beginCommit, session });
     return session;
   } catch (error) {
     return asFailure(error);
@@ -468,14 +495,19 @@ export async function confirmIdentity(services: AuthServices, session: StoredSes
  * keys are stored. Keys made for another account are replaced, with the old state wiped; the same
  * account under a new device id means the old row was removed, so the saved trust state is wiped.
  */
-async function bindKeys(services: AuthServices, keys: DeviceKeys, existing: boolean, created: SessionCreated, email: string, replaceKeys: boolean): Promise<void> {
+async function bindKeys(services: AuthServices, keys: DeviceKeys, existing: boolean, created: SessionCreated, email: string, replaceKeys: boolean, entry: { check: () => void; beginCommit: () => void; session: StoredSession }): Promise<void> {
+  const checkEntry = entry.check;
+  const commit = async (write: () => Promise<void>) => { entry.beginCommit(); await write(); };
   // Under the engine's lock, so no action in another tab is half-way through saving into what is wiped here.
   await services.engine.exclusive(async () => {
+    checkEntry();
     const identity = await services.keys.loadIdentity();
+    checkEntry();
     const seal = async () => {
       const wrap = await services.wrapSecret();
       try {
-        await services.keys.saveKeys(keys.export(wrap));
+        checkEntry();
+        await commit(() => services.keys.saveKeys(keys.export(wrap)));
       } finally {
         wrap.fill(0);
       }
@@ -484,7 +516,8 @@ async function bindKeys(services: AuthServices, keys: DeviceKeys, existing: bool
     const replace = async () => {
       const fresh = await services.freshWrap();
       try {
-        await services.keys.replaceDevice({ keys: keys.export(fresh.secret), wrapKey: fresh.key, identity: { accountId: created.account_id, deviceId: created.device_id, email } });
+        checkEntry();
+        await commit(() => services.keys.replaceDevice({ keys: keys.export(fresh.secret), wrapKey: fresh.key, identity: { accountId: created.account_id, deviceId: created.device_id, email } }));
       } finally {
         fresh.secret.fill(0);
       }
@@ -492,18 +525,19 @@ async function bindKeys(services: AuthServices, keys: DeviceKeys, existing: bool
     if (replaceKeys) {
       // The person agreed to give up the other account's keys, and this sign-in worked: only now.
       await replace();
-      return;
-    }
-    if (!existing) {
-      await services.keys.clearSnapshot(); // no keys were here: whatever snapshot there is is not theirs
+    } else if (!existing) {
+      await commit(() => services.keys.clearSnapshot()); // no keys were here: whatever snapshot there is is not theirs
+      checkEntry();
       await seal();
     } else if (identity && identity.accountId !== created.account_id) {
       await replace();
-      return;
     } else if (!identity || identity.deviceId !== created.device_id) {
-      await services.keys.clearSnapshot();
+      await commit(() => services.keys.clearSnapshot());
     }
-    await services.keys.saveIdentity({ accountId: created.account_id, deviceId: created.device_id, email });
+    checkEntry();
+    await commit(() => services.keys.saveIdentity({ accountId: created.account_id, deviceId: created.device_id, email }));
+    checkEntry();
+    await services.tokens.set(entry.session);
   });
 }
 

@@ -94,7 +94,7 @@ export function DayPanel() {
           {occurrences.length > 0 && (
             <>
               <div className="bh"><b>Events</b><span>{occurrences.length}</span></div>
-              <VirtualList className="blk" items={occurrences} getKey={(o) => `event:${o.event.id}:${o.date}`}>
+              <VirtualList className="blk" items={occurrences} getKey={(o) => `event:${o.event.id}:${o.date}`} getRowId={(o) => o.event.id}>
                 {(o) => (
                   <li className="row" data-row-id={o.event.id} style={{ gridTemplateColumns: "var(--sp-44) var(--sp-16) minmax(0,1fr) auto" }}>
                     <span className="time">{o.allDay ? "All day" : formatTime(parseDue(o.start).date)}</span>
@@ -109,7 +109,7 @@ export function DayPanel() {
           {dayTasks.length > 0 && (
             <>
               <div className="bh"><b>Tasks</b><span>{dayTasks.length}</span></div>
-              <VirtualList className="blk" items={dayTasks} getKey={(t) => `task:${t.id}`}>
+              <VirtualList className="blk" items={dayTasks} getKey={(t) => `task:${t.id}`} getRowId={(t) => t.id}>
                 {(t) => <TaskLine task={t} listName={lists.find((l) => l.id === t.listId)?.name ?? ""} />}
               </VirtualList>
             </>

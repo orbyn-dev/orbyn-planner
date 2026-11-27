@@ -7,7 +7,7 @@ import { UiProvider, useUi } from "../../ui/product/UiProvider";
 import { EventPanel } from "./EventPanel";
 import { NewEventDialog } from "./NewEventDialog";
 import { NewTaskDialog } from "../tasks";
-import { act, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { firstRunDoneForTests } from "../../test-setup";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -779,6 +779,8 @@ describe("Calendar loading and sync error (Planner Designs p-cal-loading, p-cal-
       const loading = Object.assign(Object.create(store) as LocalStore, { getState: () => notReady });
       await act(async () => { render(<ClockProvider value={() => NOW}><App store={loading} /></ClockProvider>); });
       expect(screen.getByRole("button", { name: "New event" })).toBeDisabled();
+      fireEvent.click(screen.getByRole("button", { name: "Calendars" }));
+      expect(screen.getAllByRole("menuitemcheckbox").every((item) => item.hasAttribute("disabled"))).toBe(true);
       expect(screen.getByRole("button", { name: "New event" })).toBeInTheDocument(); // the header stays
       expect(screen.queryByText("Loading this week’s events")).toBeNull();
       await act(async () => void (await vi.advanceTimersByTimeAsync(450)));

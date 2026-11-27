@@ -1,6 +1,7 @@
 import { useNow } from "../../state/clock";
 import { useUi } from "../../ui/product/UiProvider";
 import { useStore } from "../../state/store";
+import { canCompleteTask } from "../../core/planner/coverage";
 import { LANE_LABELS, laneOf, moveTo, type Lane } from "../../core/planner/taskStatus";
 import { undoableTasks } from "../../core/planner/taskRepeat";
 import type { Task } from "../../core/planner/types";
@@ -16,7 +17,7 @@ export function useMoveTask() {
   const now = useNow();
   return (task: Task, lane: Lane) => {
     const from = laneOf(task);
-    if (from === lane) return;
+    if (from === lane || (lane === "done" && !canCompleteTask(store.getState(), task))) return;
     const stamp = new Date(now).toISOString();
     if (lane === "done" && task.repeat) {
       store.setDone(task.id, true);

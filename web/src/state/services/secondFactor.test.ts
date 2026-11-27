@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ApiFailure } from "../../core/account/errors";
 import { createMemoryKeyStore } from "../../data/account/keyStore";
 import { FakeAuthCrypto } from "../../testing/FakeAuthCrypto";
@@ -31,6 +31,27 @@ async function needsCode(services: AuthServices) {
 }
 
 describe("signing in to an account with two-factor on", () => {
+  it("does not bind or publish a code response after the person cancels", async () => {
+    const { second } = await accountWithTotp();
+    const step = await needsCode(second);
+    let entered!: () => void;
+    let release!: () => void;
+    const waiting = new Promise<void>((resolve) => { entered = resolve; });
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const original = second.api.loginSecondFactor;
+    vi.spyOn(second.api, "loginSecondFactor").mockImplementationOnce(async (input) => {
+      const result = await original(input); entered(); await gate; return result;
+    });
+    const result = step.complete({ code: MOCK_TOTP_CODE }).catch((error: unknown) => error);
+    await waiting;
+    step.cancel();
+    release();
+    expect(await result).toMatchObject({ name: "AbortError" });
+    expect(second.tokens.getSession()).toBeNull();
+    expect(await second.keys.loadKeys()).toBeNull();
+    expect(await second.keys.loadIdentity()).toBeNull();
+  });
+
   it("stops at a code step with no session, and a wrong code leaves it open for another try", async () => {
     const { second } = await accountWithTotp();
     const step = await needsCode(second);

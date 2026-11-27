@@ -29,7 +29,8 @@ beforeEach(() => {
   vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(200);
   vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
     const height = this.dataset.rowId ? items.find((item) => item.id === this.dataset.rowId)?.height ?? 40 : 200;
-    return { top: 0, left: 0, right: 300, bottom: height, width: 300, height, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+    const top = this.tagName === "UL" ? -(this.parentElement?.scrollTop ?? 0) : 0;
+    return { top, left: 0, right: 300, bottom: top + height, width: 300, height, x: 0, y: top, toJSON: () => ({}) } as DOMRect;
   });
   HTMLElement.prototype.scrollTo = function (options?: ScrollToOptions | number, y?: number) {
     this.scrollTop = typeof options === "number" ? y ?? 0 : options?.top ?? 0;
@@ -88,4 +89,88 @@ describe("VirtualList", () => {
     fireEvent.keyDown(button, { key: "Tab" });
     await waitFor(() => expect(screen.getByRole("button", { name: `item-${next}` })).toHaveFocus());
   });
+});
+
+it("clears virtual list ARIA when the list shrinks below the threshold", () => {
+  const view = render(<List />);
+  expect(screen.getByRole("button", { name: "item-0" }).closest("li")).toHaveAttribute("aria-setsize", "200");
+  view.rerender(<List rows={items.slice(0, 3)} />);
+  expect(screen.getByRole("button", { name: "item-0" }).closest("li")).not.toHaveAttribute("aria-setsize");
+  expect(screen.getByRole("button", { name: "item-0" }).closest("li")).not.toHaveAttribute("aria-posinset");
+});
+
+it("Shift+Tab enters the preceding focusable card at its last descendant", async () => {
+  render(<div style={{ overflowY: "auto" }}><VirtualList items={items} getKey={key}>{(item) => <li tabIndex={0} data-row-id={item.id}><button>{item.id} first</button><button>{item.id} last</button></li>}</VirtualList></div>);
+  const firstButton = screen.getByRole("button", { name: "item-1 first" });
+  const card = firstButton.closest("li")!;
+  card.focus();
+  fireEvent.keyDown(card, { key: "Tab", shiftKey: true });
+  await waitFor(() => expect(screen.getByRole("button", { name: "item-0 last" })).toHaveFocus());
+});
+
+it("enters an entirely offscreen group from either Tab direction", async () => {
+  vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(800);
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+    const top = this.getAttribute("aria-label") === "Second" ? 2000 - (this.parentElement?.scrollTop ?? 0) : 0;
+    return { top, left: 0, right: 300, bottom: top + 800, width: 300, height: 800, x: 0, y: top, toJSON: () => ({}) } as DOMRect;
+  });
+  const group = items.slice(100, 120);
+  render(<div data-testid="port" style={{ overflowY: "auto" }}><VirtualList items={group} totalCount={200} getKey={key} label="Second">{(item) => <li data-row-id={item.id}><button>{item.id}</button></li>}</VirtualList></div>);
+  const list = screen.getByRole("list", { name: "Second" });
+  expect(list.querySelectorAll("li[data-row-id]")).toHaveLength(0);
+  fireEvent.keyDown(document.body, { key: "Tab" });
+  fireEvent.focus(list.querySelector<HTMLElement>('[data-virtual-gap][tabindex="0"]')!);
+  await waitFor(() => expect(screen.getByRole("button", { name: "item-100" })).toHaveFocus());
+  const port = screen.getByTestId("port");
+  act(() => { port.scrollTop = 0; fireEvent.scroll(port); });
+  fireEvent.blur(screen.getByRole("button", { name: "item-100" }));
+  fireEvent.keyDown(document.body, { key: "Tab", shiftKey: true });
+  fireEvent.focus(list.querySelector<HTMLElement>('[data-virtual-gap][tabindex="0"]')!);
+  await waitFor(() => expect(screen.getByRole("button", { name: "item-119" })).toHaveFocus());
+});
+
+it("remeasures a group's offset when an earlier sibling shrinks", async () => {
+  let top = 1000;
+  const observers: { callback: ResizeObserverCallback; targets: Element[]; self: ResizeObserver }[] = [];
+  vi.stubGlobal("ResizeObserver", class {
+    private record: { callback: ResizeObserverCallback; targets: Element[]; self: ResizeObserver };
+    constructor(callback: ResizeObserverCallback) { this.record = { callback, targets: [], self: this as unknown as ResizeObserver }; observers.push(this.record); }
+    observe(target: Element) { this.record.targets.push(target); }
+    unobserve() {}
+    disconnect() {}
+  });
+  vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(500);
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+    const y = this.getAttribute("aria-label") === "Second" ? top : 0;
+    return { top: y, left: 0, right: 300, bottom: y + 200, width: 300, height: 200, x: 0, y, toJSON: () => ({}) } as DOMRect;
+  });
+  const view = (before: boolean) => <div style={{ overflowY: "auto" }}>{before && <section key="previous" data-testid="previous" />}<section key="group"><VirtualList items={items.slice(100, 120)} totalCount={200} getKey={key} label="Second">{(item) => <li data-row-id={item.id}><button>{item.id}</button></li>}</VirtualList></section>{!before && <section key="previous" data-testid="previous" />}</div>;
+  const { rerender } = render(view(true));
+  const previous = screen.getByTestId("previous");
+  expect(screen.queryByRole("button", { name: "item-100" })).toBeNull();
+  top = 0;
+  act(() => { for (const observer of observers) if (observer.targets.includes(previous)) observer.callback([{ target: previous, contentRect: { width: 300, height: 200 }, borderBoxSize: [{ inlineSize: 300, blockSize: 200 }] } as unknown as ResizeObserverEntry], observer.self); });
+  await waitFor(() => expect(screen.getByRole("button", { name: "item-100" })).toBeInTheDocument());
+  top = 1000;
+  rerender(view(false));
+  await waitFor(() => expect(screen.queryByRole("button", { name: "item-100" })).toBeNull());
+  top = 0;
+  rerender(view(true));
+  await waitFor(() => expect(screen.getByRole("button", { name: "item-100" })).toBeInTheDocument());
+});
+
+it("preserves child ARIA through virtualization, including a value matching the computed position", () => {
+  const provided = (rows: Item[], position: number) => <div style={{ overflowY: "auto" }}><VirtualList items={rows} getKey={key}>{(item) => <li data-row-id={item.id} aria-posinset={position} aria-setsize={777}><button>{item.id}</button></li>}</VirtualList></div>;
+  const view = render(provided(items.slice(0, 3), 42));
+  const row = () => screen.getByRole("button", { name: "item-0" }).closest("li")!;
+  expect(row()).toHaveAttribute("aria-posinset", "42");
+  expect(row()).toHaveAttribute("aria-setsize", "777");
+  view.rerender(provided(items, 42));
+  expect(row()).toHaveAttribute("aria-posinset", "42");
+  expect(row()).toHaveAttribute("aria-setsize", "777");
+  view.rerender(provided(items, 1));
+  expect(row()).toHaveAttribute("aria-posinset", "1");
+  view.rerender(provided(items.slice(0, 3), 1));
+  expect(row()).toHaveAttribute("aria-posinset", "1");
+  expect(row()).toHaveAttribute("aria-setsize", "777");
 });

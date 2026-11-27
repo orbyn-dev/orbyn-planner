@@ -115,8 +115,7 @@ try {
   console.log(`wasm-opt ${lock.binaryen.version} ${lock.binaryen.flags.join(" ")}: ${before} -> ${after} bytes`);
   const missing = FILES.filter((f) => !existsSync(join(out, f)));
   if (missing.length > 0) {
-    console.error(`wasm: wasm-bindgen did not make ${missing.join(", ")}`);
-    process.exit(1);
+    throw new Error(`wasm: wasm-bindgen did not make ${missing.join(", ")}`);
   }
   if (check) {
     const have = existsSync(target) ? readdirSync(target) : [];
@@ -152,8 +151,7 @@ try {
       else problems.push("orbyn_wasm_bg.wasm differs from a fresh build of the pinned commit. The committed one is the Linux build; rebuild it on Linux (see docs/architecture.md) and commit it.");
     }
     if (problems.length > 0) {
-      console.error(`wasm:check: src/generated/wasm is out of date:\n  - ${problems.join("\n  - ")}\nRun npm run wasm.`);
-      process.exit(1);
+      throw new Error(`wasm:check: src/generated/wasm is out of date:\n  - ${problems.join("\n  - ")}\nRun npm run wasm.`);
     }
     console.log(`wasm:check: ${FILES.length} file(s) match a fresh build of ${engine}`);
   } else {

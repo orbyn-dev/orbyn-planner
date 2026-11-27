@@ -1,6 +1,7 @@
 import { ApiFailure } from "../../core/account/errors";
 import type { ApprovalEngine, SyncApi } from "../../core/account/authCrypto";
-import { emptySyncState, type MirrorIntent, type StoredSession, type SyncState } from "../../data/account/keyStore";
+import { emptySyncState, type PreparedMirrorIntent, type StoredSession, type SyncState } from "../../data/account/keyStore";
+import type { MirrorRequest } from "../../data/account/engineHost";
 import { signStandardProtection } from "./flows";
 import type { AuthServices } from "./auth";
 import type { DeviceList } from "../../generated/DeviceList";
@@ -72,6 +73,8 @@ const MAX_BATCHES = 50;
 const MAX_RECORD_BYTES = 200_000;
 const BACKOFF_FIRST_MS = 60_000;
 const BACKOFF_MAX_MS = 15 * 60_000;
+class SnapshotReset extends Error {}
+const snapshotGeneration = (state: SyncState | null) => state?.snapshotGeneration ?? 0;
 
 /** The Inbox and the Personal calendar, as every device makes them on first start. */
 function isDefaultRecord(o: OutboxEntry): boolean {
@@ -90,6 +93,22 @@ function isDefaultRecord(o: OutboxEntry): boolean {
  * saved or shown, so a pass that outlives `stop()` (a sign-out) changes nothing.
  */
 export async function runCycle(
+  services: AuthServices,
+  session: StoredSession,
+  store: PlannerStore,
+  tokens: ZoneTokens = pinnedTokens,
+  signal: { aborted: boolean } = { aborted: false },
+): Promise<CycleReport> {
+  for (let attempt = 0; ; attempt++) {
+    try { return await cycle(services, session, store, tokens, signal); }
+    catch (error) {
+      if (!(error instanceof SnapshotReset)) throw error;
+      if (attempt === 2) throw new SyncError("failed", "The saved sync state changed. Try again.");
+    }
+  }
+}
+
+async function cycle(
   services: AuthServices,
   session: StoredSession,
   store: PlannerStore,
@@ -115,11 +134,12 @@ export async function runCycle(
       alive();
       if (!(await keyStore.loadKeys())) throw new Aborted(); // forgotten: the state must not come back
       const latest = await keyStore.loadSyncState();
+      if (snapshotGeneration(latest) !== snapshotGeneration(state)) throw new SnapshotReset();
       await keyStore.saveSyncState({ ...state, mirrorPending: latest?.mirrorPending });
     });
   };
 
-  const withEngine = async <T>(fn: (e: Engine) => T | Promise<T>, mirror?: Omit<MirrorIntent, "applied">): Promise<T> => {
+  const withEngine = async <T>(fn: (e: Engine) => T | Promise<T>, mirror?: MirrorRequest<T>): Promise<T> => {
     alive();
     const result = await services.engine.run(
       session,
@@ -130,6 +150,7 @@ export async function runCycle(
       mirror,
     );
     alive();
+    if (snapshotGeneration(await keyStore.loadSyncState()) !== snapshotGeneration(state)) throw new SnapshotReset();
     return result;
   };
 
@@ -214,6 +235,12 @@ export async function runCycle(
     for (const id of [...applied.changed, ...applied.removed, ...applied.evicted]) if (!rejected.includes(id)) waiting.delete(id);
     if (waiting.size > 0) state.quarantined[zone] = [...waiting];
     else delete state.quarantined[zone];
+    for (const pending of outbox.values()) {
+      const key = refKey(pending);
+      if (waiting.has(pending.id) && (state.stagedZone[key] ?? state.zoneOf[key]) === zone && !e.sync.record(zone, pending.id)) {
+        delete state.staged[key]; delete state.stagedZone[key];
+      }
+    }
     return out;
   }
 
@@ -238,10 +265,10 @@ export async function runCycle(
 
   /** The engine page has already advanced its token. If local storage races, collect the same
    * engine result again against a fresh authoritative outbox, rather than dropping its mirror update. */
-  async function mergeApplied(zone: string, applied: Applied, options: { retried?: boolean; types?: Map<string, string> } = {}): Promise<void> {
+  async function mergeApplied(zone: string, applied: Applied, options: { retried?: boolean; types?: Map<string, string>; prepared?: PlannerState } = {}): Promise<void> {
     for (let attempt = 0; attempt < 3; attempt++) {
       alive();
-      const prepared = store.prepareSync ? await store.prepareSync() : undefined;
+      const prepared = attempt === 0 && options.prepared ? options.prepared : store.prepareSync ? await store.prepareSync() : undefined;
       const droppedBefore = dropped.length;
       const noticesBefore = report.trashedEdits.length;
       const changes = await withEngine(e => collect(e, zone, applied, options));
@@ -256,7 +283,7 @@ export async function runCycle(
     }
   }
 
-  async function mirrorIntent(zone: string, records: { id: string; type?: string }[]): Promise<Omit<MirrorIntent, "applied">> {
+  async function mirrorIntent(zone: string, records: { id: string; type?: string }[]): Promise<{ intent: PreparedMirrorIntent; prepared: PlannerState }> {
     const snapshot = store.prepareSync ? await store.prepareSync() : store.getState();
     const refs = new Map(records.map(record => [record.id, record]));
     for (const [type, key] of Object.entries(STORE_KEY)) {
@@ -264,15 +291,18 @@ export async function runCycle(
         if (zoneOf(type as RecordType, record) === zone && !refs.has(record.id)) refs.set(record.id, { id: record.id, type });
       }
     }
-    return { id: crypto.randomUUID(), zone, records: [...refs.values()] };
+    return { intent: { id: crypto.randomUUID(), zone, records: [...refs.values()] }, prepared: snapshot };
   }
 
-  async function clearMirror(id: string): Promise<void> {
+  const appliedIntent = (intent: PreparedMirrorIntent): MirrorRequest<Applied> => ({ ...intent, capture: result => ({ removed: [...result.removed], trashed: [...result.trashed] }) });
+
+  async function clearMirror(id: string, onlyUnapplied = false): Promise<void> {
     alive();
     await services.engine.exclusive(async () => {
       alive();
       if (!(await keyStore.loadKeys())) throw new Aborted();
       const latest = await keyStore.loadSyncState();
+      if (onlyUnapplied && latest?.mirrorPending?.some(intent => intent.id === id && intent.applied)) return;
       if (latest) await keyStore.saveSyncState({ ...latest, mirrorPending: latest.mirrorPending?.filter(intent => intent.id !== id) });
     });
   }
@@ -281,20 +311,23 @@ export async function runCycle(
     const pending = (await keyStore.loadSyncState())?.mirrorPending ?? [];
     for (const intent of pending) {
       alive();
-      if (!intent.applied) { await clearMirror(intent.id); continue; }
+      if (!intent.applied) { await clearMirror(intent.id, true); continue; }
       const applied = await withEngine(async e => {
         // Restoring a missing/unreadable engine snapshot clears its obsolete mirror queue. Check
         // again after restore before treating an old intent as proof of a canonical absence.
-        if (!(await keyStore.loadSyncState())?.mirrorPending?.some(i => i.id === intent.id && i.applied)) return null;
+        const committed = (await keyStore.loadSyncState())?.mirrorPending?.find(i => i.id === intent.id && i.applied);
+        if (!committed) return null;
         const quarantined = new Set(parse<{ record_id: string }[]>(e.sync.quarantined(intent.zone)).map(r => r.record_id));
-        const changed: string[] = []; const removed: string[] = [];
+        const changed: string[] = [];
         for (const record of intent.records) {
           if (quarantined.has(record.id)) continue;
-          if (e.sync.record(intent.zone, record.id)) changed.push(record.id); else removed.push(record.id);
+          if (e.sync.record(intent.zone, record.id)) changed.push(record.id);
         }
-        return { changed, removed, trashed: removed, quarantined: [...quarantined], unverified_deletes: [], evicted: [], rejected: [], more: false } satisfies Applied;
+        const removed = (committed.outcome?.removed ?? []).filter(id => !quarantined.has(id) && !e.sync.record(intent.zone, id));
+        return { changed, removed, trashed: (committed.outcome?.trashed ?? []).filter(id => removed.includes(id)), quarantined: [...quarantined], unverified_deletes: [], evicted: [], rejected: [], more: false } satisfies Applied;
       });
-      if (applied) await mergeApplied(intent.zone, applied, { types: new Map(intent.records.flatMap(r => r.type ? [[r.id, r.type] as const] : [])) });
+      if (!applied) throw new SnapshotReset();
+      await mergeApplied(intent.zone, applied, { retried: true, types: new Map(intent.records.flatMap(r => r.type ? [[r.id, r.type] as const] : [])) });
       await save();
       await clearMirror(intent.id);
     }
@@ -417,9 +450,9 @@ export async function runCycle(
     for (const zone of accepted.zones) {
       if (!state.zones.includes(zone)) state.zones.push(zone);
       const ids = await withEngine(e => parse<{ record_id: string }[]>(e.sync.quarantined(zone)).map(r => ({ id: r.record_id })));
-      const intent = await mirrorIntent(zone, ids);
-      const applied = await withEngine(e => parse<Applied>(e.sync.retryQuarantined(zone, now())), intent);
-      await mergeApplied(zone, applied, { retried: true });
+      const { intent, prepared } = await mirrorIntent(zone, ids);
+      const applied = await withEngine(e => parse<Applied>(e.sync.retryQuarantined(zone, now())), appliedIntent(intent));
+      await mergeApplied(zone, applied, { retried: true, prepared });
       await save(); await clearMirror(intent.id);
     }
   }
@@ -474,9 +507,9 @@ export async function runCycle(
         continue; // restarted: fetch the zone again from the start
       }
       const types = new Map(body.records.map((r) => [r.record_id, r.record_type] as const));
-      const intent = await mirrorIntent(zone, body.records.map(record => ({ id: record.record_id, type: record.record_type })));
-      const applied = await withEngine((e) => tokens.applyPage(e, zone, since, body, now()), intent);
-      await mergeApplied(zone, applied, { types });
+      const { intent, prepared } = await mirrorIntent(zone, body.records.map(record => ({ id: record.record_id, type: record.record_type })));
+      const applied = await withEngine((e) => tokens.applyPage(e, zone, since, body, now()), appliedIntent(intent));
+      await mergeApplied(zone, applied, { types, prepared });
       await save(); await clearMirror(intent.id);
       if (!body.more) break;
     }
@@ -608,9 +641,9 @@ export async function runCycle(
           // Someone changed those records first: merge their copies and send again.
           const conflict = error.body as RecordChanged;
           const types = new Map(conflict.conflicts.flatMap((c) => (c.server_record ? [[c.record_id, c.server_record.record_type] as const] : [])));
-          const intent = await mirrorIntent(zone, conflict.conflicts.map(record => ({ id: record.record_id, type: record.server_record?.record_type })));
-          const applied = await withEngine((e) => parse<Applied>(e.sync.uploadConflicted(zone, JSON.stringify(conflict), now())), intent);
-          await mergeApplied(zone, applied, { types });
+          const { intent, prepared } = await mirrorIntent(zone, conflict.conflicts.map(record => ({ id: record.record_id, type: record.server_record?.record_type })));
+          const applied = await withEngine((e) => parse<Applied>(e.sync.uploadConflicted(zone, JSON.stringify(conflict), now())), appliedIntent(intent));
+          await mergeApplied(zone, applied, { types, prepared });
           await save(); await clearMirror(intent.id);
           continue;
         }
@@ -657,7 +690,11 @@ export async function runCycle(
   // 6. Clear what was acknowledged ------------------------------------------------------------------------
   alive();
   const acknowledgedSnapshot = store.prepareSync ? await store.prepareSync() : store.getState();
-  const sent = acknowledgedSnapshot.outbox.filter((o) => state.staged[refKey(o)] === o.idempotencyKey && (state.stagedZone[refKey(o)] === undefined || sentZones.has(state.stagedZone[refKey(o)]!)))
+  const sent = acknowledgedSnapshot.outbox.filter((o) => {
+    const key = refKey(o); const zone = state.stagedZone[key] ?? state.zoneOf[key];
+    // A keyless/quarantined engine can have nothing uploadable without having sent this local edit.
+    return state.staged[key] === o.idempotencyKey && !(zone && state.quarantined[zone]?.includes(o.id)) && (state.stagedZone[key] === undefined || sentZones.has(state.stagedZone[key]!));
+  })
     .map((o) => ({ type: o.type, id: o.id, idempotencyKey: o.idempotencyKey }));
   await store.acknowledge(sent);
   for (const s of sent) {

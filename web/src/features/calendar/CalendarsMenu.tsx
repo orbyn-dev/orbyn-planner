@@ -12,6 +12,7 @@ import { usePlannerSelector, useStore } from "../../state/store";
  */
 export function CalendarsMenu() {
   const store = useStore();
+  const ready = usePlannerSelector((state) => state.ready);
   const calendars = usePlannerSelector((state) => state.calendars);
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -19,12 +20,12 @@ export function CalendarsMenu() {
   const menu = usePopover(open, () => setOpen(false), anchor);
 
   useEffect(() => {
-    if (open) menu.current?.querySelector<HTMLButtonElement>("[role=menuitemcheckbox]")?.focus();
+    if (open) menu.current?.querySelector<HTMLButtonElement>("[role=menuitemcheckbox]:not(:disabled), [role=menuitem]:not(:disabled)")?.focus();
   }, [open, menu]);
 
   const onKey = (e: React.KeyboardEvent) => {
     if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
-    const items = [...(menu.current?.querySelectorAll<HTMLButtonElement>("[role^=menuitem]") ?? [])];
+    const items = [...(menu.current?.querySelectorAll<HTMLButtonElement>("[role^=menuitem]:not(:disabled)") ?? [])];
     if (items.length === 0) return;
     e.preventDefault();
     const at = items.indexOf(document.activeElement as HTMLButtonElement);
@@ -46,6 +47,7 @@ export function CalendarsMenu() {
               type="button"
               role="menuitemcheckbox"
               aria-checked={c.visible}
+              disabled={!ready}
               className="mi"
               onClick={() => store.updateCalendar(c.id, { visible: !c.visible })}
             >
