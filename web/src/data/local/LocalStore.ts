@@ -90,6 +90,8 @@ export class LocalStore implements PlannerStore {
   private pending = new Map<string, number>();
   /** Refs skipped to protect optimistic edits remain owed even if the journal cursor advances. */
   private deferredRefresh = new Map<string, Ref>();
+  /** A committed write can still owe a read retry; this is not an unsaved-write failure. */
+  private deferredReadError: unknown;
   /** Purged tag ids: a task that still carries one has it cleared the next time it is edited (no rewrite of the rest). */
   private purgedTags = new Set<string>();
   private channel: BroadcastChannel | null = null;
@@ -348,7 +350,10 @@ export class LocalStore implements PlannerStore {
       await this.flush();
       if (this.closed || this.state.persistence.status === "failed" && this.state.persistence.reason !== new StaleOperation().message) throw new Error("The planner is not ready to sync");
       const boundary = this.writes;
-      await this.reconcileDeferred();
+      if (this.deferredReadError || this.deferredRefresh.size) {
+        await this.reconcileDeferred(); // Retained refs retry here; a continuing read failure reaches the sync caller.
+        this.deferredReadError = undefined;
+      }
       if (this.writes !== boundary) continue;
       let captured: DatabaseStamp | undefined;
       if (this.stamp && this.persistence.changes) {
@@ -583,7 +588,6 @@ export class LocalStore implements PlannerStore {
         // complete-set operations; advancing over it would hide a lost broadcast from another tab.
         if (result.stamp && result.before && this.stamp && result.before.generation === this.stamp.generation && result.before.revision === this.stamp.revision) this.stamp = result.stamp;
         this.channel?.postMessage({ tab: this.tab, refs: patches.map((p) => ({ type: p.type, id: p.id })) });
-        await this.reconcileDeferred(patches);
       } catch (error) {
         failure = error;
         if (!settled) for (const p of patches) this.pending.set(refKey(p), (this.pending.get(refKey(p)) ?? 1) - 1);
@@ -595,6 +599,16 @@ export class LocalStore implements PlannerStore {
           try { this.install(await this.persistence.load()); } catch { /* Keep the visible failure if recovery cannot read. */ }
           this.setPersistence({ status: "failed", reason: error.message });
         } else this.setPersistence({ status: "failed", reason: describe(error, "write") });
+      }
+      if (settled && !failure && !this.closed) {
+        try {
+          await this.reconcileDeferred(patches);
+          if (!this.deferredRefresh.size) this.deferredReadError = undefined;
+        } catch (error) {
+          // apply already committed. Keep both the cause and owed refs for preparation to retry,
+          // without rejecting that successful commit or labelling its durable changes unsaved.
+          this.deferredReadError = error;
+        }
       }
     });
     return this.writes.then(() => { if (propagate && failure) throw failure; });

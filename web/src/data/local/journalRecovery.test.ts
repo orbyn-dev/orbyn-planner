@@ -120,3 +120,46 @@ describe("refresh while local edits are pending", () => {
     expect(store.getState().outbox.find(entry => entry.id === task.id)?.changedFields.notes).toBe("must survive"); store.close(); other.close();
   });
 });
+
+describe("post-commit reconciliation failures", () => {
+  it.each([false, true])("retries an owed read without failing a committed write (remote=%s)", async (remote) => {
+    const committed = barrier(); const resume = barrier();
+    class Paused extends IdbPersistence {
+      pause = false;
+      override async apply(...args: Parameters<IdbPersistence["apply"]>) {
+        const result = await super.apply(...args);
+        if (this.pause) { this.pause = false; committed.release(); await resume.promise; }
+        return result;
+      }
+    }
+    const p = new Paused(); const store = new LocalStore({ persistence: p, now: clock }); await store.ready;
+    const task = store.addTask({ title: "before" }); await store.flush(); const prepared = await store.prepareSync();
+    p.pause = true;
+    let operation: Promise<void>;
+    if (remote) operation = store.applyRemote([{ type: "task", id: task.id, fields: { notes: "committed edit" } }], prepared);
+    else { store.updateTask(task.id, { notes: "committed edit" }); operation = store.flush(); }
+    await committed.promise;
+    const other = new IdbPersistence(); await other.apply({ at, patches: [{ type: "task", id: task.id, op: "update", key: "newer", fields: { title: "newer external title" } }] });
+    const changed = vi.fn(); store.subscribe(changed); Channel.deliver([{ type: "task", id: task.id }]); await vi.waitFor(() => expect(changed).toHaveBeenCalled());
+    const read = vi.spyOn(p, "read").mockRejectedValueOnce(new Error("temporary follow-up read failure"));
+    resume.release(); const outcome = await operation.then(() => null, error => error);
+    expect((await other.load()).tasks.find(t => t.id === task.id)).toMatchObject({ notes: "committed edit", title: "newer external title" });
+    expect(outcome).toBeNull();
+    read.mockRejectedValueOnce(new Error("read still unavailable"));
+    await expect(store.prepareSync()).rejects.toThrow("read still unavailable");
+    expect(store.getState().persistence.status).toBe("ok");
+    expect((await store.prepareSync()).tasks.find(t => t.id === task.id)).toMatchObject({ notes: "committed edit", title: "newer external title" });
+    expect(read).toHaveBeenCalledTimes(3); expect(store.getState().persistence.status).toBe("ok"); store.close(); other.close();
+  });
+
+  it("keeps genuine write failures blocked and preserves their unsaved optimistic edits", async () => {
+    const p = new IdbPersistence(); const store = new LocalStore({ persistence: p, now: clock, broadcast: false }); await store.ready;
+    const task = store.addTask({ title: "saved" }); await store.flush();
+    vi.spyOn(p, "apply").mockRejectedValueOnce(new DOMException("full", "QuotaExceededError"));
+    store.updateTask(task.id, { title: "unsaved" }); await store.flush();
+    await expect(store.prepareSync()).rejects.toThrow("not ready to sync");
+    expect(store.getState().persistence).toEqual({ status: "failed", reason: "This device is out of storage." });
+    expect(store.getState().tasks.find(t => t.id === task.id)?.title).toBe("unsaved");
+    expect((await p.load()).tasks.find(t => t.id === task.id)?.title).toBe("saved"); store.close();
+  });
+});
