@@ -163,3 +163,60 @@ describe("post-commit reconciliation failures", () => {
     expect((await p.load()).tasks.find(t => t.id === task.id)?.title).toBe("saved"); store.close();
   });
 });
+
+describe("complete-view certification", () => {
+  it.each([[false, false], [true, false], [false, true]])("certifies metadata before checking a name (queued early=%s, reuse old=%s)", async (queuedEarly, reuseOld) => {
+    const committed = barrier(); const resume = barrier();
+    class Paused extends IdbPersistence {
+      pause = false;
+      override async apply(...args: Parameters<IdbPersistence["apply"]>) { const result = await super.apply(...args); if (this.pause) { this.pause = false; committed.release(); await resume.promise; } return result; }
+    }
+    const p = new Paused(); const store = new LocalStore({ persistence: p, now: clock }); await store.ready;
+    const tag = store.addTag("Original", "c1"); const task = store.addTask({ title: "ordinary" }); await store.flush();
+    p.pause = true; store.updateTag(tag.id, { colour: "c2" }); const colourDone = store.flush(); await committed.promise;
+    const renamed = "Renamed elsewhere";
+    if (queuedEarly) store.addTag(renamed, "c3");
+    const other = new IdbPersistence(); await other.apply({ at, patches: [{ type: "tag", id: tag.id, op: "update", key: "rename", fields: { name: renamed } }] });
+    const changed = vi.fn(); store.subscribe(changed); Channel.deliver([{ type: "tag", id: tag.id }]); await vi.waitFor(() => expect(changed).toHaveBeenCalled());
+    vi.spyOn(p, "read").mockRejectedValueOnce(new Error("metadata read unavailable")); resume.release(); await colourDone;
+    expect((await other.load()).tags.find(t => t.id === tag.id)).toMatchObject({ name: renamed, colour: "c2" });
+    let returned: unknown; let rejected: unknown;
+    if (!queuedEarly) {
+      store.updateTask(task.id, { notes: "ordinary writes remain allowed" }); await store.flush();
+      expect((await other.load()).tasks.find(t => t.id === task.id)?.notes).toBe("ordinary writes remain allowed");
+      try { returned = store.addTag(reuseOld ? "Original" : renamed, "c3"); } catch (error) { rejected = error; }
+    }
+    await store.flush();
+    expect((await other.load()).tags.filter(t => t.name === renamed)).toHaveLength(1);
+    if (!queuedEarly) { expect(returned).toBeUndefined(); expect(rejected).toMatchObject({ name: "StaleOperation" }); }
+    if (reuseOld) {
+      const reused = store.addTag("Original", "c3"); await store.flush();
+      expect((await other.load()).tags.some(t => t.id === reused.id && t.name === "Original")).toBe(true);
+    }
+    // An authoritative recovery empties the owed refs. A cached previous read error must not
+    // permanently block a legitimate complete operation, including in the local-only planner.
+    const retry = store.addTag("Unique retry", "c4"); await store.flush();
+    expect((await other.load()).tags.some(t => t.id === retry.id && t.name === "Unique retry")).toBe(true);
+    expect(store.getState().persistence.status).toBe("ok"); store.close(); other.close();
+  });
+
+  it("does not certify a view while its owed read is in flight, even after its ref left the queue", async () => {
+    const committed = barrier(); const resumeApply = barrier(); const capturedRead = barrier(); const resumeRead = barrier();
+    class Paused extends IdbPersistence {
+      pauseApply = false; pauseRead = false;
+      override async apply(...args: Parameters<IdbPersistence["apply"]>) { const result = await super.apply(...args); if (this.pauseApply) { this.pauseApply = false; committed.release(); await resumeApply.promise; } return result; }
+      override async read(...args: Parameters<IdbPersistence["read"]>) { const result = await super.read(...args); if (this.pauseRead) { this.pauseRead = false; capturedRead.release(); await resumeRead.promise; } return result; }
+    }
+    const p = new Paused(); const store = new LocalStore({ persistence: p, now: clock }); await store.ready;
+    const tag = store.addTag("Original", "c1"); await store.flush(); p.pauseApply = true; store.updateTag(tag.id, { colour: "c2" }); await committed.promise;
+    const other = new IdbPersistence(); await other.apply({ at, patches: [{ type: "tag", id: tag.id, op: "update", key: "rename", fields: { name: "New name" } }] });
+    const changed = vi.fn(); store.subscribe(changed); Channel.deliver([{ type: "tag", id: tag.id }]); await vi.waitFor(() => expect(changed).toHaveBeenCalled());
+    p.pauseRead = true; resumeApply.release(); await capturedRead.promise;
+    let returned: unknown; let rejected: unknown;
+    try { returned = store.addTag("New name", "c3"); } catch (error) { rejected = error; }
+    resumeRead.release(); await store.flush();
+    expect((await other.load()).tags.filter(t => t.name === "New name")).toHaveLength(1);
+    expect(returned).toBeUndefined(); expect(rejected).toMatchObject({ name: "StaleOperation" });
+    store.addTag("After read", "c4"); await store.flush(); expect(store.getState().persistence.status).toBe("ok"); store.close(); other.close();
+  });
+});

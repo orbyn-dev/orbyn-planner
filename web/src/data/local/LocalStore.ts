@@ -92,6 +92,7 @@ export class LocalStore implements PlannerStore {
   private deferredRefresh = new Map<string, Ref>();
   /** A committed write can still owe a read retry; this is not an unsaved-write failure. */
   private deferredReadError: unknown;
+  private deferredReadsInFlight = 0;
   /** Purged tag ids: a task that still carries one has it cleared the next time it is edited (no rewrite of the rest). */
   private purgedTags = new Set<string>();
   private channel: BroadcastChannel | null = null;
@@ -262,6 +263,7 @@ export class LocalStore implements PlannerStore {
     this.observations.clear();
     this.latestObservation = snapshot.stamp;
     for (const key of this.deferredRefresh.keys()) if (!this.pending.get(key)) this.deferredRefresh.delete(key);
+    if (!this.deferredRefresh.size) this.deferredReadError = undefined;
   }
 
   private defaults(): void {
@@ -331,7 +333,7 @@ export class LocalStore implements PlannerStore {
       }
       this.hydrationSeen = null;
       this.state = { ...this.state, ready: true, coverage: { ...this.state.coverage, phase: "complete", metadata: true, openTasks: true, taskRecords: "complete", eventRecords: "complete", outbox: "complete" } };
-      this.purgeDeleted();
+      if (!this.hasDeferredReads()) this.purgeDeleted();
       if (typeof performance !== "undefined") performance.mark("planner:store-ready");
       this.emit();
     } catch (error) {
@@ -385,7 +387,7 @@ export class LocalStore implements PlannerStore {
         this.install(snapshot);
         captured = snapshot.stamp;
       }
-      if (this.writes !== boundary) continue; // A synchronous subscriber may have queued an edit while reconciliation emitted.
+      if (this.writes !== boundary || this.hasDeferredReads()) continue; // Subscribers or another preparation can leave the view incomplete.
       if (this.state.persistence.status === "failed") this.state = { ...this.state, persistence: this.persistence.durable ? { status: "ok" } : { status: "memory" } };
       const prepared = this.state;
       if (captured) this.preparedSnapshots.set(prepared, captured);
@@ -460,14 +462,17 @@ export class LocalStore implements PlannerStore {
   }
 
   /** Takes storage's version of records, except ones with a write still on its way. */
-  private reconcile(result: ApplyResult): void {
+  private reconcile(result: ApplyResult, knownOwnWrite = false): void {
     // Purge markers only grow within one database generation. An older read cannot undo a
     // marker observed by a later refresh while hydration yields between publication batches.
     if (result.purgedTags && (!result.stamp || !this.stamp || result.stamp.generation === this.stamp.generation)) for (const id of result.purgedTags) this.purgedTags.add(id);
     const grouped = new Map<RecordType, Map<string, AnyRecord | null>>();
     for (const r of result.records) {
       this.hydrationSeen?.add(refKey(r));
-      if (this.pending.get(refKey(r))) { this.deferredRefresh.set(refKey(r), { type: r.type, id: r.id }); continue; }
+      if (this.pending.get(refKey(r))) {
+        if (!knownOwnWrite) this.deferredRefresh.set(refKey(r), { type: r.type, id: r.id });
+        continue;
+      }
       if (!this.observe(`record:${refKey(r)}`, result.stamp)) continue;
       const changes = grouped.get(r.type) ?? new Map<string, AnyRecord | null>();
       changes.set(r.id, r.record ? viewOf(r.type, r.record) : null);
@@ -488,7 +493,10 @@ export class LocalStore implements PlannerStore {
     }
     if (result.outbox.length) {
       const changes = new Map(result.outbox.filter(o => {
-        if (this.pending.get(refKey(o))) { this.deferredRefresh.set(refKey(o), { type: o.type, id: o.id }); return false; }
+        if (this.pending.get(refKey(o))) {
+          if (!knownOwnWrite) this.deferredRefresh.set(refKey(o), { type: o.type, id: o.id });
+          return false;
+        }
         return this.observe(`outbox:${refKey(o)}`, result.stamp);
       }).map(o => [refKey(o), o.entry]));
       const next: OutboxEntry[] = [];
@@ -511,6 +519,7 @@ export class LocalStore implements PlannerStore {
     const refs = [...this.deferredRefresh.values()].filter(r => !this.pending.get(refKey(r)) && (!allowed || allowed.has(refKey(r))));
     if (!refs.length) return;
     for (const r of refs) this.deferredRefresh.delete(refKey(r));
+    this.deferredReadsInFlight++;
     try {
       for (let attempt = 0; attempt < 3; attempt++) {
         const result = await this.persistence.read(refs);
@@ -526,6 +535,26 @@ export class LocalStore implements PlannerStore {
     } catch (error) {
       for (const r of refs) this.deferredRefresh.set(refKey(r), r);
       throw error;
+    } finally {
+      this.deferredReadsInFlight--;
+    }
+  }
+
+  private hasDeferredReads(): boolean {
+    return this.deferredRefresh.size > 0 || this.deferredReadsInFlight > 0;
+  }
+
+  /** Preconditions and writes share the same complete-view certificate and recovery path. */
+  private assertCompleteView(): void {
+    if (this.hasDeferredReads()) {
+      // Do not hand callers an optimistic entity/id built from incomplete preconditions. Queue
+      // read-only recovery so a local-only planner can retry once its owed reads succeed.
+      this.writes = this.writes.then(async () => {
+        if (this.closed || this.state.persistence.status === "failed" && this.state.persistence.reason !== new StaleOperation().message) return;
+        try { await this.reconcileDeferred(); if (!this.hasDeferredReads()) this.deferredReadError = undefined; }
+        catch (error) { this.deferredReadError = error; }
+      });
+      throw new StaleOperation();
     }
   }
 
@@ -548,6 +577,7 @@ export class LocalStore implements PlannerStore {
 
   /** Makes a change: on screen now, in storage and the outbox next, and tells other tabs. */
   private commit(inputs: PatchInput[], complete = false, propagate = false, captured?: DatabaseStamp): Promise<void> {
+    if (complete) this.assertCompleteView();
     const expected = captured ?? (complete || !this.state.ready ? this.stamp : undefined);
     const covered = !this.state.ready ? inputs.filter(p => p.type === "task").map(p => ({ id: p.id })) : undefined;
     let failure: unknown;
@@ -572,6 +602,9 @@ export class LocalStore implements PlannerStore {
       }
       let settled = false;
       try {
+        // The revision alone is not a complete-view certificate: a refresh may have skipped refs
+        // while an earlier edit was pending. Such candidates must be rebuilt after recovery.
+        if (complete && this.hasDeferredReads()) throw new StaleOperation();
         let fence = expected;
         if (fence && !propagate) { while (this.ownRevisions.has(fence.revision + 1)) fence = { ...fence, revision: fence.revision + 1 }; }
         const result = await this.persistence.apply({ at, patches: wire }, fence, covered);
@@ -583,7 +616,10 @@ export class LocalStore implements PlannerStore {
         settled = true;
         if (this.closed) return;
         if (this.state.persistence.status === "failed" && this.state.persistence.reason === new StaleOperation().message) this.state = { ...this.state, persistence: this.persistence.durable ? { status: "ok" } : { status: "memory" } };
-        this.reconcile(result);
+        // A contiguous own receipt has no unknown intervening state to reconcile into later
+        // optimistic writes. Unlike a skipped refresh, it creates no new read debt for those refs.
+        const knownOwnWrite = !result.stamp && !this.stamp || Boolean(result.before && this.stamp && result.before.generation === this.stamp.generation && result.before.revision === this.stamp.revision);
+        this.reconcile(result, knownOwnWrite);
         // This result proves only our own refs. A skipped revision must still be replayed before
         // complete-set operations; advancing over it would hide a lost broadcast from another tab.
         if (result.stamp && result.before && this.stamp && result.before.generation === this.stamp.generation && result.before.revision === this.stamp.revision) this.stamp = result.stamp;
@@ -745,6 +781,7 @@ export class LocalStore implements PlannerStore {
 
   /** Whether another live tag already has this name, ignoring case. */
   private nameTaken(name: string, except?: string): boolean {
+    this.assertCompleteView();
     const wanted = name.trim().toLowerCase();
     return this.state.tags.some((t) => t.deletedAt === null && t.id !== except && t.name.trim().toLowerCase() === wanted);
   }
