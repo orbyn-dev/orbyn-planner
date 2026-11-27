@@ -25,7 +25,7 @@ export interface MirrorIntent {
   /** Confirmed engine outcomes, committed with the snapshot. Absence alone is never a deletion. */
   outcome?: MirrorOutcome;
 }
-export interface MirrorOutcome { removed: string[]; trashed: string[] }
+export interface MirrorOutcome { changed?: string[]; removed: string[]; trashed: string[] }
 export type PreparedMirrorIntent = Omit<MirrorIntent, "applied" | "outcome">;
 export interface SyncState {
   /** Increases when engine-side metadata is reset; older passes cannot write it back. Legacy state is generation zero. */

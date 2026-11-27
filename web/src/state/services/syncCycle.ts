@@ -283,10 +283,10 @@ async function cycle(
     }
   }
 
-  async function mirrorIntent(zone: string, records: { id: string; type?: string }[]): Promise<{ intent: PreparedMirrorIntent; prepared: PlannerState }> {
+  async function mirrorIntent(zone: string, records: { id: string; type?: string }[], includeLocalRecords = true): Promise<{ intent: PreparedMirrorIntent; prepared: PlannerState }> {
     const snapshot = store.prepareSync ? await store.prepareSync() : store.getState();
     const refs = new Map(records.map(record => [record.id, record]));
-    for (const [type, key] of Object.entries(STORE_KEY)) {
+    for (const [type, key] of includeLocalRecords ? Object.entries(STORE_KEY) : []) {
       for (const record of snapshot[key] as readonly { id: string; listId?: string; calendarId?: string }[]) {
         if (zoneOf(type as RecordType, record) === zone && !refs.has(record.id)) refs.set(record.id, { id: record.id, type });
       }
@@ -294,7 +294,7 @@ async function cycle(
     return { intent: { id: crypto.randomUUID(), zone, records: [...refs.values()] }, prepared: snapshot };
   }
 
-  const appliedIntent = (intent: PreparedMirrorIntent): MirrorRequest<Applied> => ({ ...intent, capture: result => ({ removed: [...result.removed], trashed: [...result.trashed] }) });
+  const appliedIntent = (intent: PreparedMirrorIntent): MirrorRequest<Applied> => ({ ...intent, capture: result => ({ changed: [...result.changed], removed: [...result.removed], trashed: [...result.trashed] }) });
 
   async function clearMirror(id: string, onlyUnapplied = false): Promise<void> {
     alive();
@@ -319,9 +319,9 @@ async function cycle(
         if (!committed) return null;
         const quarantined = new Set(parse<{ record_id: string }[]>(e.sync.quarantined(intent.zone)).map(r => r.record_id));
         const changed: string[] = [];
-        for (const record of intent.records) {
-          if (quarantined.has(record.id)) continue;
-          if (e.sync.record(intent.zone, record.id)) changed.push(record.id);
+        for (const id of new Set([...intent.records.map(record => record.id), ...(committed.outcome?.changed ?? [])])) {
+          if (quarantined.has(id)) continue;
+          if (e.sync.record(intent.zone, id)) changed.push(id);
         }
         const removed = (committed.outcome?.removed ?? []).filter(id => !quarantined.has(id) && !e.sync.record(intent.zone, id));
         return { changed, removed, trashed: (committed.outcome?.trashed ?? []).filter(id => removed.includes(id)), quarantined: [...quarantined], unverified_deletes: [], evicted: [], rejected: [], more: false } satisfies Applied;
@@ -447,14 +447,7 @@ async function cycle(
   const envelopes = await api.keyEnvelopes();
   if (envelopes.envelopes.length > 0) {
     const accepted = await withEngine(e => parse<Accepted>(e.sync.acceptEnvelopes(JSON.stringify(envelopes), JSON.stringify(devices))));
-    for (const zone of accepted.zones) {
-      if (!state.zones.includes(zone)) state.zones.push(zone);
-      const ids = await withEngine(e => parse<{ record_id: string }[]>(e.sync.quarantined(zone)).map(r => ({ id: r.record_id })));
-      const { intent, prepared } = await mirrorIntent(zone, ids);
-      const applied = await withEngine(e => parse<Applied>(e.sync.retryQuarantined(zone, now())), appliedIntent(intent));
-      await mergeApplied(zone, applied, { retried: true, prepared });
-      await save(); await clearMirror(intent.id);
-    }
+    for (const zone of accepted.zones) if (!state.zones.includes(zone)) state.zones.push(zone);
   }
 
   // 2. The zones on the server ---------------------------------------------------------------------------
@@ -469,6 +462,18 @@ async function cycle(
     if (!after) break;
   }
   for (const name of serverZones.keys()) if (!state.zones.includes(name)) state.zones.push(name);
+
+  // A key can have committed before its retry intent existed. Duplicate envelopes report no new
+  // zones, so recover from the engine's actual queues, including when no envelopes are delivered.
+  const retrying = state.zones.length === 0 ? [] : await withEngine(engine => state.zones.map(zone => ({
+    zone, records: parse<{ record_id: string }[]>(engine.sync.quarantined(zone)).map(record => ({ id: record.record_id })),
+  })).filter(candidate => candidate.records.length > 0));
+  for (const { zone, records } of retrying) {
+    const { intent, prepared } = await mirrorIntent(zone, records, false);
+    const applied = await withEngine(engine => parse<Applied>(engine.sync.retryQuarantined(zone, now())), appliedIntent(intent));
+    await mergeApplied(zone, applied, { retried: true, prepared });
+    await save(); await clearMirror(intent.id);
+  }
 
   // 2b. Rotate the keys a removed device still holds -----------------------------------------------------------
   // Removing a device ends its sessions, not the zone keys it already has: every key this device holds is replaced, and

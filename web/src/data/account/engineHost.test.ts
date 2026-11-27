@@ -269,7 +269,7 @@ describe("durable mirror intent ordering", () => {
   it("records ids before the action and marks them applied with the saved snapshot", async () => {
     const { keys, host } = await setup();
     const intent = { id: "mirror-1", zone: "list:inbox", records: [{ id: "task-1", type: "task" }] };
-    const outcome = { removed: ["task-1"], trashed: ["task-1"] };
+    const outcome = { changed: ["task-2"], removed: ["task-1"], trashed: ["task-1"] };
     await host().run(session, async e => {
       expect((await keys.loadSyncState())?.mirrorPending).toEqual([{ ...intent, applied: false }]);
       return e.verifyDevices(list([device(ME)]));

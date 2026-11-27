@@ -150,7 +150,7 @@ describe("snapshot and mirror atomic writer boundary", () => {
     await new Promise<void>((resolve, reject) => { tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error); });
     old.onversionchange = () => old.close();
     const current = createIdbKeyStore(); expect(await current.loadSession()).toEqual(session);
-    const outcome = { removed: ["task"], trashed: ["task"] };
+    const outcome = { changed: ["other-task"], removed: ["task"], trashed: ["task"] };
     await current.saveSnapshot(new Uint8Array([2]), intent.id, outcome);
     expect([...(await current.loadSnapshot())!]).toEqual([2]);
     expect((await current.loadSyncState())?.mirrorPending).toEqual([{ ...intent, applied: true, outcome }]);
@@ -170,7 +170,7 @@ it("rolls back snapshot bytes and the applied marker together when their transac
     result.addEventListener("success", () => { writes.push(this.name); if (this.name === "sync") this.transaction.abort(); });
     return result;
   });
-  try { await expect(current.saveSnapshot(new Uint8Array([2]), intent.id, { removed: ["task"], trashed: ["task"] })).rejects.toThrow("snapshot write was aborted"); }
+  try { await expect(current.saveSnapshot(new Uint8Array([2]), intent.id, { changed: ["other-task"], removed: ["task"], trashed: ["task"] })).rejects.toThrow("snapshot write was aborted"); }
   finally { spy.mockRestore(); }
   expect(writes).toEqual(["snapshot", "sync"]);
   expect([...(await current.loadSnapshot())!]).toEqual([1]);

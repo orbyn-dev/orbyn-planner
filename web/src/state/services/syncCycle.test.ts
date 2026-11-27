@@ -306,6 +306,79 @@ describe("a refetch after an expired token doesn't trash this device's own unsen
 });
 
 describe("keys and the quarantine", () => {
+  it("retries an unchanged no-key queue once per pass and keeps its unsent local edit", async () => {
+    const r = await createSyncRig(); const task = r.a.store.addTask({ title: "Still waiting" });
+    await sync(r, r.a); await sync(r, r.b);
+    await r.a.services.engine.run(r.a.session, engine => engine.sync!.rotateZoneKey("list:inbox"));
+    await r.a.keys.saveSyncState({ ...(await r.a.keys.loadSyncState())!, keysSent: {} });
+    r.clock.now += 1000; r.a.store.updateTask(task.id, { title: "Encrypted update" }); await sync(r, r.a);
+    const hidden = vi.spyOn(r.b.services.api, "keyEnvelopes").mockResolvedValue({ envelopes: [] });
+    r.b.store.updateTask(task.id, { notes: "Keep while keyless" });
+    try {
+      await sync(r, r.b);
+      const entry = r.b.store.getState().outbox.find(item => item.id === task.id)!;
+      expect(entry).toBeDefined();
+      const writes = vi.spyOn(r.b.keys, "saveSyncState");
+      try {
+        for (let pass = 0; pass < 2; pass++) {
+          writes.mockClear();
+          const report = await sync(r, r.b);
+          expect(report.quarantined).toBeGreaterThan(0);
+          expect(r.b.store.getState().outbox.find(item => item.id === task.id)?.idempotencyKey).toBe(entry.idempotencyKey);
+          expect(r.b.store.getState().tasks.find(item => item.id === task.id)?.notes).toBe("Keep while keyless");
+          const prepared = writes.mock.calls.filter(([state]) => state.mirrorPending?.some(intent => intent.zone === "list:inbox" && !intent.applied));
+          expect(prepared).toHaveLength(1);
+          expect((await r.b.keys.loadSyncState())?.mirrorPending).toEqual([]);
+        }
+      } finally { writes.mockRestore(); }
+    } finally { hidden.mockRestore(); }
+  });
+
+  it("recovers quarantine after a crash commits a key before its retry intent, even when envelopes are duplicates", async () => {
+    const r = await createSyncRig();
+    const existing = r.a.store.addTask({ title: "Original row" });
+    await sync(r, r.a); await sync(r, r.b);
+    await r.a.services.engine.run(r.a.session, engine => engine.sync!.rotateZoneKey("list:inbox"));
+    const sender = (await r.a.keys.loadSyncState())!;
+    await r.a.keys.saveSyncState({ ...sender, keysSent: {} });
+    r.clock.now += 1000;
+    r.a.store.updateTask(existing.id, { title: "Updated encrypted row" });
+    const unseen = r.a.store.addTask({ title: "Recovered encrypted row" });
+    await sync(r, r.a);
+    const hiddenKeys = vi.spyOn(r.b.services.api, "keyEnvelopes").mockResolvedValue({ envelopes: [] });
+    r.b.store.updateTask(existing.id, { notes: "Unsent local notes" });
+    try { await sync(r, r.b); } finally { hiddenKeys.mockRestore(); }
+    expect((await r.b.keys.loadSyncState())?.quarantined["list:inbox"]).toContain(unseen.id);
+    expect(r.b.store.getState().outbox.some(entry => entry.id === existing.id)).toBe(true);
+    const keyEnvelopes = r.b.services.api.keyEnvelopes.bind(r.b.services.api);
+    let acceptingKey = false;
+    const armCrash = vi.spyOn(r.b.services.api, "keyEnvelopes").mockImplementation(async () => { const envelopes = await keyEnvelopes(); acceptingKey = true; return envelopes; });
+    const saveSnapshot = r.b.keys.saveSnapshot.bind(r.b.keys);
+    const crash = vi.spyOn(r.b.keys, "saveSnapshot").mockImplementation(async (bytes, mirror, outcome) => {
+      await saveSnapshot(bytes, mirror, outcome);
+      if (acceptingKey && !mirror) { acceptingKey = false; throw new Error("crash after accepted key snapshot"); }
+    });
+    try { await expect(sync(r, r.b)).rejects.toThrow("crash after accepted key snapshot"); }
+    finally { armCrash.mockRestore(); crash.mockRestore(); }
+    expect((await r.b.keys.loadSyncState())?.mirrorPending).toEqual([]);
+    r.b.store = await r.reload(r.b);
+    r.b.services.engine = createEngineHost({ keys: r.b.services.keys, crypto: r.b.services.crypto, wrapSecret: r.b.services.wrapSecret, now: r.b.services.now, wrapKeyPresent: async () => true });
+    const devices = await r.b.services.api.devices();
+    const envelopes = await keyEnvelopes();
+    const duplicate = await r.b.services.engine.run(r.b.session, engine => JSON.parse(engine.sync!.acceptEnvelopes(JSON.stringify(envelopes), JSON.stringify(devices))) as { zones: string[] });
+    expect(duplicate.zones).toEqual([]);
+    const serverZones = await r.b.services.api.zones();
+    const caughtUp = await r.b.services.engine.run(r.b.session, engine => JSON.parse(engine.sync!.checkZones(JSON.stringify(serverZones))) as { stale: string[] });
+    expect(caughtUp.stale).not.toContain("list:inbox");
+    expect(titles(r.b)).not.toContain("Recovered encrypted row");
+    await sync(r, r.b);
+    expect(titles(r.b)).toContain("Recovered encrypted row");
+    expect(r.b.store.getState().tasks.find(task => task.id === existing.id)?.notes).toBe("Unsent local notes");
+    expect((await r.b.keys.loadSyncState())?.quarantined["list:inbox"]).toBeUndefined();
+    await sync(r, r.a);
+    expect(r.a.store.getState().tasks.find(task => task.id === existing.id)?.notes).toBe("Unsent local notes");
+  });
+
   it("records in a zone whose key hasn't arrived wait in the quarantine, and open when it does", async () => {
     const r = await createSyncRig();
     r.a.store.addTask({ title: "Secret plans" });
