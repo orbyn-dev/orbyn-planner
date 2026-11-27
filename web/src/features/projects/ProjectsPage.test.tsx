@@ -224,3 +224,17 @@ describe("Project page", () => {
     expect(within(screen.getByRole("navigation", { name: "Primary" })).getByRole("link", { name: "Projects" })).toHaveAttribute("aria-current", "page");
   });
 });
+
+
+it("keeps a project board unavailable until the full planner is ready", async () => {
+  const store = new LocalStore({ persistence: new MemoryPersistence(), now: () => NOW, broadcast: false });
+  await store.ready;
+  const { projectId } = seedHome(store);
+  const partial = { ...store.getState(), ready: false };
+  const loading = Object.assign(Object.create(store) as LocalStore, { getState: () => partial });
+  window.history.replaceState(null, "", `/projects/${projectId}`);
+  render(<ClockProvider value={() => NOW}><App store={loading} /></ClockProvider>);
+  expect(await screen.findByText("Loading page…")).toHaveAttribute("role", "status");
+  expect(screen.queryByRole("tab", { name: "Board" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "Home renovation" })).not.toBeInTheDocument();
+});

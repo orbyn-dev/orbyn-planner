@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { focusRow } from "../../lib/focus";
+import { useState } from "react";
+import { focusCard, focusRow } from "../../lib/focus";
 import { VirtualList } from "./VirtualList";
 
 type Item = { id: string; height: number };
@@ -173,4 +174,21 @@ it("preserves child ARIA through virtualization, including a value matching the 
   view.rerender(provided(items.slice(0, 3), 1));
   expect(row()).toHaveAttribute("aria-posinset", "1");
   expect(row()).toHaveAttribute("aria-setsize", "777");
+});
+
+
+it("reveals and focuses a moved card in an offscreen virtualized destination after commit", async () => {
+  const moved = { id: "moved-card", height: 40 };
+  function Board() {
+    const [done, setDone] = useState(false);
+    return <div style={{ overflowY: "auto" }}>
+      <button onClick={() => { setDone(true); focusCard(moved.id); }}>Move</button>
+      <VirtualList label="Source" items={done ? [] : [moved]} totalCount={201} getKey={id}>{(item) => <li tabIndex={0} data-row-id={item.id}>{item.id}</li>}</VirtualList>
+      <VirtualList label="Destination" items={done ? [...items, moved] : items} totalCount={201} getKey={id}>{(item) => <li tabIndex={0} data-row-id={item.id}>{item.id}</li>}</VirtualList>
+    </div>;
+  }
+  render(<Board />);
+  fireEvent.click(screen.getByRole("button", { name: "Move" }));
+  await waitFor(() => expect(screen.getByText("moved-card")).toHaveFocus());
+  expect(screen.getByText("moved-card").closest('[aria-label="Destination"]')).not.toBeNull();
 });

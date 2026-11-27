@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactElement } from "react";
 import { defaultRangeExtractor, useVirtualizer, type Range } from "@tanstack/react-virtual";
+import { pendingCardId, takePendingCard } from "../../lib/focus";
 import { useRowMotion } from "./useRowMotion";
 
 export interface VirtualListProps<T> {
@@ -176,6 +177,10 @@ export function VirtualList<T>({ items, getKey, getRowId = getKey, children, cla
       virtual.scrollToIndex(index, { align: "auto" });
     };
     document.addEventListener("planner:reveal-row", reveal);
+    const pendingId = pendingCardId();
+    if (pendingId && list.current && items.some((item) => getRowId(item) === pendingId) && takePendingCard(pendingId, list.current)) {
+      reveal(new CustomEvent("planner:reveal-row", { detail: pendingId }));
+    }
     return () => document.removeEventListener("planner:reveal-row", reveal);
   }, [enabled, items, getKey, getRowId, virtual]);
 

@@ -10,6 +10,10 @@ export interface InitialView {
   /** ISO instant at the start of the local week, for completion counts. */
   completedSince: string;
 }
+/** The database identity is valid, but retained journal history no longer covers the reader. */
+export class JournalHistoryGap extends Error {
+  constructor() { super("Planner changes could not be reconciled. Reload to try again."); this.name = "JournalHistoryGap"; }
+}
 export class StaleOperation extends Error {
   constructor() { super("Planner changed in another tab. Try that action again."); this.name = "StaleOperation"; }
 }
@@ -388,7 +392,7 @@ export class IdbPersistence implements Persistence {
         tx.objectStore("journal").getAll(IDBKeyRange.lowerBound(since.revision, true)).onsuccess = (e) => {
           const entries = (e.target as IDBRequest<JournalEntry[]>).result;
           if (entries.length !== stamp.revision - since.revision || entries.some((x, i) => x.revision !== since.revision + i + 1)) {
-            failure = new Error("Planner changes could not be reconciled. Reload to try again."); tx.abort(); return;
+            failure = new JournalHistoryGap(); tx.abort(); return;
           }
           const refs = new Map(entries.flatMap(entry => entry.refs).map(({ type, id }) => [refKey({ type, id }), { type, id }]));
           for (const r of refs.values()) {

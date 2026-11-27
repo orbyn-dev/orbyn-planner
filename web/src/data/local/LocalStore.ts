@@ -1,7 +1,7 @@
 import { repeatFields } from "../../core/planner/eventRecord";
 import { applyFields, sectionFields, storedOf, TAG_PREFIX, viewOf } from "../../core/planner/records";
 import { coalesce, refKey, type AnyRecord, type Patch, type Ref } from "../../core/planner/outbox";
-import { DEVICE_DB, defaultPersistence, StaleOperation, type ApplyResult, type DatabaseStamp, type InitialView, type Snapshot, type Persistence } from "./persistence";
+import { DEVICE_DB, defaultPersistence, JournalHistoryGap, StaleOperation, type ApplyResult, type DatabaseStamp, type InitialView, type Snapshot, type Persistence } from "./persistence";
 import { type Acknowledged } from "../../core/planner/types";
 import { addDays, dateKey, startOfWeek } from "../../core/planner/dates";
 import { inOrder, keyBetween } from "../../core/planner/order";
@@ -88,6 +88,8 @@ export class LocalStore implements PlannerStore {
   private hydrationSeen: Set<string> | null = null;
   private readonly initialView: InitialView;
   private pending = new Map<string, number>();
+  /** Refs skipped to protect optimistic edits remain owed even if the journal cursor advances. */
+  private deferredRefresh = new Map<string, Ref>();
   /** Purged tag ids: a task that still carries one has it cleared the next time it is edited (no rewrite of the rest). */
   private purgedTags = new Set<string>();
   private channel: BroadcastChannel | null = null;
@@ -257,6 +259,7 @@ export class LocalStore implements PlannerStore {
     this.stamp = snapshot.stamp;
     this.observations.clear();
     this.latestObservation = snapshot.stamp;
+    for (const key of this.deferredRefresh.keys()) if (!this.pending.get(key)) this.deferredRefresh.delete(key);
   }
 
   private defaults(): void {
@@ -345,14 +348,31 @@ export class LocalStore implements PlannerStore {
       await this.flush();
       if (this.closed || this.state.persistence.status === "failed" && this.state.persistence.reason !== new StaleOperation().message) throw new Error("The planner is not ready to sync");
       const boundary = this.writes;
+      await this.reconcileDeferred();
+      if (this.writes !== boundary) continue;
       let captured: DatabaseStamp | undefined;
       if (this.stamp && this.persistence.changes) {
-        const result = await this.persistence.changes(this.stamp);
-        if (this.closed) throw new Error("The planner was closed");
-        if (this.writes !== boundary || result.stamp && this.latestObservation && result.stamp.revision < this.latestObservation.revision) continue;
-        this.reconcile(result);
-        captured = result.stamp;
-        this.stamp = captured;
+        const since = this.stamp;
+        let result: ApplyResult | undefined;
+        try { result = await this.persistence.changes(since); }
+        catch (error) {
+          if (!(error instanceof JournalHistoryGap)) throw error;
+          // A pruned journal is recoverable from the authoritative current snapshot. A different
+          // database generation or a failed/older read is not permission to replace this account.
+          const snapshot = await this.persistence.load();
+          if (this.closed) throw new Error("The planner was closed", { cause: error });
+          if (!snapshot.stamp || snapshot.stamp.generation !== since.generation || snapshot.stamp.revision < since.revision) throw new Error("The planner database changed while preparing sync", { cause: error });
+          if (this.writes !== boundary || this.latestObservation && snapshot.stamp.revision < this.latestObservation.revision) continue;
+          this.install(snapshot);
+          captured = snapshot.stamp;
+        }
+        if (result) {
+          if (this.closed) throw new Error("The planner was closed");
+          if (this.writes !== boundary || result.stamp && this.latestObservation && result.stamp.revision < this.latestObservation.revision) continue;
+          this.reconcile(result);
+          captured = result.stamp;
+          this.stamp = captured;
+        }
       } else {
         const snapshot = await this.persistence.load();
         if (this.closed) throw new Error("The planner was closed");
@@ -360,6 +380,7 @@ export class LocalStore implements PlannerStore {
         this.install(snapshot);
         captured = snapshot.stamp;
       }
+      if (this.writes !== boundary) continue; // A synchronous subscriber may have queued an edit while reconciliation emitted.
       if (this.state.persistence.status === "failed") this.state = { ...this.state, persistence: this.persistence.durable ? { status: "ok" } : { status: "memory" } };
       const prepared = this.state;
       if (captured) this.preparedSnapshots.set(prepared, captured);
@@ -441,7 +462,8 @@ export class LocalStore implements PlannerStore {
     const grouped = new Map<RecordType, Map<string, AnyRecord | null>>();
     for (const r of result.records) {
       this.hydrationSeen?.add(refKey(r));
-      if (this.pending.get(refKey(r)) || !this.observe(`record:${refKey(r)}`, result.stamp)) continue;
+      if (this.pending.get(refKey(r))) { this.deferredRefresh.set(refKey(r), { type: r.type, id: r.id }); continue; }
+      if (!this.observe(`record:${refKey(r)}`, result.stamp)) continue;
       const changes = grouped.get(r.type) ?? new Map<string, AnyRecord | null>();
       changes.set(r.id, r.record ? viewOf(r.type, r.record) : null);
       grouped.set(r.type, changes);
@@ -460,7 +482,10 @@ export class LocalStore implements PlannerStore {
       if (next.length !== previous.length || next.some((r, i) => r !== previous[i])) this.state = { ...this.state, [key]: next };
     }
     if (result.outbox.length) {
-      const changes = new Map(result.outbox.filter(o => !this.pending.get(refKey(o)) && this.observe(`outbox:${refKey(o)}`, result.stamp)).map(o => [refKey(o), o.entry]));
+      const changes = new Map(result.outbox.filter(o => {
+        if (this.pending.get(refKey(o))) { this.deferredRefresh.set(refKey(o), { type: o.type, id: o.id }); return false; }
+        return this.observe(`outbox:${refKey(o)}`, result.stamp);
+      }).map(o => [refKey(o), o.entry]));
       const next: OutboxEntry[] = [];
       for (const entry of this.state.outbox) {
         const key = refKey(entry);
@@ -473,6 +498,30 @@ export class LocalStore implements PlannerStore {
       if (next.length !== this.state.outbox.length || next.some((o, i) => o !== this.state.outbox[i])) this.state = { ...this.state, outbox: next };
     }
     this.emit();
+  }
+
+  /** Re-read after settlement, rather than applying a cached absence over a later successful edit. */
+  private async reconcileDeferred(only?: Ref[]): Promise<void> {
+    const allowed = only ? new Set(only.map(refKey)) : null;
+    const refs = [...this.deferredRefresh.values()].filter(r => !this.pending.get(refKey(r)) && (!allowed || allowed.has(refKey(r))));
+    if (!refs.length) return;
+    for (const r of refs) this.deferredRefresh.delete(refKey(r));
+    try {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const result = await this.persistence.read(refs);
+        if (this.closed) return;
+        if (this.stamp && (!result.stamp || result.stamp.generation !== this.stamp.generation)) throw new Error("The planner database changed while reconciling edits");
+        // Another refresh can advance the complete cursor while this targeted read is in flight.
+        // Re-read freshly; do not drop an owed absence merely because its first response is older.
+        if (result.stamp && this.latestObservation && result.stamp.revision < this.latestObservation.revision || result.stamp && this.stamp && result.stamp.revision < this.stamp.revision) continue;
+        this.reconcile(result); // A new queued edit re-registers its ref instead of being overwritten.
+        return;
+      }
+      throw new StaleOperation();
+    } catch (error) {
+      for (const r of refs) this.deferredRefresh.set(refKey(r), r);
+      throw error;
+    }
   }
 
   private async refresh(refs: Ref[]): Promise<void> {
@@ -516,6 +565,7 @@ export class LocalStore implements PlannerStore {
         for (const p of patches) this.pending.set(refKey(p), (this.pending.get(refKey(p)) ?? 1) - 1);
         return;
       }
+      let settled = false;
       try {
         let fence = expected;
         if (fence && !propagate) { while (this.ownRevisions.has(fence.revision + 1)) fence = { ...fence, revision: fence.revision + 1 }; }
@@ -525,6 +575,7 @@ export class LocalStore implements PlannerStore {
           if (this.ownRevisions.size > 4096) this.ownRevisions.delete(this.ownRevisions.values().next().value!);
         }
         for (const p of patches) this.pending.set(refKey(p), (this.pending.get(refKey(p)) ?? 1) - 1);
+        settled = true;
         if (this.closed) return;
         if (this.state.persistence.status === "failed" && this.state.persistence.reason === new StaleOperation().message) this.state = { ...this.state, persistence: this.persistence.durable ? { status: "ok" } : { status: "memory" } };
         this.reconcile(result);
@@ -532,9 +583,10 @@ export class LocalStore implements PlannerStore {
         // complete-set operations; advancing over it would hide a lost broadcast from another tab.
         if (result.stamp && result.before && this.stamp && result.before.generation === this.stamp.generation && result.before.revision === this.stamp.revision) this.stamp = result.stamp;
         this.channel?.postMessage({ tab: this.tab, refs: patches.map((p) => ({ type: p.type, id: p.id })) });
+        await this.reconcileDeferred(patches);
       } catch (error) {
         failure = error;
-        for (const p of patches) this.pending.set(refKey(p), (this.pending.get(refKey(p)) ?? 1) - 1);
+        if (!settled) for (const p of patches) this.pending.set(refKey(p), (this.pending.get(refKey(p)) ?? 1) - 1);
         if (this.closed) return;
         // Storage failures retain unsaved edits. A stale candidate is recoverable from a fresh snapshot.
         if (error instanceof StaleOperation) {
