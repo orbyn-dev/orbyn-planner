@@ -203,6 +203,7 @@ function Shell() {
         <div ref={sheetGrid} className={ui.taskId || ui.eventKey || ui.dayKey ? "sheet-grid has-panel" : "sheet-grid"}>
           <div ref={sheetMain} className="sheet-main"><ContentWidthContext.Provider value={widthFlags}>{showFirstRun ? <FirstRun onDone={firstRun.finish} /> : page()}</ContentWidthContext.Provider></div>
           <DayPanel />
+          <IncomingTaskLink />
           <TaskPanel />
           <EventPanel />
         </div>
@@ -226,6 +227,21 @@ function Shell() {
       <Toast />
     </div>
   );
+}
+
+function IncomingTaskLink() {
+  const auth = useAuth(), ui = useUi();
+  const { tasks } = usePlanner();
+  useEffect(() => {
+    if (import.meta.env.VITE_ECOSYSTEM_SYNC !== "1" || auth?.status !== "signedIn" || !auth.session) return;
+    const query = new URLSearchParams(location.search);
+    const id = query.get("orbynTask"), accountId = query.get("orbynAccount");
+    if (!id || accountId !== auth.session.accountId || !/^[0-9a-f-]{36}$/i.test(id) || !tasks.some(task => task.id === id)) return;
+    ui.openTask(id);
+    query.delete("orbynTask"); query.delete("orbynAccount");
+    history.replaceState(null, "", location.pathname + (query.size ? `?${query}` : ""));
+  }, [auth?.status, auth?.session, tasks, ui]);
+  return null;
 }
 
 /** Ends the splash in index.html once the account gate has a screen to show, never while it still renders nothing. */

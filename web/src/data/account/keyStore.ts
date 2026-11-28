@@ -17,6 +17,8 @@ export interface StoredSession {
  * with no secrets: names and ids the server sees anyway. Cleared with the device.
  */
 export interface SyncState {
+  /** Opaque IDs only. Relationship content remains in the sealed engine snapshot. */
+  noteLinks?: Record<string, string[]>;
   /** Zones this device writes to or reads, by name. */
   zones: string[];
   /** The zone each record was last synced to, by "type:id", so a record that moves lists is moved in the store. */
@@ -63,7 +65,7 @@ export interface SyncState {
 
 /** What only the engine's snapshot can vouch for. Dropping or replacing the snapshot makes it untrue. */
 export function withoutEngineSide(state: SyncState): SyncState {
-  return { ...state, staged: {}, stagedZone: {}, keysSent: {}, keysReached: {}, made: {}, quarantined: {}, verified: [], reset: true };
+  return { ...state, noteLinks: {}, staged: {}, stagedZone: {}, keysSent: {}, keysReached: {}, made: {}, quarantined: {}, verified: [], reset: true };
 }
 
 export const emptySyncState = (): SyncState => ({ zones: [], zoneOf: {}, staged: {}, stagedZone: {}, keysSent: {}, made: {}, approvals: {}, resentAt: {}, failed: {}, backoff: {}, quarantined: {}, lastSyncedAt: null });

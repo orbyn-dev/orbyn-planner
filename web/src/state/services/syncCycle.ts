@@ -1,4 +1,5 @@
 import { ApiFailure } from "../../core/account/errors";
+import { readNoteLinkIndex, saveNoteLinkIndex, needsNoteLinkReplay } from "../../data/account/noteLinkIndex";
 import type { ApprovalEngine, SyncApi } from "../../core/account/authCrypto";
 import { emptySyncState, type StoredSession, type SyncState } from "../../data/account/keyStore";
 import { signStandardProtection } from "./flows";
@@ -127,6 +128,14 @@ export async function runCycle(
     return result;
   };
 
+  const ecosystem = import.meta.env.VITE_ECOSYSTEM_SYNC === "1";
+  let rebuildNoteLinks = false;
+  if (ecosystem) await withEngine(e => {
+    const index = readNoteLinkIndex(e.sync);
+    rebuildNoteLinks = needsNoteLinkReplay(e.sync);
+    state.noteLinks = index ?? state.noteLinks ?? {};
+  });
+
   /**
    * The records an `Applied` changed, as the store should have them. `types` holds the record types the
    * server reported for a page (not authenticated: they are only checked against what the zone allows).
@@ -151,13 +160,28 @@ export async function runCycle(
   }
 
   function collect(e: Engine, zone: string, applied: Applied, options: { retried?: boolean; types?: Map<string, string> } = {}): RemoteChange[] {
+    if (ecosystem) state.noteLinks = readNoteLinkIndex(e.sync) ?? state.noteLinks ?? {};
     const out: RemoteChange[] = [];
     const outbox = new Map(store.getState().outbox.map((o) => [refKey(o), o] as const));
     const rejected: string[] = [];
-    for (const id of applied.changed) {
+    // A replay can return an authenticated record at the version we already
+    // hold. Include those page IDs when reconstructing the local backlink index.
+    const changed = ecosystem && isNoteLinkZone(zone)
+      ? [...new Set([...applied.changed, ...(options.types?.keys() ?? [])])].filter(id => !applied.quarantined.includes(id))
+      : applied.changed;
+    for (const id of changed) {
       const json = e.sync.record(zone, id);
       if (!json) continue;
       const record = parse<{ record_type: string; fields: StampedFields }>(json);
+      if (import.meta.env.VITE_ECOSYSTEM_SYNC === "1" && isNoteLinkZone(zone)) {
+        if (readNoteLink(zone, id, record, session.accountId)) {
+          const ids = new Set(state.noteLinks?.[zone] ?? []);
+          if (!ids.has(id) && ids.size >= 10_000) { rejected.push(id); continue; }
+          ids.add(id);
+          (state.noteLinks ??= {})[zone] = [...ids];
+        } else rejected.push(id);
+        continue;
+      }
       let fields = valuesOf(record.fields);
       const type = acceptable(zone, id, record.record_type, fields, options.types?.get(id));
       if (!type) {
@@ -176,6 +200,10 @@ export async function runCycle(
       out.push({ type, id, fields });
     }
     for (const id of applied.removed) {
+      if (import.meta.env.VITE_ECOSYSTEM_SYNC === "1" && isNoteLinkZone(zone)) {
+        (state.noteLinks ??= {})[zone] = (state.noteLinks?.[zone] ?? []).filter(value => value !== id);
+        continue;
+      }
       // The engine has no record to name a type for: the server's type for the page, or the local record's.
       const type = acceptable(zone, id, options.types?.get(id) ?? localTypeOf(zone, id), null, options.types?.get(id));
       if (!type) {
@@ -205,9 +233,10 @@ export async function runCycle(
     // What the engine could not open (or found invalid), from its own list, besides what this side rejected.
     for (const q of parse<{ record_id: string; reason: string }[]>(e.sync.quarantined(zone))) waiting.add(q.record_id);
     for (const id of [...applied.quarantined, ...rejected]) waiting.add(id);
-    for (const id of [...applied.changed, ...applied.removed, ...applied.evicted]) if (!rejected.includes(id)) waiting.delete(id);
+    for (const id of [...changed, ...applied.removed, ...applied.evicted]) if (!rejected.includes(id)) waiting.delete(id);
     if (waiting.size > 0) state.quarantined[zone] = [...waiting];
     else delete state.quarantined[zone];
+    if (ecosystem && isNoteLinkZone(zone)) saveNoteLinkIndex(e.sync, state.noteLinks ?? {}, now());
     return out;
   }
 
@@ -363,6 +392,15 @@ export async function runCycle(
     if (!after) break;
   }
   for (const name of serverZones.keys()) if (!state.zones.includes(name)) state.zones.push(name);
+  if (ecosystem && rebuildNoteLinks) await withEngine(e => {
+    // Old versions advanced tokens separately from the index. Replay these zones
+    // once when upgrading; the reset and replacement index share one snapshot.
+    for (const zone of serverZones.keys()) if (isNoteLinkZone(zone)) {
+      e.sync.tokenExpired(zone);
+      if (!stale.includes(zone)) stale.push(zone);
+    }
+    saveNoteLinkIndex(e.sync, state.noteLinks ?? {}, now(), true);
+  });
 
   // 2b. Rotate the keys a removed device still holds -----------------------------------------------------------
   // Removing a device ends its sessions, not the zone keys it already has: every key this device holds is replaced, and
@@ -384,6 +422,8 @@ export async function runCycle(
 
   // 3. Fetch what changed -------------------------------------------------------------------------------------
   for (const zone of stale) {
+    // Note bodies belong to Notes. Planner fetches only relationship records.
+    if (import.meta.env.VITE_ECOSYSTEM_SYNC === "1" && zone.startsWith("notes-sync:")) continue;
     for (let page = 0; page < MAX_BATCHES * 10; page++) {
       const since = await withEngine((e) => e.sync.token(zone));
       let body: ZoneChanges;
@@ -633,3 +673,4 @@ export async function removeZone(services: AuthServices, session: StoredSession,
   });
   await services.api.deleteZone(zone, JSON.parse(proof));
 }
+import { isNoteLinkZone, readNoteLink } from "../../core/planner/noteLinks";
