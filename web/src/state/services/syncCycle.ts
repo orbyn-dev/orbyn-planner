@@ -158,6 +158,15 @@ export async function runCycle(
       const json = e.sync.record(zone, id);
       if (!json) continue;
       const record = parse<{ record_type: string; fields: StampedFields }>(json);
+      if (import.meta.env.VITE_ECOSYSTEM_SYNC === "1" && isNoteLinkZone(zone)) {
+        if (readNoteLink(zone, id, record, session.accountId)) {
+          const ids = new Set(state.noteLinks?.[zone] ?? []);
+          ids.add(id);
+          if (ids.size > 10_000) throw new Error("Too many linked notes.");
+          (state.noteLinks ??= {})[zone] = [...ids];
+        } else rejected.push(id);
+        continue;
+      }
       let fields = valuesOf(record.fields);
       const type = acceptable(zone, id, record.record_type, fields, options.types?.get(id));
       if (!type) {
@@ -176,6 +185,10 @@ export async function runCycle(
       out.push({ type, id, fields });
     }
     for (const id of applied.removed) {
+      if (import.meta.env.VITE_ECOSYSTEM_SYNC === "1" && isNoteLinkZone(zone)) {
+        (state.noteLinks ??= {})[zone] = (state.noteLinks?.[zone] ?? []).filter(value => value !== id);
+        continue;
+      }
       // The engine has no record to name a type for: the server's type for the page, or the local record's.
       const type = acceptable(zone, id, options.types?.get(id) ?? localTypeOf(zone, id), null, options.types?.get(id));
       if (!type) {
@@ -384,6 +397,8 @@ export async function runCycle(
 
   // 3. Fetch what changed -------------------------------------------------------------------------------------
   for (const zone of stale) {
+    // Note bodies belong to Notes. Planner fetches only relationship records.
+    if (import.meta.env.VITE_ECOSYSTEM_SYNC === "1" && zone.startsWith("notes-sync:")) continue;
     for (let page = 0; page < MAX_BATCHES * 10; page++) {
       const since = await withEngine((e) => e.sync.token(zone));
       let body: ZoneChanges;
@@ -633,3 +648,4 @@ export async function removeZone(services: AuthServices, session: StoredSession,
   });
   await services.api.deleteZone(zone, JSON.parse(proof));
 }
+import { isNoteLinkZone, readNoteLink } from "../../core/planner/noteLinks";

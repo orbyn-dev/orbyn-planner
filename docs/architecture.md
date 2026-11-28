@@ -4,6 +4,26 @@ The plan lives in the internal Orbyn Platform Plan, and the screens in the inter
 
 ## Rules
 
+### Opt-in Notes relationship test
+
+`VITE_ECOSYSTEM_SYNC=1` enables a development-only Notes integration. The default
+build is unchanged. Both apps use the same configured Engine account but retain
+separate approved devices, keys, local databases and ownership of their content.
+`VITE_NOTES_URL` configures the trusted HTTPS or loopback Notes destination.
+
+The sync cycle recognizes `orbyn_note_task_link_v1` records in
+`notes-links:<device UUID>`. It retains opaque relationship IDs in sync metadata;
+the account/note/task references and cached note title remain in the sealed engine
+snapshot. Engine snapshot resets clear these IDs. Foreign-account relationships
+and malformed destinations are rejected. Notes body zones (`notes-sync:`) are
+not fetched by Planner in this mode. The task panel shows linked titles and
+**Open in Notes**; Notes owns the text. Incoming task references open only an
+existing task in the currently authenticated account. Remote records never supply
+the app URL. Unlinking and automatic refresh of cached note titles are deferred.
+
+This opt-in test is not production release qualification. The integration does not
+change Engine APIs, generated wire types, account-free libraries or desktop shells.
+
 - One UI for web, desktop and phone. Platform code stays in thin shells.
 - The planner is for everyone: no student, engineer or business defaults, and no AI in v1.
 - Orbyn house style: Geist and JetBrains Mono; Light, Dark and Dim; at most three interface colours: ink, amber when the person must act, and red for failures and removals. A person's list, calendar and project colours are content and keep their colour.

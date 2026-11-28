@@ -1,4 +1,5 @@
 import { linksIn } from "../../lib/links";
+import { LinkedNotes } from "./LinkedNotes";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNow } from "../../state/clock";
 import { usePrefs } from "../../state/prefs";
@@ -271,6 +272,7 @@ function Panel({ task }: { task: Task }) {
         </ul>
       )}
 
+      <LinkedNotes taskId={task.id} />
       <div className="tp-foot">
         <button type="button" className="ghost red" onClick={remove}>Delete</button>
         <button type="button" className="btn" onClick={() => complete(task, !task.done)}>

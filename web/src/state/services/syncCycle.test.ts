@@ -2,7 +2,7 @@
 //
 // Sync through the engine's real module against the mock record store: two paired devices, their stores
 // in memory, a server that versions records and refuses stale writes like the real one.
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { emptySyncState } from "../../data/account/keyStore";
 import { runCycle } from "./syncCycle";
 import { removeDevice } from "./flows";
@@ -13,6 +13,34 @@ const titles = (d: TestDevice) => d.store.getState().tasks.map((t) => t.title).s
 /** The key ids the server holds for a zone, to one recipient device. */
 const keyIds = (r: SyncRig, zone: string, recipient: string) =>
   [...r.engine.accounts.values()][0]!.records!.envelopes.filter((e) => e.zone === zone && e.recipient_device_id === recipient).map((e) => e.key_id).sort();
+
+it("indexes encrypted Notes relationships without fetching Notes bodies in the opt-in build", async () => {
+  vi.stubEnv("VITE_ECOSYSTEM_SYNC", "1");
+  try {
+    const r = await createSyncRig();
+    const task = r.a.store.addTask({ title: "Existing Planner task" });
+    const linkZone = `notes-links:${r.a.session.deviceId}`, bodyZone = `notes-sync:${r.a.session.deviceId}`;
+    const id = crypto.randomUUID(), bodyId = crypto.randomUUID();
+    await r.a.services.api.createZone(linkZone);
+    await r.a.services.api.createZone(bodyZone);
+    await r.a.services.engine.run(r.a.session, engine => {
+      const sync = engine.sync!;
+      sync.createZoneKey(linkZone); sync.createZoneKey(bodyZone);
+      const stamp = JSON.parse(sync.tick(r.a.services.now()));
+      sync.stage(linkZone, "orbyn_note_task_link_v1", id, JSON.stringify({ link: { stamp, value: {
+        accountId: r.a.session.accountId, noteId: "opaque-note", taskId: task.id,
+        taskZone: "list:inbox", noteTitle: "Linked note title", active: true,
+      } } }));
+      sync.stage(bodyZone, "orbyn_note_edit_v1", bodyId, JSON.stringify({ body: { stamp, value: "Note body belongs to Notes" } }));
+    });
+    await sync(r, r.a); await sync(r, r.b);
+    expect((await r.b.services.keys.loadSyncState())?.noteLinks?.[linkZone]).toEqual([id]);
+    await r.b.services.engine.run(r.b.session, engine => {
+      expect(engine.sync!.record(linkZone, id)).toContain("Linked note title");
+      expect(engine.sync!.record(bodyZone, bodyId)).toBeUndefined();
+    });
+  } finally { vi.unstubAllEnvs(); }
+});
 
 describe("outgoing and incoming", () => {
   it("a task made on A reaches B, and A's outbox is cleared only once it was acknowledged", async () => {
