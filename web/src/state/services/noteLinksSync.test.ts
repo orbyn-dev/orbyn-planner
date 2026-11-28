@@ -2,6 +2,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { createSyncRig } from "../../testing/syncRig";
 import { runCycle } from "./syncCycle";
+import { readNoteLinkIndex } from "../../data/account/noteLinkIndex";
 
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 async function fixture() {
@@ -75,4 +76,22 @@ it("quarantines excess relationships while syncing Planner edits and existing re
   await r.b.services.engine.run(r.b.session, engine => {
     expect(engine.sync!.record(zone, id)).toContain("Updated existing title");
   });
+});
+it("retains new backlink IDs after correcting a two-hour-fast clock without advancing remote edit stamps", async () => {
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  const { r, zone, id, stage } = await fixture();
+  const corrected = r.clock.now + 100;
+  r.clock.now += 2 * 60 * 60 * 1000;
+  await runCycle(r.b.services, r.b.session, r.b.store);
+  r.clock.now = corrected;
+  const next = crypto.randomUUID();
+  await stage(next, "Arrived after correcting the clock");
+  await runCycle(r.a.services, r.a.session, r.a.store);
+  await runCycle(r.b.services, r.b.session, r.b.store);
+  await r.b.services.engine.run(r.b.session, engine => {
+    expect(readNoteLinkIndex(engine.sync!)?.[zone]).toEqual(expect.arrayContaining([id, next]));
+    expect(JSON.parse(engine.sync!.tick(r.clock.now)).millis).toBeLessThanOrEqual(r.clock.now);
+  });
+  await runCycle(r.b.services, r.b.session, r.b.store);
+  expect((await r.b.keys.loadSyncState())?.noteLinks?.[zone]).toContain(next);
 });

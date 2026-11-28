@@ -19,6 +19,9 @@ record, committed atomically with the change token. The sync-metadata ID map is
 only a compatibility mirror. A failed mirror save is recovered from the engine
 snapshot; an upgrade replay resets relationship cursors with a sealed completion
 marker, so an interrupted replay cannot lose IDs. Engine snapshot resets clear
+the index. Local index replacements remain monotonic after wall-clock correction
+without advancing the clock used for remotely synchronized Planner records.
+Engine snapshot resets clear
 these IDs. New relationships above the per-zone limit are quarantined without
 blocking Planner uploads; existing relationships may still update at the limit.
 Configured Notes app subpaths are preserved. Foreign-account relationships

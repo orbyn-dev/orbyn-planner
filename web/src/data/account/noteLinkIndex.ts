@@ -1,5 +1,6 @@
 import type { SyncApi } from "../../core/account/authCrypto";
 import { isNoteLinkZone } from "../../core/planner/noteLinks";
+import type { Stamp } from "../../core/sync/mapping";
 
 const ZONE = "planner-local-note-links-v1";
 export type NoteLinkIndex = Record<string, string[]>;
@@ -23,6 +24,22 @@ export function needsNoteLinkReplay(engine: SyncApi): boolean {
 }
 export function saveNoteLinkIndex(engine: SyncApi, index: NoteLinkIndex, now: number, replayComplete = false): void {
   engine.createZoneKey(ZONE);
-  const stamp = JSON.parse(engine.tick(now));
+  const stamp = JSON.parse(engine.tick(now)) as Stamp;
+  const raw = engine.record(ZONE, "index");
+  const fields = raw ? JSON.parse(raw).fields : {};
+  // Restore intentionally skips far-future stamps when resuming the shared
+  // clock. This local-only field must still replace its previous value. Advance
+  // its private stamp, not the clock used to stamp remote Planner records.
+  for (const name of replayComplete ? ["index", "replay_complete"] : ["index"]) {
+    const previous = fields[name]?.stamp as Stamp | undefined;
+    if (!previous || previous.millis < stamp.millis || previous.millis === stamp.millis && previous.counter < stamp.counter) continue;
+    if (!Number.isSafeInteger(previous.millis)) throw new Error("The local note-link index clock is exhausted.");
+    stamp.millis = previous.millis;
+    if (previous.counter < 0xffff_ffff) stamp.counter = previous.counter + 1;
+    else {
+      if (!Number.isSafeInteger(previous.millis + 1)) throw new Error("The local note-link index clock is exhausted.");
+      stamp.millis++; stamp.counter = 0;
+    }
+  }
   engine.stage(ZONE, "planner_note_link_index_v1", "index", JSON.stringify({ index: { value: index, stamp }, ...(replayComplete ? { replay_complete: { value: true, stamp } } : {}) }));
 }
