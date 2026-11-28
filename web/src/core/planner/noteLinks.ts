@@ -3,6 +3,17 @@
 export const NOTE_LINK_ZONE = "notes-links:";
 export type LinkedNote = { id: string; zone: string; accountId: string; noteId: string; taskId: string; taskZone: string; noteTitle: string; active: boolean };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export function noteAppLink(configured: unknown, accountId: string, noteId: string): URL | null {
+  if (typeof configured !== "string") return null;
+  try {
+    const url = new URL(configured);
+    if (url.username || url.password || !(url.protocol === "https:" || url.protocol === "http:" && ["127.0.0.1", "localhost", "[::1]"].includes(url.hostname))) return null;
+    url.hash = "";
+    url.searchParams.set("orbynNote", noteId);
+    url.searchParams.set("orbynAccount", accountId);
+    return url;
+  } catch { return null; }
+}
 export function isNoteLinkZone(zone: string): boolean { return zone.startsWith(NOTE_LINK_ZONE) && UUID.test(zone.slice(NOTE_LINK_ZONE.length)); }
 export function readNoteLink(zone: string, id: string, record: { record_type: string; fields: Record<string, { value: unknown }> }, accountId: string): LinkedNote | null {
   const value = record.fields.link?.value as Partial<LinkedNote> | undefined;

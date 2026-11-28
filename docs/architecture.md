@@ -14,7 +14,14 @@ separate approved devices, keys, local databases and ownership of their content.
 The sync cycle recognizes `orbyn_note_task_link_v1` records in
 `notes-links:<device UUID>`. It retains opaque relationship IDs in sync metadata;
 the account/note/task references and cached note title remain in the sealed engine
-snapshot. Engine snapshot resets clear these IDs. Foreign-account relationships
+snapshot. The authoritative backlink index is a local-only encrypted engine
+record, committed atomically with the change token. The sync-metadata ID map is
+only a compatibility mirror. A failed mirror save is recovered from the engine
+snapshot; an upgrade replay resets relationship cursors with a sealed completion
+marker, so an interrupted replay cannot lose IDs. Engine snapshot resets clear
+these IDs. New relationships above the per-zone limit are quarantined without
+blocking Planner uploads; existing relationships may still update at the limit.
+Configured Notes app subpaths are preserved. Foreign-account relationships
 and malformed destinations are rejected. Notes body zones (`notes-sync:`) are
 not fetched by Planner in this mode. The task panel shows linked titles and
 **Open in Notes**; Notes owns the text. Incoming task references open only an

@@ -34,6 +34,7 @@ it("indexes encrypted Notes relationships without fetching Notes bodies in the o
       sync.stage(bodyZone, "orbyn_note_edit_v1", bodyId, JSON.stringify({ body: { stamp, value: "Note body belongs to Notes" } }));
     });
     await sync(r, r.a); await sync(r, r.b);
+    expect([...r.engine.accounts.values()][0]!.records!.zones.has("planner-local-note-links-v1")).toBe(false);
     expect((await r.b.services.keys.loadSyncState())?.noteLinks?.[linkZone]).toEqual([id]);
     await r.b.services.engine.run(r.b.session, engine => {
       expect(engine.sync!.record(linkZone, id)).toContain("Linked note title");
